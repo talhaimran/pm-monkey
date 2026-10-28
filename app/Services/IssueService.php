@@ -7,6 +7,7 @@ use App\Enums\IssueType;
 use App\Models\Issue;
 use App\Models\Project;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -16,7 +17,11 @@ class IssueService
     /** Relations needed to render an issue (IssueResource) and its activity diff. */
     public const DISPLAY = ['project', 'column', 'assignee', 'reporter', 'epic', 'parent', 'labels'];
 
-    public function __construct(private ProjectService $projects, private ActivityLogger $activity) {}
+    public function __construct(
+        private ProjectService $projects,
+        private ActivityLogger $activity,
+        private RankService $ranks,
+    ) {}
 
     /**
      * Create an issue. $data uses the shared input shape: status = column name, assignee = email,
@@ -34,6 +39,7 @@ class IssueService
                 ...$attributes,
                 'project_id' => $project->id,
                 'number' => $this->nextNumber($project),
+                'rank' => $this->ranks->bottom($project),
                 'reporter_id' => $actor->id,
             ]);
             $issue->labels()->sync($labelIds ?? []);
@@ -106,6 +112,27 @@ class IssueService
             'epicIssues' => fn ($q) => $q->with('column')->orderBy('number')->limit(100),
             'comments' => fn ($q) => $q->with('author')->oldest()->limit(100),
         ]);
+    }
+
+    /**
+     * Apply board/list filters: assignee (email or "unassigned"), type, priority, label (name),
+     * q (title text or issue key such as WEB-12).
+     */
+    public function filter(Builder $query, Project $project, array $filters): Builder
+    {
+        return $query
+            ->when($filters['assignee'] ?? null, fn ($q, $assignee) => strtolower($assignee) === 'unassigned'
+                ? $q->whereNull('assignee_id')
+                : $q->whereHas('assignee', fn ($u) => $u->where('email', $assignee)))
+            ->when($filters['type'] ?? null, fn ($q, $type) => $q->where('type', $type))
+            ->when($filters['priority'] ?? null, fn ($q, $priority) => $q->where('priority', $priority))
+            ->when($filters['label'] ?? null, fn ($q, $label) => $q->whereHas('labels', fn ($l) => $l->where('name', $label)))
+            ->when(trim($filters['q'] ?? ''), function ($q, $search) use ($project) {
+                $number = preg_match('/^'.preg_quote($project->key, '/').'-(\d+)$/i', $search, $m) ? $m[1] : null;
+                $q->where(fn ($w) => $number
+                    ? $w->where('number', $number)
+                    : $w->where('title', 'like', '%'.addcslashes($search, '%_\\').'%'));
+            });
     }
 
     private function nextNumber(Project $project): int

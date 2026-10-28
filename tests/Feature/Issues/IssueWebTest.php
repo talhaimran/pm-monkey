@@ -9,14 +9,14 @@ beforeEach(function () {
     $this->project = makeProject($this->admin, 'WEB');
 });
 
-test('project page lists recent issues and create options', function () {
+test('project board page includes create options', function () {
     makeIssue($this->project, $this->admin, ['title' => 'Hello']);
 
     $this->actingAs($this->admin)->get('/projects/WEB')
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('Projects/Show')
-            ->where('issues.0.key', 'WEB-1')
+            ->component('Projects/Board')
+            ->where('board.columns.0.issues.0.key', 'WEB-1')
             ->has('options.columns', 4)
             ->has('options.types', 4));
 });

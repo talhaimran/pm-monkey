@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\V1\BoardController;
+use App\Http\Controllers\Api\V1\ColumnController;
 use App\Http\Controllers\Api\V1\CommentController;
 use App\Http\Controllers\Api\V1\IssueController;
 use App\Http\Controllers\Api\V1\LabelController;
@@ -24,11 +26,18 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::patch('projects/{key}/labels/{name}', [LabelController::class, 'update']);
     Route::delete('projects/{key}/labels/{name}', [LabelController::class, 'destroy']);
 
+    Route::get('projects/{key}/board', [BoardController::class, 'show']);
+    Route::get('projects/{key}/columns', [ColumnController::class, 'index']);
+    Route::post('projects/{key}/columns', [ColumnController::class, 'store']);
+    Route::patch('projects/{key}/columns/{name}', [ColumnController::class, 'update']);
+    Route::delete('projects/{key}/columns/{name}', [ColumnController::class, 'destroy']);
+
     Route::post('projects/{key}/issues', [IssueController::class, 'store']);
     Route::get('issues/{key}', [IssueController::class, 'show']);
     Route::patch('issues/{key}', [IssueController::class, 'update']);
     Route::delete('issues/{key}', [IssueController::class, 'destroy']);
     Route::get('issues/{key}/activity', [IssueController::class, 'activity']);
+    Route::post('issues/{key}/move', [BoardController::class, 'move']);
 
     Route::post('issues/{key}/comments', [CommentController::class, 'store']);
     Route::patch('comments/{comment}', [CommentController::class, 'update']);

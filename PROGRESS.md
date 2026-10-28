@@ -34,3 +34,12 @@
 - MCP: create/get/update/delete_issue, get_issue_activity, add/update/delete_comment, list/create/update/delete_label. Resources: `issue://{key}`, `project://{key}` (statuses, labels, members).
 - `ProjectService::delete` deletes issues first, because issues restrict column deletes.
 - Deferred to slice 6: issue listing and search. For now the project page shows the 50 most recent issues.
+
+## Slice 4: Board and columns ✅
+- The project page (`/projects/{KEY}`) is now the Kanban board. dnd-kit drag works between and within columns (pointer and keyboard sensors) with optimistic UI; server data wins after each reload.
+- One project-wide `issues.rank` (bigint, gaps of 1024) orders the board and will order the backlog in slice 5. A move takes the neighbours' midpoint, and the project renumbers when there's no gap left. All of this runs under the project row lock.
+- Move input: `status` plus `position` (0-based index) or `after` (issue key). The web UI sends `after`, so reordering stays correct while filters hide cards. Status changes are logged (through IssueService::update); pure reorders aren't.
+- Board filters run server-side through `IssueService::filter()`: assignee (email or "unassigned"), type, priority, label, q (title or key). The list view in slice 6 will reuse it. The board hides epics and caps at 500 issues, with a `truncated` flag.
+- Columns: admins add, rename, reorder and delete them (API/MCP address columns by name). Deleting a column with issues needs `move_issues_to`. A project keeps at least one column. Moving issues out of a deleted column isn't recorded in the activity log.
+- MCP: get_board, move_issue, list_columns, create_column, update_column, delete_column.
+- Verified in the browser: dragged across columns (status updated and logged via web), reordered within a column (rank only, nothing logged), and the type filter.

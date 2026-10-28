@@ -18,12 +18,14 @@ export default function Settings({
     invitations,
     roles,
     labels,
+    columns,
     can,
 }: {
     project: Project;
     invitations: Invitation[];
     roles: ProjectRole[];
     labels: Label[];
+    columns: { id: number; name: string; position: number; issue_count: number }[];
     can: { manage: boolean; contribute: boolean };
 }) {
     const { errors: pageErrors } = usePage().props as { errors: Record<string, string> };
@@ -35,6 +37,9 @@ export default function Settings({
     });
     const invite = useForm({ email: '', role: 'member' as ProjectRole });
     const newLabel = useForm({ name: '', color: '#6b7280' });
+    const newColumn = useForm({ name: '' });
+    const [moveTargets, setMoveTargets] = useState<Record<number, string>>({});
+    const columnRoute = (name: string, id: number) => route(name, [project.key, id]);
 
     const saveDetails: FormEventHandler = (e) => {
         e.preventDefault();
@@ -146,6 +151,91 @@ export default function Settings({
                         ))}
                     </ul>
                 </section>
+
+                {can.manage && (
+                    <section className={card}>
+                        <h3 className={heading}>Board columns</h3>
+                        <InputError className="mt-2" message={pageErrors.move_issues_to ?? pageErrors.column} />
+                        <ol className="mt-4 space-y-2">
+                            {columns.map((c, i) => (
+                                <li key={c.id} className="flex flex-wrap items-center gap-2 text-sm">
+                                    <TextInput
+                                        aria-label={`Name of column ${c.name}`}
+                                        className="w-44"
+                                        defaultValue={c.name}
+                                        onBlur={(e) =>
+                                            e.target.value.trim() &&
+                                            e.target.value !== c.name &&
+                                            router.patch(columnRoute('projects.columns.update', c.id), { name: e.target.value }, { preserveScroll: true })
+                                        }
+                                    />
+                                    <SecondaryButton
+                                        aria-label={`Move ${c.name} left`}
+                                        disabled={i === 0}
+                                        onClick={() => router.patch(columnRoute('projects.columns.update', c.id), { position: i - 1 }, { preserveScroll: true })}
+                                    >
+                                        ↑
+                                    </SecondaryButton>
+                                    <SecondaryButton
+                                        aria-label={`Move ${c.name} right`}
+                                        disabled={i === columns.length - 1}
+                                        onClick={() => router.patch(columnRoute('projects.columns.update', c.id), { position: i + 1 }, { preserveScroll: true })}
+                                    >
+                                        ↓
+                                    </SecondaryButton>
+                                    <span className="text-gray-500 dark:text-gray-400">{c.issue_count} issues</span>
+                                    {c.issue_count > 0 && (
+                                        <select
+                                            aria-label={`Move ${c.name} issues to`}
+                                            className={selectClass}
+                                            value={moveTargets[c.id] ?? ''}
+                                            onChange={(e) => setMoveTargets({ ...moveTargets, [c.id]: e.target.value })}
+                                        >
+                                            <option value="">Move issues to…</option>
+                                            {columns.filter((o) => o.id !== c.id).map((o) => (
+                                                <option key={o.id}>{o.name}</option>
+                                            ))}
+                                        </select>
+                                    )}
+                                    <DangerButton
+                                        disabled={columns.length === 1 || (c.issue_count > 0 && !moveTargets[c.id])}
+                                        onClick={() =>
+                                            router.delete(columnRoute('projects.columns.destroy', c.id), {
+                                                data: { move_issues_to: moveTargets[c.id] || null },
+                                                preserveScroll: true,
+                                            })
+                                        }
+                                    >
+                                        Delete
+                                    </DangerButton>
+                                </li>
+                            ))}
+                        </ol>
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                newColumn.post(route('projects.columns.store', project.key), {
+                                    preserveScroll: true,
+                                    onSuccess: () => newColumn.reset(),
+                                });
+                            }}
+                            className="mt-4 flex flex-wrap items-start gap-3"
+                        >
+                            <div className="flex-1">
+                                <TextInput
+                                    aria-label="New column name"
+                                    className="block w-full"
+                                    placeholder="Blocked"
+                                    value={newColumn.data.name}
+                                    onChange={(e) => newColumn.setData('name', e.target.value)}
+                                    required
+                                />
+                                <InputError className="mt-2" message={newColumn.errors.name} />
+                            </div>
+                            <PrimaryButton disabled={newColumn.processing}>Add column</PrimaryButton>
+                        </form>
+                    </section>
+                )}
 
                 <section className={card}>
                     <h3 className={heading}>Labels</h3>

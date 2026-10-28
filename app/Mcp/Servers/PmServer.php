@@ -5,18 +5,24 @@ namespace App\Mcp\Servers;
 use App\Mcp\Resources\IssueResource;
 use App\Mcp\Resources\ProjectResource;
 use App\Mcp\Tools\AddComment;
+use App\Mcp\Tools\CreateColumn;
 use App\Mcp\Tools\CreateIssue;
 use App\Mcp\Tools\CreateLabel;
 use App\Mcp\Tools\CreateProject;
+use App\Mcp\Tools\DeleteColumn;
 use App\Mcp\Tools\DeleteComment;
 use App\Mcp\Tools\DeleteIssue;
 use App\Mcp\Tools\DeleteLabel;
 use App\Mcp\Tools\DeleteProject;
+use App\Mcp\Tools\GetBoard;
 use App\Mcp\Tools\GetIssue;
 use App\Mcp\Tools\GetIssueActivity;
 use App\Mcp\Tools\GetProject;
+use App\Mcp\Tools\ListColumns;
 use App\Mcp\Tools\ListLabels;
 use App\Mcp\Tools\ListProjects;
+use App\Mcp\Tools\MoveIssue;
+use App\Mcp\Tools\UpdateColumn;
 use App\Mcp\Tools\UpdateComment;
 use App\Mcp\Tools\UpdateIssue;
 use App\Mcp\Tools\UpdateLabel;
@@ -58,6 +64,12 @@ class PmServer extends Server
         CreateLabel::class,
         UpdateLabel::class,
         DeleteLabel::class,
+        GetBoard::class,
+        MoveIssue::class,
+        ListColumns::class,
+        CreateColumn::class,
+        UpdateColumn::class,
+        DeleteColumn::class,
     ];
 
     protected array $resources = [

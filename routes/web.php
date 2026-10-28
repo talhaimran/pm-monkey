@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Web\BoardController;
 use App\Http\Controllers\Web\InvitationController;
 use App\Http\Controllers\Web\IssueController;
 use App\Http\Controllers\Web\LabelController;
@@ -33,13 +34,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/issues/{key}', [IssueController::class, 'show'])->name('issues.show');
     Route::patch('/issues/{key}', [IssueController::class, 'update'])->name('issues.update');
     Route::delete('/issues/{key}', [IssueController::class, 'destroy'])->name('issues.destroy');
+    Route::post('/issues/{key}/move', [BoardController::class, 'move'])->name('issues.move');
     Route::post('/issues/{key}/comments', [IssueController::class, 'comment'])->name('issues.comments.store');
     Route::patch('/comments/{comment}', [IssueController::class, 'updateComment'])->name('comments.update');
     Route::delete('/comments/{comment}', [IssueController::class, 'destroyComment'])->name('comments.destroy');
     Route::post('/invitations/{invitation}/accept', [InvitationController::class, 'accept'])->name('invitations.accept');
 
     Route::prefix('/projects/{project:key}')->name('projects.')->group(function () {
-        Route::get('/', [ProjectController::class, 'show'])->name('show');
+        Route::get('/', [BoardController::class, 'show'])->name('show');
+        Route::post('/columns', [BoardController::class, 'storeColumn'])->name('columns.store');
+        Route::patch('/columns/{column}', [BoardController::class, 'updateColumn'])->name('columns.update')->scopeBindings();
+        Route::delete('/columns/{column}', [BoardController::class, 'destroyColumn'])->name('columns.destroy')->scopeBindings();
         Route::get('/settings', [ProjectController::class, 'settings'])->name('settings');
         Route::post('/issues', [IssueController::class, 'store'])->name('issues.store');
         Route::post('/labels', [LabelController::class, 'store'])->name('labels.store');

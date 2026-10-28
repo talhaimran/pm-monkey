@@ -7,13 +7,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Projects\DestroyProjectRequest;
 use App\Http\Requests\Projects\StoreProjectRequest;
 use App\Http\Requests\Projects\UpdateProjectRequest;
-use App\Http\Resources\IssueResource;
+use App\Http\Resources\ColumnResource;
 use App\Http\Resources\LabelResource;
 use App\Http\Resources\ProjectInvitationResource;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use App\Models\ProjectInvitation;
-use App\Services\IssueService;
 use App\Services\ProjectService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,20 +44,6 @@ class ProjectController extends Controller
         return redirect()->route('projects.settings', $project->key);
     }
 
-    public function show(Request $request, Project $project): Response
-    {
-        Gate::authorize('view', $project);
-        $issues = $project->issues()->with(array_slice(IssueService::DISPLAY, 1))->latest('id')->limit(50)->get()
-            ->each->setRelation('project', $project);
-
-        return Inertia::render('Projects/Show', [
-            'project' => (new ProjectResource($project))->resolve(),
-            'issues' => IssueResource::collection($issues)->resolve(),
-            'options' => $this->projects->issueOptions($project),
-            'can' => ['contribute' => $request->user()->can('contribute', $project)],
-        ]);
-    }
-
     public function settings(Request $request, Project $project): Response
     {
         Gate::authorize('view', $project);
@@ -70,6 +55,7 @@ class ProjectController extends Controller
             'invitations' => $canManage ? ProjectInvitationResource::collection($project->invitations)->resolve() : [],
             'roles' => ProjectRole::values(),
             'labels' => LabelResource::collection($project->labels()->get())->resolve(),
+            'columns' => ColumnResource::collection($project->columns()->withCount('issues')->get())->resolve(),
             'can' => ['manage' => $canManage, 'contribute' => $request->user()->can('contribute', $project)],
         ]);
     }
