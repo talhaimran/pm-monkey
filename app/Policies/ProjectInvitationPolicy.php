@@ -10,8 +10,13 @@ class ProjectInvitationPolicy
 {
     public function accept(User $user, ProjectInvitation $invitation): Response
     {
-        return strtolower($user->email) === $invitation->email
+        if (strtolower($user->email) !== $invitation->email) {
+            return Response::deny('This invitation was sent to a different email address.');
+        }
+
+        // Without this, anyone could register with an invited address and take the role.
+        return $user->hasVerifiedEmail()
             ? Response::allow()
-            : Response::deny('This invitation was sent to a different email address.');
+            : Response::deny('Verify your email address before accepting invitations: use "Send verification link" on the Projects page.');
     }
 }

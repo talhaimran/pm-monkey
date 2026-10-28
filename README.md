@@ -63,6 +63,7 @@ It also creates project **WEB** (about 30 issues, labels, epics, sub-tasks, an a
 | `MAIL_MAILER` | `log` | Invitations are written to `storage/logs/laravel.log`. Set SMTP to really send them. |
 | `PM_API_RATE_LIMIT` | `120` | Requests per minute per API token (REST and MCP over HTTP). |
 | `PM_IDEMPOTENCY_TTL_HOURS` | `24` | How long a response is kept for `Idempotency-Key` replay. |
+| `PM_INVITE_RATE_LIMIT` | `30` | Invitation emails per hour per user (web and API). |
 | `PM_MCP_TOKEN` | — | Token the stdio MCP server acts as. Usually set in the MCP client's config, not `.env`. |
 
 ## Running
@@ -71,7 +72,13 @@ It also creates project **WEB** (about 30 issues, labels, epics, sub-tasks, an a
 composer run dev          # app server, queue worker and Vite with hot reload
 ```
 
-Or separately: `php artisan serve` and `npm run dev`. For production assets, run `npm run build` and serve `public/` with any PHP host (set `APP_ENV=production`, `APP_DEBUG=false`).
+Or separately: `php artisan serve` and `npm run dev`.
+
+For production, run `npm run build` and serve `public/` with any PHP host over HTTPS. Then:
+- Set `APP_ENV=production` and `APP_DEBUG=false`. With debug on, API and MCP errors include internal details.
+- Set `SESSION_SECURE_COOKIE=true`.
+- Configure real SMTP so verification and invitation emails arrive.
+- Remove the `register` routes in `routes/auth.php` if strangers shouldn't be able to sign up. Registration is open by default.
 
 The app is at <http://localhost:8000>, and the API docs are at <http://localhost:8000/docs/api> (OpenAPI JSON at `/docs/api.json`).
 
@@ -93,7 +100,8 @@ Create tokens at **user menu → API tokens** (`/settings/tokens`):
 
 - **Read-only** or **Read and write**. Read-only tokens (and Viewers) can never change anything.
 - **All my projects** or a chosen subset. A scoped token can't see or create anything outside its projects.
-- The token is shown once. The page lists each token's scope and **last used** time, and lets you **revoke** it.
+- **Expiry:** 30 days, 90 days (the default), 1 year or never. Expired tokens stop working on REST and both MCP transports.
+- The token is shown once. The page lists each token's scope, **last used** time and expiry, and lets you **revoke** it.
 
 Every REST and MCP call uses the token as `Authorization: Bearer <token>`.
 
@@ -216,7 +224,6 @@ All business logic lives in `app/Services`. Web controllers (`app/Http/Controlle
 Out of scope by design: a workflows engine, custom fields, plugins, time tracking, SSO, email notifications and real-time collaboration (other people's changes appear when you reload).
 
 Also not done:
-- Email verification isn't enforced, so anyone who registers with an invited address can accept that invitation.
 - The board and backlog load at most 500 and 1000 issues, with a notice when they're cut off.
 - There's no in-app list of keyboard shortcuts.
 - MCP tools don't take an idempotency key; use the REST API when you need replay safety.

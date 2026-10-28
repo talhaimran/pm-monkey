@@ -21,7 +21,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:api', Idempotent::cla
     Route::delete('projects/{key}', [ProjectController::class, 'destroy']);
 
     Route::get('projects/{key}/members', [ProjectMemberController::class, 'index']);
-    Route::post('projects/{key}/invitations', [ProjectMemberController::class, 'invite']);
+    Route::post('projects/{key}/invitations', [ProjectMemberController::class, 'invite'])->middleware('throttle:invites');
     Route::patch('projects/{key}/members/{email}', [ProjectMemberController::class, 'update']);
     Route::delete('projects/{key}/members/{email}', [ProjectMemberController::class, 'destroy']);
 

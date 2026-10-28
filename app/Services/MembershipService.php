@@ -64,6 +64,19 @@ class MembershipService
         });
     }
 
+    /** Keys of projects where $user is the only admin (they'd be left unmanageable without them). */
+    public function soleAdminProjectKeys(User $user): array
+    {
+        return $user->projects()
+            ->wherePivot('role', ProjectRole::Admin->value)
+            ->withCount(['members as admin_count' => fn ($q) => $q->where('project_user.role', ProjectRole::Admin->value)])
+            ->orderBy('key')
+            ->get()
+            ->where('admin_count', 1)
+            ->pluck('key')
+            ->all();
+    }
+
     /** Find a project member by email; 404 lists the members so callers can correct the input. */
     public function resolveMember(Project $project, string $email): User
     {

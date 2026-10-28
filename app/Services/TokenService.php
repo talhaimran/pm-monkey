@@ -10,8 +10,11 @@ use Laravel\Sanctum\PersonalAccessToken;
 /** API tokens are Sanctum tokens whose abilities encode access (read/write) and project scope (project:{id}). */
 class TokenService
 {
-    /** @param list<string>|null $projectKeys null or empty = all of the user's projects */
-    public function create(User $user, string $name, bool $write, ?array $projectKeys): NewAccessToken
+    /**
+     * @param  list<string>|null  $projectKeys  null or empty = all of the user's projects
+     * @param  int|null  $expiresInDays  null = never expires
+     */
+    public function create(User $user, string $name, bool $write, ?array $projectKeys, ?int $expiresInDays = null): NewAccessToken
     {
         $abilities = $write ? ['read', 'write'] : ['read'];
 
@@ -29,7 +32,7 @@ class TokenService
             $abilities = [...$abilities, ...$projects->values()->map(fn ($id) => "project:{$id}")];
         }
 
-        return $user->createToken(trim($name), $abilities);
+        return $user->createToken(trim($name), $abilities, $expiresInDays ? now()->addDays($expiresInDays) : null);
     }
 
     public function revoke(User $user, int $id): void
@@ -52,6 +55,7 @@ class TokenService
                 // A scoped token keeps only projects that still exist and that the user still belongs to.
                 'projects' => $projectIds->isEmpty() ? null : $projectIds->map(fn ($id) => $keys[$id] ?? null)->filter()->values()->all(),
                 'last_used_at' => $token->last_used_at,
+                'expires_at' => $token->expires_at,
                 'created_at' => $token->created_at,
             ];
         })->all();

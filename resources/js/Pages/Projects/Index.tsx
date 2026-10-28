@@ -4,8 +4,8 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Invitation, Project } from '@/types';
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { FormEventHandler, useState } from 'react';
 
 export default function Index({
     projects,
@@ -18,6 +18,8 @@ export default function Index({
         key: '',
         name: '',
     });
+    const verified = Boolean(usePage().props.auth.user.email_verified_at);
+    const [linkSent, setLinkSent] = useState(false);
 
     const create: FormEventHandler = (e) => {
         e.preventDefault();
@@ -40,6 +42,24 @@ export default function Index({
                         <h3 className="font-medium text-gray-900 dark:text-gray-100">
                             Pending invitations
                         </h3>
+                        {!verified && (
+                            <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                Verify your email address to accept invitations.
+                                {linkSent ? (
+                                    <span className="font-medium">Verification link sent; check your inbox.</span>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        className="text-indigo-700 underline dark:text-indigo-300"
+                                        onClick={() =>
+                                            router.post(route('verification.send'), {}, { preserveScroll: true, onSuccess: () => setLinkSent(true) })
+                                        }
+                                    >
+                                        Send verification link
+                                    </button>
+                                )}
+                            </p>
+                        )}
                         <ul className="mt-2 divide-y divide-indigo-100 dark:divide-indigo-900">
                             {invitations.map((inv) => (
                                 <li
@@ -51,6 +71,7 @@ export default function Index({
                                         {inv.project?.key}) as {inv.role}
                                     </span>
                                     <PrimaryButton
+                                        disabled={!verified}
                                         onClick={() =>
                                             router.post(
                                                 route('invitations.accept', inv.id),

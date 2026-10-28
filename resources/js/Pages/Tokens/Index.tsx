@@ -14,6 +14,7 @@ interface Token {
     access: 'read' | 'write';
     projects: string[] | null;
     last_used_at: string | null;
+    expires_at: string | null;
     created_at: string;
 }
 
@@ -31,11 +32,15 @@ export default function Index({
     const flashToken = (usePage().props as { flash?: { token?: string | null } }).flash?.token;
     const [copied, setCopied] = useState(false);
     const [allProjects, setAllProjects] = useState(true);
-    const form = useForm({ name: '', access: 'read' as 'read' | 'write', projects: [] as string[] });
+    const form = useForm({ name: '', access: 'read' as 'read' | 'write', projects: [] as string[], expires_in_days: '90' });
 
     const submit = (e: FormEvent) => {
         e.preventDefault();
-        form.transform((d) => ({ ...d, projects: allProjects ? null : d.projects }));
+        form.transform((d) => ({
+            ...d,
+            projects: allProjects ? null : d.projects,
+            expires_in_days: d.expires_in_days === '' ? null : Number(d.expires_in_days),
+        }));
         form.post(route('tokens.store'), { preserveScroll: true, onSuccess: () => form.reset('name', 'projects') });
     };
 
@@ -136,6 +141,22 @@ export default function Index({
                             <InputError className="mt-1" message={form.errors.projects} />
                         </fieldset>
 
+                        <div>
+                            <InputLabel htmlFor="token-expiry" value="Expires" />
+                            <select
+                                id="token-expiry"
+                                className="mt-1 rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                value={form.data.expires_in_days}
+                                onChange={(e) => form.setData('expires_in_days', e.target.value)}
+                            >
+                                <option value="30">In 30 days</option>
+                                <option value="90">In 90 days</option>
+                                <option value="365">In 1 year</option>
+                                <option value="">Never</option>
+                            </select>
+                            <InputError className="mt-1" message={form.errors.expires_in_days} />
+                        </div>
+
                         <PrimaryButton disabled={form.processing || (!allProjects && form.data.projects.length === 0)}>Create token</PrimaryButton>
                     </form>
                 </section>
@@ -154,7 +175,14 @@ export default function Index({
                                             {t.access === 'write' ? 'Read and write' : 'Read-only'} ·{' '}
                                             {t.projects === null ? 'All projects' : t.projects.length ? t.projects.join(', ') : 'No projects left'} · Last used{' '}
                                             {t.last_used_at ? new Date(t.last_used_at).toLocaleString() : 'never'} · Created{' '}
-                                            {new Date(t.created_at).toLocaleDateString()}
+                                            {new Date(t.created_at).toLocaleDateString()} ·{' '}
+                                            {t.expires_at === null ? (
+                                                'Never expires'
+                                            ) : new Date(t.expires_at) < new Date() ? (
+                                                <span className="font-medium text-red-600 dark:text-red-400">Expired</span>
+                                            ) : (
+                                                `Expires ${new Date(t.expires_at).toLocaleDateString()}`
+                                            )}
                                         </div>
                                     </div>
                                     <DangerButton

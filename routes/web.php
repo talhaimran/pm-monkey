@@ -66,7 +66,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/labels/{label}', [LabelController::class, 'destroy'])->name('labels.destroy')->scopeBindings();
         Route::patch('/', [ProjectController::class, 'update'])->name('update');
         Route::delete('/', [ProjectController::class, 'destroy'])->name('destroy');
-        Route::post('/invitations', [ProjectMemberController::class, 'invite'])->name('invitations.store');
+        Route::post('/invitations', [ProjectMemberController::class, 'invite'])->name('invitations.store')->middleware('throttle:invites');
         Route::delete('/invitations/{invitation}', [ProjectMemberController::class, 'revoke'])->name('invitations.destroy')->scopeBindings();
         Route::patch('/members/{user}', [ProjectMemberController::class, 'update'])->name('members.update');
         Route::delete('/members/{user}', [ProjectMemberController::class, 'destroy'])->name('members.destroy');

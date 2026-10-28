@@ -31,6 +31,7 @@ class TokenController extends Controller
             $request->validated('name'),
             $request->validated('access') === 'write',
             $request->validated('projects'),
+            $request->validated('expires_in_days'),
         );
 
         // Shown once; only the hash is stored.

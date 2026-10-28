@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\MembershipService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -43,13 +45,19 @@ class ProfileController extends Controller
     /**
      * Delete the user's account.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request, MembershipService $memberships): RedirectResponse
     {
         $request->validate([
             'password' => ['required', 'current_password'],
         ]);
 
         $user = $request->user();
+
+        if ($keys = $memberships->soleAdminProjectKeys($user)) {
+            throw ValidationException::withMessages([
+                'password' => 'You are the only admin of '.implode(', ', $keys).'. Make another member an admin or delete those projects before deleting your account.',
+            ]);
+        }
 
         Auth::logout();
 

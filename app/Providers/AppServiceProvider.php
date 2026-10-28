@@ -42,6 +42,15 @@ class AppServiceProvider extends ServiceProvider
             ], 429, $headers));
         });
 
+        RateLimiter::for('invites', function (Request $request) {
+            $limit = (int) config('pm.invite_rate_limit');
+            $message = "Too many invitations: the limit is {$limit} per hour. Try again later.";
+
+            return Limit::perHour($limit)->by('invites:'.$request->user()?->id)->response(fn (Request $request, array $headers) => $request->expectsJson()
+                ? response()->json(['message' => $message], 429, $headers)
+                : back()->withErrors(['email' => $message]));
+        });
+
         // API docs are public so agents can discover the API without a token.
         Gate::define('viewApiDocs', fn (?User $user = null) => true);
     }

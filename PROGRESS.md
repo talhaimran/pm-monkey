@@ -100,3 +100,11 @@
 - AGENTS.md: ground rules for agents, the data model, all 36 tools (generated from `PmServer::$tools`), filters and placement, resources, workflows (orient, file a bug, work an issue, break down, plan/close a sprint, triage, find), example MCP/REST calls with real responses, and the error table.
 - Found while documenting: `get_board` didn't advertise its `sprint` filter in the tool schema. Fixed, with a test.
 - Verified the documented REST and MCP calls against the dev app with a temporary token (since revoked). The `claude mcp add` commands weren't run, because the Claude Code CLI isn't installed on this machine.
+
+## Security hardening (after review) ✅
+- **Invitation takeover:** with open registration and no email verification, anyone could register with an invited address and accept, including an Admin invite. Accepting now requires a verified email (`ProjectInvitationPolicy`). The rest of the app stays usable unverified, and the Projects page shows the reason plus a "Send verification link" button using Breeze's verification routes. Changing your email already resets verification.
+- **Orphaned projects:** deleting your account while you're the only admin of a project is refused, naming the projects (`MembershipService::soleAdminProjectKeys`, checked in `ProfileController::destroy`).
+- **Invitation spam:** the `invites` limiter allows `PM_INVITE_RATE_LIMIT` (default 30) per hour per user on web and API. The web form shows the limit as a field error; the API returns a 429 with a message.
+- **Token expiry:** tokens can expire in 30, 90 (default in the UI) or 365 days, or never (`expires_in_days`, max 365). Sanctum rejects expired tokens on REST and `/mcp`, and `LocalPmServer` rejects them on stdio. The tokens page shows the expiry, or "Expired".
+- Each finding was proven with a throwaway exploit test first, and now has a regression test in `tests/Feature/Security/HardeningTest.php`.
+- Not changed: unauthenticated API/MCP calls aren't throttled (auth runs first; tokens are 40 random characters, so guessing isn't feasible), and production settings (debug, secure cookies, open registration) are documented in the README instead of hard-coded.
