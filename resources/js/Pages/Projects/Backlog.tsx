@@ -5,7 +5,9 @@ import IssueFormModal, { selectClass } from '@/Components/IssueFormModal';
 import Modal from '@/Components/Modal';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import ProjectNav from '@/Components/ProjectNav';
 import TextInput from '@/Components/TextInput';
+import { useCreateShortcut } from '@/Components/useCreateShortcut';
 import { placement, useLaneDroppable, useSortableLanes } from '@/Components/useSortableLanes';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { IssueOptions, Project } from '@/types';
@@ -13,7 +15,7 @@ import { closestCorners, DndContext, DragOverlay } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Card } from './Board';
 
 interface SprintSection {
@@ -51,6 +53,8 @@ export default function Backlog({
 }) {
     const errors = usePage().props.errors as Record<string, string>;
     const [creatingIssue, setCreatingIssue] = useState(false);
+    const openCreate = useCallback(() => setCreatingIssue(true), []);
+    useCreateShortcut(openCreate, can.contribute);
     const [editing, setEditing] = useState<SprintSection | 'new' | null>(null);
     const [completing, setCompleting] = useState<SprintSection | null>(null);
 
@@ -72,21 +76,10 @@ export default function Backlog({
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                        <span className="font-mono text-indigo-600 dark:text-indigo-400">{project.key}</span> Backlog
-                    </h2>
-                    <div className="flex items-center gap-3">
-                        <Link
-                            href={route('projects.show', project.key)}
-                            className="text-sm text-gray-600 underline hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-                        >
-                            Board
-                        </Link>
-                        {can.contribute && <SecondaryButton onClick={() => setEditing('new')}>Create sprint</SecondaryButton>}
-                        {can.contribute && <PrimaryButton onClick={() => setCreatingIssue(true)}>Create issue</PrimaryButton>}
-                    </div>
-                </div>
+                <ProjectNav projectKey={project.key} name={project.name}>
+                    {can.contribute && <SecondaryButton onClick={() => setEditing('new')}>Create sprint</SecondaryButton>}
+                    {can.contribute && <PrimaryButton onClick={openCreate}>Create issue</PrimaryButton>}
+                </ProjectNav>
             }
         >
             <Head title={`${project.key} backlog`} />

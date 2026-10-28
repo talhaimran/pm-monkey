@@ -55,3 +55,14 @@
 - Refactor: board and backlog share `useSortableLanes` (dnd-kit multi-lane logic), and `RankService::positionAfter` serves both.
 - MCP: list_sprints, create_sprint, update_sprint, delete_sprint, start_sprint, complete_sprint, get_backlog, rank_backlog.
 - Verified in the browser: created a sprint, dragged an issue in (logged via web), started it, then completed it with the unfinished issue returning to the backlog.
+
+## Slice 6: List view, search, dashboard ✅
+- List view at `/projects/{KEY}/issues`: paginated (25 per page, max 100), sortable headers (key, title, type, priority, status, assignee, points, due, created, updated; `-` = descending, default `-key`), and the same filters as the board plus sprint. Epics are included. Unknown sorts return 422 listing the valid ones.
+- One query path: `IssueService::list()` (filter + sort + paginate) serves the web list, web search, `GET /api/v1/projects/{key}/issues`, `GET /api/v1/issues` (cross-project search) and MCP `search_issues`. `filter()` no longer needs a project: a key in `q` matches by project key and number.
+- Search: the header box (focused with `/`) goes to `/search?q=`. An exact key the user can see redirects to that issue.
+- Dashboard: "My issues" (open, assigned to me, by priority then due date) and a card per project with status bars, open/overdue counts and active sprint progress. `DashboardService::summaries()` uses about 6 queries in total, however many projects there are.
+- API: `GET /me/issues`, `GET /projects/{key}/summary`. MCP: `search_issues`, `my_issues`, `project_summary`.
+- Keyboard: `/` focuses search (on narrow screens it opens the menu first), `c` opens the create dialog on the board, backlog and list (through a `pm:create-issue` window event), and Esc closes dialogs. Shortcuts are ignored while typing.
+- Light/dark: Tailwind `darkMode: 'class'`. An inline head script applies the saved choice before paint. The header toggle cycles light → dark → system, and system follows the OS live.
+- Refactor: shared `IssueFilters`, `ProjectNav` (Board/Backlog/Issues/Settings tabs), `IssueTable`, `Pagination`, `useCreateShortcut`.
+- Verified in the browser: dashboard, `c` and Esc on the board, `/` search jumping to WEB-3, priority sort, the theme toggle persisting light mode across a reload, and the header layout at 1100px.

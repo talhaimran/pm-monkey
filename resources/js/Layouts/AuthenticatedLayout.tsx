@@ -2,8 +2,38 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
-import { Link, usePage } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode, useState } from 'react';
+import ThemeToggle from '@/Components/ThemeToggle';
+import { CREATE_ISSUE_EVENT } from '@/Components/useCreateShortcut';
+import { Link, router, usePage } from '@inertiajs/react';
+import { FormEvent, PropsWithChildren, ReactNode, useEffect, useState } from 'react';
+
+const isTyping = (el: EventTarget | null) =>
+    el instanceof HTMLElement && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName));
+
+function GlobalSearch({ id, className = '' }: { id: string; className?: string }) {
+    const [q, setQ] = useState(() => new URLSearchParams(window.location.search).get('q') ?? '');
+    const submit = (e: FormEvent) => {
+        e.preventDefault();
+        if (q.trim()) router.get(route('search'), { q: q.trim() });
+    };
+
+    return (
+        <form onSubmit={submit} role="search" className={className}>
+            <label htmlFor={id} className="sr-only">
+                Search issues
+            </label>
+            <input
+                id={id}
+                type="search"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => e.key === 'Escape' && e.currentTarget.blur()}
+                placeholder="Search issues  /"
+                className="w-full rounded-md border-gray-300 py-1.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+            />
+        </form>
+    );
+}
 
 export default function Authenticated({
     header,
@@ -13,6 +43,26 @@ export default function Authenticated({
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
+
+    // Global shortcuts: "/" focuses search, "c" asks the current page to open its create-issue dialog.
+    // Esc closes dialogs via Headless UI. Ignored while typing or with modifier keys.
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return;
+            if (e.key === '/') {
+                e.preventDefault();
+                const desktop = document.getElementById('global-search');
+                if (desktop?.offsetParent) return desktop.focus();
+                // Narrow screens keep search in the menu: open it, then focus once rendered.
+                setShowingNavigationDropdown(true);
+                setTimeout(() => document.getElementById('global-search-mobile')?.focus());
+            } else if (e.key === 'c') {
+                window.dispatchEvent(new Event(CREATE_ISSUE_EVENT));
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, []);
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -42,7 +92,8 @@ export default function Authenticated({
                             </div>
                         </div>
 
-                        <div className="hidden sm:ms-6 sm:flex sm:items-center">
+                        <div className="hidden sm:ms-auto sm:flex sm:items-center sm:gap-2">
+                            <GlobalSearch id="global-search" className="w-48 lg:w-64" />
                             <div className="relative ms-3">
                                 <Dropdown>
                                     <Dropdown.Trigger>
@@ -85,6 +136,10 @@ export default function Authenticated({
                                     </Dropdown.Content>
                                 </Dropdown>
                             </div>
+                        </div>
+
+                        <div className="ms-auto flex items-center sm:order-last sm:ms-2">
+                            <ThemeToggle />
                         </div>
 
                         <div className="-me-2 flex items-center sm:hidden">
@@ -137,6 +192,7 @@ export default function Authenticated({
                     }
                 >
                     <div className="space-y-1 pb-3 pt-2">
+                        <GlobalSearch id="global-search-mobile" className="px-4 pb-2" />
                         <ResponsiveNavLink
                             href={route('dashboard')}
                             active={route().current('dashboard')}

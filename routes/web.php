@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Web\BoardController;
 use App\Http\Controllers\Web\InvitationController;
 use App\Http\Controllers\Web\IssueController;
+use App\Http\Controllers\Web\IssueListController;
 use App\Http\Controllers\Web\LabelController;
 use App\Http\Controllers\Web\ProjectController;
 use App\Http\Controllers\Web\ProjectMemberController;
@@ -21,9 +22,7 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [IssueListController::class, 'dashboard'])->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -32,6 +31,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
     Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
+    Route::get('/search', [IssueListController::class, 'search'])->name('search');
     Route::get('/issues/{key}', [IssueController::class, 'show'])->name('issues.show');
     Route::patch('/issues/{key}', [IssueController::class, 'update'])->name('issues.update');
     Route::delete('/issues/{key}', [IssueController::class, 'destroy'])->name('issues.destroy');
@@ -48,6 +48,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/columns/{column}', [BoardController::class, 'updateColumn'])->name('columns.update')->scopeBindings();
         Route::delete('/columns/{column}', [BoardController::class, 'destroyColumn'])->name('columns.destroy')->scopeBindings();
         Route::get('/backlog', [SprintController::class, 'backlog'])->name('backlog');
+        Route::get('/issues', [IssueListController::class, 'index'])->name('issues.index');
         Route::post('/sprints', [SprintController::class, 'store'])->name('sprints.store');
         Route::patch('/sprints/{sprint}', [SprintController::class, 'update'])->name('sprints.update')->scopeBindings();
         Route::delete('/sprints/{sprint}', [SprintController::class, 'destroy'])->name('sprints.destroy')->scopeBindings();

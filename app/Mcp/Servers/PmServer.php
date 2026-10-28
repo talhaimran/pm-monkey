@@ -27,7 +27,10 @@ use App\Mcp\Tools\ListLabels;
 use App\Mcp\Tools\ListProjects;
 use App\Mcp\Tools\ListSprints;
 use App\Mcp\Tools\MoveIssue;
+use App\Mcp\Tools\MyIssues;
+use App\Mcp\Tools\ProjectSummary;
 use App\Mcp\Tools\RankBacklog;
+use App\Mcp\Tools\SearchIssues;
 use App\Mcp\Tools\StartSprint;
 use App\Mcp\Tools\UpdateColumn;
 use App\Mcp\Tools\UpdateComment;
@@ -86,6 +89,9 @@ class PmServer extends Server
         CompleteSprint::class,
         GetBacklog::class,
         RankBacklog::class,
+        SearchIssues::class,
+        MyIssues::class,
+        ProjectSummary::class,
     ];
 
     protected array $resources = [

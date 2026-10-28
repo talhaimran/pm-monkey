@@ -10,6 +10,16 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        <!-- Theme before first paint: saved choice, else the system setting (see ThemeToggle.tsx) -->
+        <script>
+            (function () {
+                var saved = null;
+                try { saved = localStorage.getItem('theme'); } catch (e) {}
+                var dark = saved === 'dark' || (saved !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                document.documentElement.classList.toggle('dark', dark);
+            })();
+        </script>
+
         <!-- Scripts -->
         @routes
         @viteReactRefresh

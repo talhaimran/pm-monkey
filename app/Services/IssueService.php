@@ -5,9 +5,11 @@ namespace App\Services;
 use App\Enums\IssuePriority;
 use App\Enums\IssueType;
 use App\Enums\SprintState;
+use App\Models\Column;
 use App\Models\Issue;
 use App\Models\Project;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -115,12 +117,14 @@ class IssueService
         ]);
     }
 
+    /** Sort keys accepted by sort(); prefix with "-" for descending. */
+    public const SORTS = ['key', 'title', 'type', 'priority', 'status', 'assignee', 'story_points', 'due_date', 'created', 'updated'];
+
     /**
-     * Apply board/list filters: assignee (email or "unassigned"), type, priority, label (name),
-     * sprint (name, "active" or "backlog"),
-     * q (title text or issue key such as WEB-12).
+     * Apply board/list/search filters: assignee (email or "unassigned"), type, priority, label (name),
+     * sprint (name, "active" or "backlog"), q (title text, or an issue key such as WEB-12).
      */
-    public function filter(Builder $query, Project $project, array $filters): Builder
+    public function filter(Builder $query, array $filters): Builder
     {
         return $query
             ->when($filters['assignee'] ?? null, fn ($q, $assignee) => strtolower($assignee) === 'unassigned'
@@ -134,12 +138,50 @@ class IssueService
                 default => $q->whereHas('sprint', fn ($s) => $s->where('name', $sprint)),
             })
             ->when($filters['label'] ?? null, fn ($q, $label) => $q->whereHas('labels', fn ($l) => $l->where('name', $label)))
-            ->when(trim($filters['q'] ?? ''), function ($q, $search) use ($project) {
-                $number = preg_match('/^'.preg_quote($project->key, '/').'-(\d+)$/i', $search, $m) ? $m[1] : null;
-                $q->where(fn ($w) => $number
-                    ? $w->where('number', $number)
-                    : $w->where('title', 'like', '%'.addcslashes($search, '%_\\').'%'));
-            });
+            ->when(trim($filters['q'] ?? ''), fn ($q, $search) => preg_match('/^([A-Za-z][A-Za-z0-9]{1,9})-(\d+)$/', $search, $m)
+                ? $q->where('number', $m[2])->whereHas('project', fn ($p) => $p->where('key', $m[1]))
+                : $q->where('title', 'like', '%'.addcslashes($search, '%_\\').'%'));
+    }
+
+    /**
+     * Filtered, sorted, paginated issues in one project, or across all of the user's projects.
+     * $params: filters (see filter()), sort, per_page (max 100), page.
+     */
+    public function list(User $user, ?Project $project, array $params): LengthAwarePaginator
+    {
+        $query = $project
+            ? $project->issues()->getQuery()
+            : Issue::whereIn('project_id', $user->projects()->select('projects.id'));
+
+        return $this->sort($this->filter($query, $params), $params['sort'] ?? null)
+            ->with(self::DISPLAY)
+            ->paginate(min((int) ($params['per_page'] ?? 25), 100), page: $params['page'] ?? null);
+    }
+
+    /** Order by one of SORTS ("-" prefix = descending); ties break by id in the same direction. */
+    public function sort(Builder $query, ?string $sort): Builder
+    {
+        $sort = $sort ?: '-key';
+        $direction = str_starts_with($sort, '-') ? 'desc' : 'asc';
+        $field = ltrim($sort, '-');
+
+        match ($field) {
+            'key' => $query->orderBy('issues.project_id', $direction)->orderBy('issues.number', $direction),
+            'priority' => $query->orderByRaw('FIELD(issues.priority, '.$this->quoted(IssuePriority::values()).') '.$direction),
+            'type' => $query->orderByRaw('FIELD(issues.type, '.$this->quoted(IssueType::values()).') '.$direction),
+            'status' => $query->orderBy(Column::select('position')->whereColumn('columns.id', 'issues.column_id'), $direction),
+            'assignee' => $query->orderBy(User::select('name')->whereColumn('users.id', 'issues.assignee_id'), $direction),
+            'created' => $query->orderBy('issues.created_at', $direction),
+            'updated' => $query->orderBy('issues.updated_at', $direction),
+            default => $query->orderBy("issues.{$field}", $direction),
+        };
+
+        return $query->orderBy('issues.id', $direction);
+    }
+
+    private function quoted(array $values): string
+    {
+        return collect($values)->map(fn ($v) => "'{$v}'")->implode(', ');
     }
 
     private function nextNumber(Project $project): int

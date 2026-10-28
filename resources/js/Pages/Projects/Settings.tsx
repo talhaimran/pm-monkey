@@ -2,16 +2,15 @@ import DangerButton from '@/Components/DangerButton';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
+import { selectClass } from '@/Components/IssueFormModal';
 import PrimaryButton from '@/Components/PrimaryButton';
+import ProjectNav from '@/Components/ProjectNav';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Invitation, Label, Project, ProjectRole } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
-
-const selectClass =
-    'rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300';
 
 export default function Settings({
     project,
@@ -72,12 +71,7 @@ export default function Settings({
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                    <span className="font-mono text-indigo-600 dark:text-indigo-400">
-                        {project.key}
-                    </span>{' '}
-                    {project.name} · Settings
-                </h2>
+                <ProjectNav projectKey={project.key} name={project.name} />
             }
         >
             <Head title={`${project.key} settings`} />

@@ -1,15 +1,16 @@
-import IssueFormModal, { selectClass } from '@/Components/IssueFormModal';
+import IssueFilters, { Filters } from '@/Components/IssueFilters';
+import IssueFormModal from '@/Components/IssueFormModal';
 import PrimaryButton from '@/Components/PrimaryButton';
-import SecondaryButton from '@/Components/SecondaryButton';
-import TextInput from '@/Components/TextInput';
+import ProjectNav from '@/Components/ProjectNav';
+import { useCreateShortcut } from '@/Components/useCreateShortcut';
+import { placement, useLaneDroppable, useSortableLanes } from '@/Components/useSortableLanes';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { IssueOptions, Project } from '@/types';
-import { placement, useLaneDroppable, useSortableLanes } from '@/Components/useSortableLanes';
 import { closestCorners, DndContext, DragOverlay } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Head, Link, router } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 export interface Card {
     key: string;
@@ -29,7 +30,6 @@ interface BoardData {
     truncated: boolean;
 }
 
-type Filters = Partial<Record<'assignee' | 'type' | 'priority' | 'label' | 'q' | 'sprint', string>>;
 
 const typeColors: Record<string, string> = {
     bug: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
@@ -70,7 +70,8 @@ export default function Board({
         ),
     );
     const [creating, setCreating] = useState(false);
-    const [search, setSearch] = useState(filters.q ?? '');
+    const openCreate = useCallback(() => setCreating(true), []);
+    useCreateShortcut(openCreate, can.contribute);
     const columnNames = board.columns.map((c) => c.name);
 
     const applyFilters = (next: Filters) =>
@@ -80,91 +81,25 @@ export default function Board({
             { preserveState: true, preserveScroll: true, replace: true },
         );
 
-    useEffect(() => {
-        if (search === (filters.q ?? '')) return;
-        const t = setTimeout(() => applyFilters({ q: search }), 300);
-        return () => clearTimeout(t);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search]);
-
-    const filterSelect = (name: keyof Filters, label: string, choices: { value: string; label: string }[]) => (
-        <select
-            aria-label={label}
-            className={selectClass}
-            value={filters[name] ?? ''}
-            onChange={(e) => applyFilters({ [name]: e.target.value })}
-        >
-            <option value="">{label}: all</option>
-            {choices.map((c) => (
-                <option key={c.value} value={c.value}>
-                    {c.label}
-                </option>
-            ))}
-        </select>
-    );
-    const plain = (values: string[]) => values.map((v) => ({ value: v, label: v }));
-    const hasFilters = Object.values(filters).some(Boolean);
-
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                        <span className="font-mono text-indigo-600 dark:text-indigo-400">{project.key}</span> {project.name}
-                    </h2>
-                    <div className="flex items-center gap-3">
-                        <Link
-                            href={route('projects.backlog', project.key)}
-                            className="text-sm text-gray-600 underline hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-                        >
-                            Backlog
-                        </Link>
-                        <Link
-                            href={route('projects.settings', project.key)}
-                            className="text-sm text-gray-600 underline hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-                        >
-                            Settings
-                        </Link>
-                        {can.contribute && <PrimaryButton onClick={() => setCreating(true)}>Create issue</PrimaryButton>}
-                    </div>
-                </div>
+                <ProjectNav projectKey={project.key} name={project.name}>
+                    {can.contribute && <PrimaryButton onClick={openCreate}>Create issue</PrimaryButton>}
+                </ProjectNav>
             }
         >
             <Head title={`${project.key} board`} />
 
             <div className="px-4 py-4 sm:px-6 lg:px-8">
-                <div className="mb-4 flex flex-wrap items-center gap-2">
-                    <TextInput
-                        type="search"
-                        aria-label="Search issues"
-                        placeholder="Search title or key…"
-                        className="w-full sm:w-56"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                <div className="mb-4">
+                    <IssueFilters
+                        filters={filters}
+                        options={options}
+                        types={options.types.filter((t) => t !== 'epic')}
+                        onApply={applyFilters}
+                        onClear={() => router.get(route('projects.show', project.key), {}, { preserveState: true, replace: true })}
                     />
-                    {filterSelect('assignee', 'Assignee', [
-                        { value: 'unassigned', label: 'Unassigned' },
-                        ...options.members.map((m) => ({ value: m.email, label: m.name })),
-                    ])}
-                    {filterSelect('type', 'Type', plain(options.types.filter((t) => t !== 'epic')))}
-                    {filterSelect('priority', 'Priority', plain(options.priorities))}
-                    {options.labels.length > 0 && filterSelect('label', 'Label', plain(options.labels.map((l) => l.name)))}
-                    {options.sprints.length > 0 &&
-                        filterSelect('sprint', 'Sprint', [
-                            { value: 'active', label: 'Active sprint' },
-                            { value: 'backlog', label: 'Backlog (no sprint)' },
-                            ...plain(options.sprints),
-                        ])}
-                    {hasFilters && (
-                        <SecondaryButton
-                            onClick={() => {
-                                setSearch('');
-                                router.get(route('projects.show', project.key), {}, { preserveState: true, replace: true });
-                            }}
-                        >
-                            Clear
-                        </SecondaryButton>
-                    )}
                 </div>
 
                 {board.truncated && (

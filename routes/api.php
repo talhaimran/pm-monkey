@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\BoardController;
 use App\Http\Controllers\Api\V1\ColumnController;
 use App\Http\Controllers\Api\V1\CommentController;
 use App\Http\Controllers\Api\V1\IssueController;
+use App\Http\Controllers\Api\V1\IssueListController;
 use App\Http\Controllers\Api\V1\LabelController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\ProjectMemberController;
@@ -42,6 +43,11 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::delete('projects/{key}/sprints/{sprint}', [SprintController::class, 'destroy']);
     Route::post('projects/{key}/sprints/{sprint}/start', [SprintController::class, 'start']);
     Route::post('projects/{key}/sprints/{sprint}/complete', [SprintController::class, 'complete']);
+
+    Route::get('projects/{key}/issues', [IssueListController::class, 'index']);
+    Route::get('projects/{key}/summary', [IssueListController::class, 'summary']);
+    Route::get('issues', [IssueListController::class, 'search']);
+    Route::get('me/issues', [IssueListController::class, 'mine']);
 
     Route::post('projects/{key}/issues', [IssueController::class, 'store']);
     Route::get('issues/{key}', [IssueController::class, 'show']);

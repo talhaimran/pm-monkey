@@ -24,7 +24,7 @@ class BoardService
     public function board(Project $project, array $filters): array
     {
         $issues = $this->issues
-            ->filter($project->issues()->where('type', '!=', IssueType::Epic->value)->getQuery(), $project, $filters)
+            ->filter($project->issues()->where('type', '!=', IssueType::Epic->value)->getQuery(), $filters)
             ->with(['assignee', 'labels', 'parent', 'column'])
             ->orderBy('rank')
             ->limit(self::LIMIT + 1)
