@@ -1,6 +1,11 @@
 <?php
 
+use App\Enums\ProjectRole;
+use App\Models\Project;
+use App\Models\User;
+use App\Services\ProjectService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /*
@@ -44,7 +49,22 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function makeProject(User $admin, string $key = 'WEB', string $name = 'Website'): Project
 {
-    // ..
+    return app(ProjectService::class)->create($admin, ['key' => $key, 'name' => $name]);
+}
+
+function addMember(Project $project, User $user, ProjectRole $role): User
+{
+    $project->members()->attach($user, ['role' => $role->value]);
+
+    return $user;
+}
+
+/** Authenticate as an API token holder with the given abilities. */
+function apiAs(User $user, array $abilities = ['read', 'write']): User
+{
+    Sanctum::actingAs($user, $abilities);
+
+    return $user;
 }

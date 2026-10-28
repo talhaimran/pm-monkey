@@ -24,9 +24,13 @@ SPEC.md is the source of truth. PROGRESS.md logs slice progress and decisions ma
 - `Model::preventLazyLoading()` outside production; no N+1.
 - Issues addressable by key (`WEB-12`) everywhere; accept names (assignee email, column name) where sensible; errors list valid options.
 - Destructive API/MCP actions need `confirm: true`. Viewers and read-only tokens never write.
+- Not-found lookups throw `ValidationException::withMessages([...])->status(404)` listing valid options, so API and MCP report the same message.
+- MCP tools (`app/Mcp/Tools`, registered in `App\Mcp\Servers\PmServer`) use snake_case `#[Name]` and reuse Form Request `rules()`. Output goes through the `RespondsWithJson` trait (summary + JSON). Use `auth()->user()` rather than `$request->user()` in shared resources (MCP has no HTTP request user).
+- Resources passed to Inertia must `->resolve()` nested collections; Inertia wraps nested resources in `{data: …}`.
 
 ## Commands
-- Dev servers: `composer run dev` (runs `php artisan dev`: server + queue + vite)
+- Dev servers: `composer run dev` (runs `php artisan dev`: server + queue + vite). Browser preview: `.claude/launch.json` entries `dev` (vite :5173) and `app` (artisan serve :8000).
+- Local login: `php artisan db:seed` creates test@example.com (factory password).
 - Tests: `php artisan test` (Pest), one file: `php artisan test tests/Feature/XTest.php`. Tests run on MySQL db `pm_monkey_test` (phpunit.xml), not SQLite, because row locks matter.
 - Lint: `vendor/bin/pint` (PHP); `npm run build` runs `tsc` as the TS check
 - Build frontend: `npm run build`
