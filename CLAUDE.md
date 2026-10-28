@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-SPEC.md is the source of truth. PROGRESS.md logs slice progress and decisions made on ambiguous points.
+SPEC.md is the source of truth. PROGRESS.md logs slice progress and decisions made on ambiguous points. README.md covers setup and connecting MCP clients; AGENTS.md is the guide for agents using the app. Update AGENTS.md's tool table when tools change.
 
 ## Working style (always on in this project)
 - **superpowers**: check for a matching skill before acting. Use `superpowers:writing-plans` before each slice, `superpowers:test-driven-development` while building, `superpowers:systematic-debugging` on failures, and `superpowers:verification-before-completion` before every commit.

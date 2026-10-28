@@ -43,6 +43,7 @@ class GetBoard extends Tool
             'priority' => $schema->string()->enum(['lowest', 'low', 'medium', 'high', 'highest']),
             'label' => $schema->string()->description('Label name.'),
             'q' => $schema->string()->description('Text in the title, or an issue key.'),
+            'sprint' => $schema->string()->description('Sprint name, "active" or "backlog".'),
         ];
     }
 }

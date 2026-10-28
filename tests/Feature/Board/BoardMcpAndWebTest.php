@@ -20,6 +20,7 @@ test('get_board and move_issue over mcp', function () {
     makeIssue($this->project, $this->admin, ['title' => 'Card']);
 
     PmServer::tool(GetBoard::class, ['project' => 'WEB'])->assertOk()->assertSee(['"name":"To Do"', 'WEB-1']);
+    PmServer::tool(GetBoard::class, ['project' => 'WEB', 'sprint' => 'backlog'])->assertOk()->assertSee('WEB-1');
     PmServer::tool(MoveIssue::class, ['issue' => 'WEB-1', 'status' => 'Done'])
         ->assertOk()
         ->assertSee('Moved WEB-1 to Done');

@@ -94,3 +94,9 @@
 - Running it again without `fresh` skips with a hint instead of failing on unique keys.
 - Tests: the seed shape, the printed token working against the real API (parsed from console output), and re-run safety.
 - Reseeded the dev DB, after backing it up to the session scratchpad (`pm_monkey-before-seed.sql`). The dashboard shows the seeded data.
+
+## Slice 10: README and AGENTS.md ✅
+- README: requirements, setup (DB user, .env, migrate/seed, demo logins), environment variables, running (dev and build), tests and lint, the tokens page, REST conventions (names not ids, confirm, Idempotency-Key, bulk, rate limit), and MCP over both transports. Includes Claude Code (`claude mcp add` stdio and HTTP, `.mcp.json` with env expansion), Claude Desktop (stdio config, HTTP through the third-party `mcp-remote` bridge), debugging (`mcp:inspector pm`, curl), architecture and known gaps.
+- AGENTS.md: ground rules for agents, the data model, all 36 tools (generated from `PmServer::$tools`), filters and placement, resources, workflows (orient, file a bug, work an issue, break down, plan/close a sprint, triage, find), example MCP/REST calls with real responses, and the error table.
+- Found while documenting: `get_board` didn't advertise its `sprint` filter in the tool schema. Fixed, with a test.
+- Verified the documented REST and MCP calls against the dev app with a temporary token (since revoked). The `claude mcp add` commands weren't run, because the Claude Code CLI isn't installed on this machine.
