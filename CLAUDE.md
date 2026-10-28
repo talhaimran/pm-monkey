@@ -27,6 +27,9 @@ SPEC.md is the source of truth. PROGRESS.md logs slice progress and decisions ma
 - Not-found lookups throw `ValidationException::withMessages([...])->status(404)` listing valid options, so API and MCP report the same message.
 - MCP tools (`app/Mcp/Tools`, registered in `App\Mcp\Servers\PmServer`) use snake_case `#[Name]` and reuse Form Request `rules()`. Output goes through the `RespondsWithJson` trait (summary + JSON). Use `auth()->user()` rather than `$request->user()` in shared resources (MCP has no HTTP request user).
 - Resources passed to Inertia must `->resolve()` nested collections; Inertia wraps nested resources in `{data: …}`.
+- Issue input shape is the same for web, API and MCP: `status` column name, `assignee` email, `labels` names, `epic`/`parent` keys. `IssueService::resolveInput` maps them to ids.
+- Activity `via` comes from `ActivityLogger`: the container binding `pm.via` (set by `PmServer::createContext`) means mcp, a PersonalAccessToken means api, otherwise web.
+- MySQL JSON columns reorder keys; compare JSON arrays in tests with `toEqual`, not `toBe`.
 
 ## Commands
 - Dev servers: `composer run dev` (runs `php artisan dev`: server + queue + vite). Browser preview: `.claude/launch.json` entries `dev` (vite :5173) and `app` (artisan serve :8000).

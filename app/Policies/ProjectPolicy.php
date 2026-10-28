@@ -20,6 +20,20 @@ class ProjectPolicy
         return $this->writable($user) ?? Response::allow();
     }
 
+    /** Create and edit issues, comments and labels: members and admins with a writable token. */
+    public function contribute(User $user, Project $project): Response
+    {
+        if ($denied = $this->writable($user)) {
+            return $denied;
+        }
+
+        $role = $project->roleFor($user);
+
+        return $role?->canWrite()
+            ? Response::allow()
+            : Response::deny("Your role in {$project->key} is ".($role?->value ?? 'none')."; viewers can't make changes.");
+    }
+
     /** Edit settings, manage members and invitations. */
     public function manage(User $user, Project $project): Response
     {

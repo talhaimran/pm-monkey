@@ -1,8 +1,10 @@
 <?php
 
 use App\Enums\ProjectRole;
+use App\Models\Issue;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\IssueService;
 use App\Services\ProjectService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -59,6 +61,11 @@ function addMember(Project $project, User $user, ProjectRole $role): User
     $project->members()->attach($user, ['role' => $role->value]);
 
     return $user;
+}
+
+function makeIssue(Project $project, User $reporter, array $data = []): Issue
+{
+    return app(IssueService::class)->create($project, $reporter, ['title' => 'Issue', ...$data]);
 }
 
 /** Authenticate as an API token holder with the given abilities. */

@@ -116,7 +116,7 @@ export default function Index({
                             {projects.map((p) => (
                                 <li key={p.id}>
                                     <Link
-                                        href={route('projects.settings', p.key)}
+                                        href={route('projects.show', p.key)}
                                         className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 sm:px-6 dark:hover:bg-gray-700"
                                     >
                                         <span className="w-16 font-mono text-sm font-semibold text-indigo-600 dark:text-indigo-400">

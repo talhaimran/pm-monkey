@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\IssuePriority;
+use App\Enums\IssueType;
 use App\Enums\ProjectRole;
+use App\Models\Column;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -22,6 +25,9 @@ class ProjectService
         return DB::transaction(function () use ($creator, $data) {
             $project = Project::create([...$data, 'key' => strtoupper($data['key'])]);
             $project->members()->attach($creator, ['role' => ProjectRole::Admin->value]);
+            $project->columns()->createMany(
+                collect(Column::DEFAULTS)->map(fn ($name, $i) => ['name' => $name, 'position' => $i])->all()
+            );
 
             return $project;
         });
@@ -37,7 +43,26 @@ class ProjectService
 
     public function delete(Project $project): void
     {
-        $project->delete();
+        // Issues first: they restrict column deletes, so the project cascade can't remove them in any order.
+        DB::transaction(function () use ($project) {
+            $project->issues()->whereNotNull('parent_id')->delete();
+            $project->issues()->delete();
+            $project->delete();
+        });
+    }
+
+    /** Valid values for issue fields, used to build pickers and to explain errors. */
+    public function issueOptions(Project $project): array
+    {
+        return [
+            'columns' => $project->columns()->pluck('name')->all(),
+            'members' => $project->members()->orderBy('name')->get(['users.id', 'name', 'email'])
+                ->map(fn ($u) => ['name' => $u->name, 'email' => $u->email])->all(),
+            'labels' => $project->labels()->get(['id', 'name', 'color'])
+                ->map(fn ($l) => ['id' => $l->id, 'name' => $l->name, 'color' => $l->color])->all(),
+            'types' => IssueType::values(),
+            'priorities' => IssuePriority::values(),
+        ];
     }
 
     /**

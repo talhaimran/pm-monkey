@@ -16,6 +16,21 @@ class Project extends Model
         return $this->belongsToMany(User::class)->withPivot('role')->withTimestamps();
     }
 
+    public function columns(): HasMany
+    {
+        return $this->hasMany(Column::class)->orderBy('position');
+    }
+
+    public function issues(): HasMany
+    {
+        return $this->hasMany(Issue::class);
+    }
+
+    public function labels(): HasMany
+    {
+        return $this->hasMany(Label::class)->orderBy('name');
+    }
+
     public function invitations(): HasMany
     {
         return $this->hasMany(ProjectInvitation::class);

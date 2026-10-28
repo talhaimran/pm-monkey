@@ -6,7 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Invitation, Project, ProjectRole } from '@/types';
+import { Invitation, Label, Project, ProjectRole } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
 
@@ -17,12 +17,14 @@ export default function Settings({
     project,
     invitations,
     roles,
+    labels,
     can,
 }: {
     project: Project;
     invitations: Invitation[];
     roles: ProjectRole[];
-    can: { manage: boolean };
+    labels: Label[];
+    can: { manage: boolean; contribute: boolean };
 }) {
     const { errors: pageErrors } = usePage().props as { errors: Record<string, string> };
     const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -32,6 +34,7 @@ export default function Settings({
         description: project.description ?? '',
     });
     const invite = useForm({ email: '', role: 'member' as ProjectRole });
+    const newLabel = useForm({ name: '', color: '#6b7280' });
 
     const saveDetails: FormEventHandler = (e) => {
         e.preventDefault();
@@ -142,6 +145,72 @@ export default function Settings({
                             </li>
                         ))}
                     </ul>
+                </section>
+
+                <section className={card}>
+                    <h3 className={heading}>Labels</h3>
+                    <InputError className="mt-2" message={pageErrors.name} />
+                    <ul className="mt-4 flex flex-wrap gap-2">
+                        {labels.length === 0 && <li className="text-sm text-gray-500">No labels yet.</li>}
+                        {labels.map((l) => (
+                            <li key={l.id} className="flex items-center gap-2 rounded-full border px-3 py-1 text-sm text-gray-800 dark:text-gray-200" style={{ borderColor: l.color }}>
+                                {can.contribute && (
+                                    <input
+                                        type="color"
+                                        aria-label={`Color for ${l.name}`}
+                                        className="h-4 w-4 cursor-pointer border-0 bg-transparent p-0"
+                                        defaultValue={l.color}
+                                        onBlur={(e) =>
+                                            e.target.value !== l.color &&
+                                            router.patch(route('projects.labels.update', [project.key, l.id]), { color: e.target.value }, { preserveScroll: true })
+                                        }
+                                    />
+                                )}
+                                {l.name}
+                                {can.contribute && (
+                                    <button
+                                        aria-label={`Delete label ${l.name}`}
+                                        className="text-gray-400 hover:text-red-600"
+                                        onClick={() => router.delete(route('projects.labels.destroy', [project.key, l.id]), { preserveScroll: true })}
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                    {can.contribute && (
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                newLabel.post(route('projects.labels.store', project.key), {
+                                    preserveScroll: true,
+                                    onSuccess: () => newLabel.reset('name'),
+                                });
+                            }}
+                            className="mt-4 flex flex-wrap items-start gap-3"
+                        >
+                            <input
+                                type="color"
+                                aria-label="New label color"
+                                className="h-10 w-10 cursor-pointer rounded border-gray-300 dark:border-gray-700"
+                                value={newLabel.data.color}
+                                onChange={(e) => newLabel.setData('color', e.target.value)}
+                            />
+                            <div className="flex-1">
+                                <TextInput
+                                    aria-label="New label name"
+                                    className="block w-full"
+                                    placeholder="frontend"
+                                    value={newLabel.data.name}
+                                    onChange={(e) => newLabel.setData('name', e.target.value)}
+                                    required
+                                />
+                                <InputError className="mt-2" message={newLabel.errors.name} />
+                            </div>
+                            <PrimaryButton disabled={newLabel.processing}>Add label</PrimaryButton>
+                        </form>
+                    )}
                 </section>
 
                 {can.manage && (

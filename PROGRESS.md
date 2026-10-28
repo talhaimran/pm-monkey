@@ -22,3 +22,15 @@
 - Decision: MCP tools are added in each slice; slice 8 adds transports, auth and end-to-end calls. Slice 2 tools: list_projects, get_project, create_project, update_project, delete_project. Membership changes are web/API only.
 - Gotcha: Inertia wraps nested JsonResources in `{data: …}`, so resources resolve nested collections to arrays. Caught in the browser; now pinned by a test.
 - Only admins manage members; there's no self-service "leave project".
+
+## Slice 3: Issues, comments, labels, sub-tasks, activity ✅
+- Issues are numbered per project with `projects.issue_counter` under a row lock, plus unique(project_id, number). Checked with 20 parallel processes: numbers 1–20, no duplicates or gaps. Numbers are never reused.
+- Status = board column. A `columns` table is seeded with To Do / In Progress / In Review / Done per project (the migration backfills existing projects). Column CRUD and the board come in slice 4.
+- One input shape everywhere: status = column name, assignee = member email, labels = label names (must exist), epic/parent = issue keys. Unknown values return errors listing the valid options.
+- Decision: two link fields. `epic_id` must point to an Epic; `parent_id` makes a sub-task, one level deep. Epics can't be sub-tasks or parents. Deleting a parent deletes its sub-tasks; deleting an epic unlinks its issues.
+- Activity log: created/updated/commented, with `changes` as {field: {from, to}} in display values (descriptions truncated to 200 chars) and `via` web|api|mcp plus `token_name`. MCP is detected by `PmServer::createContext()`. No-op updates aren't logged.
+- Permissions: members and admins create, edit and delete issues and labels. Comments are edited by their author and deleted by the author or an admin.
+- Markdown is rendered server-side (`Str::markdown`, HTML stripped, unsafe links blocked) for web only. API and MCP return raw Markdown. Styled without @tailwindcss/typography, to avoid a dependency.
+- MCP: create/get/update/delete_issue, get_issue_activity, add/update/delete_comment, list/create/update/delete_label. Resources: `issue://{key}`, `project://{key}` (statuses, labels, members).
+- `ProjectService::delete` deletes issues first, because issues restrict column deletes.
+- Deferred to slice 6: issue listing and search. For now the project page shows the 50 most recent issues.
