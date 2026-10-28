@@ -16,7 +16,7 @@ class DashboardService
     /** Open issues assigned to the user across their projects: priority desc, due date (nulls last), key. */
     public function myIssues(User $user, int $limit = 50): Collection
     {
-        $query = Issue::whereIn('project_id', $user->projects()->select('projects.id'))
+        $query = Issue::whereIn('project_id', $user->accessibleProjects()->select('projects.id'))
             ->where('assignee_id', $user->id)
             ->where(fn ($q) => $this->notDone($q))
             ->with(IssueService::DISPLAY);

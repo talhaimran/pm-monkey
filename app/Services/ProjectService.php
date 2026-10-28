@@ -17,7 +17,7 @@ class ProjectService
 {
     public function listFor(User $user, int $perPage = 25, ?int $page = null): LengthAwarePaginator
     {
-        return $user->projects()->orderBy('key')->paginate(max(1, min($perPage, 100)), page: $page);
+        return $user->accessibleProjects()->orderBy('key')->paginate(max(1, min($perPage, 100)), page: $page);
     }
 
     /** @param array{key: string, name: string, description?: ?string} $data */
@@ -73,13 +73,13 @@ class ProjectService
      */
     public function resolve(User $user, string $key): Project
     {
-        $project = $user->projects()->where('key', strtoupper($key))->first();
+        $project = $user->accessibleProjects()->where('key', strtoupper($key))->first();
 
         if ($project) {
             return $project;
         }
 
-        $keys = $user->projects()->orderBy('key')->limit(50)->pluck('key');
+        $keys = $user->accessibleProjects()->orderBy('key')->limit(50)->pluck('key');
         $hint = $keys->isEmpty()
             ? 'You are not a member of any project yet; create one first.'
             : 'Projects you can access: '.$keys->implode(', ').'.';

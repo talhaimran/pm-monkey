@@ -9,6 +9,7 @@ use App\Http\Controllers\Web\LabelController;
 use App\Http\Controllers\Web\ProjectController;
 use App\Http\Controllers\Web\ProjectMemberController;
 use App\Http\Controllers\Web\SprintController;
+use App\Http\Controllers\Web\TokenController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -28,6 +29,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::get('/settings/tokens', [TokenController::class, 'index'])->name('tokens.index');
+    Route::post('/settings/tokens', [TokenController::class, 'store'])->name('tokens.store');
+    Route::delete('/settings/tokens/{token}', [TokenController::class, 'destroy'])->name('tokens.destroy');
 
     Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
     Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');

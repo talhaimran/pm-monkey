@@ -5,6 +5,8 @@ namespace App\Mcp\Servers;
 use App\Mcp\Resources\IssueResource;
 use App\Mcp\Resources\ProjectResource;
 use App\Mcp\Tools\AddComment;
+use App\Mcp\Tools\BulkCreateIssues;
+use App\Mcp\Tools\BulkUpdateIssues;
 use App\Mcp\Tools\CompleteSprint;
 use App\Mcp\Tools\CreateColumn;
 use App\Mcp\Tools\CreateIssue;
@@ -92,6 +94,8 @@ class PmServer extends Server
         SearchIssues::class,
         MyIssues::class,
         ProjectSummary::class,
+        BulkCreateIssues::class,
+        BulkUpdateIssues::class,
     ];
 
     protected array $resources = [

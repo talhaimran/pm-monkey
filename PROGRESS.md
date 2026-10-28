@@ -66,3 +66,13 @@
 - Light/dark: Tailwind `darkMode: 'class'`. An inline head script applies the saved choice before paint. The header toggle cycles light → dark → system, and system follows the OS live.
 - Refactor: shared `IssueFilters`, `ProjectNav` (Board/Backlog/Issues/Settings tabs), `IssueTable`, `Pagination`, `useCreateShortcut`.
 - Verified in the browser: dashboard, `c` and Esc on the board, `/` search jumping to WEB-3, priority sort, the theme toggle persisting light mode across a reload, and the header layout at 1100px.
+
+## Slice 7: Tokens UI, idempotency, rate limiting, bulk ✅
+- `/settings/tokens` (user menu → API tokens): create a token (name, read-only or read-write, all projects or chosen ones), see access, scope, last used and created, and revoke it. The plain token is shown once via a session flash. Tokens are managed on the web only, so a token can't mint tokens.
+- Scope lives in Sanctum abilities, with no migration: `read`, `write`, `project:{id}`. No `project:` entries means all of the user's projects, including ones they join later. `User::accessibleProjects()` applies the scope to every lookup (project resolve/list, cross-project search, dashboard, comment by id). Out-of-scope projects return the same 404 as non-membership, and scoped tokens can't create projects.
+- Idempotency-Key: the `Idempotent` middleware on all `/api/v1` POSTs, keyed per token (or user) + path + key. Only successful responses are stored (24h, `PM_IDEMPOTENCY_TTL_HOURS`). A replay returns `Idempotent-Replayed: true`. The same key with a different body gets 422; a concurrent duplicate gets 409 (cache lock).
+- Rate limit: the `api` limiter, `PM_API_RATE_LIMIT` per minute (default 120), keyed by token → user → IP. The 429 says the limit and when to retry. The MCP web route gets it in slice 8.
+- Bulk: `POST /projects/{key}/issues/bulk` and `PATCH /issues/bulk` (by key), max 50, all-or-nothing. Errors are keyed and prefixed `issues.{i}` / `updates.{i}`. MCP: `bulk_create_issues`, `bulk_update_issues`.
+- Decision: MCP create tools don't take an idempotency key. The HTTP MCP endpoint is one JSON-RPC POST per call, so a per-call key would need a tool argument. Agents needing replay safety can use the REST API.
+- Test gotcha: `withHeader()`/`withToken()` persist across requests in one test, and Sanctum caches the guard user. Switch tokens with `flushHeaders()` + `app('auth')->forgetGuards()` (see `asToken()` in ApiGuardsTest).
+- Verified in the browser: created a WEB-only read-only token, called the real API with it (session cookie omitted: only WEB listed, write → 403 "read-only"), saw "Last used" update, and revoked it.

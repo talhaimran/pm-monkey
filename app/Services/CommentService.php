@@ -39,7 +39,7 @@ class CommentService
     {
         $comment = Comment::with(['issue.project', 'author'])->find($id);
 
-        if (! $comment || ! $comment->issue->project->roleFor($user)) {
+        if (! $comment || ! $user->accessibleProjects()->whereKey($comment->issue->project_id)->exists()) {
             throw ValidationException::withMessages([
                 'comment' => "Comment {$id} was not found. Get the issue to see its comment ids.",
             ])->status(404);

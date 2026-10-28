@@ -30,6 +30,8 @@ SPEC.md is the source of truth. PROGRESS.md logs slice progress and decisions ma
 - Issue input shape is the same for web, API and MCP: `status` column name, `assignee` email, `labels` names, `epic`/`parent` keys. `IssueService::resolveInput` maps them to ids.
 - Activity `via` comes from `ActivityLogger`: the container binding `pm.via` (set by `PmServer::createContext`) means mcp, a PersonalAccessToken means api, otherwise web.
 - Ordering uses `issues.rank` through `RankService::place()` (needs the project row locked in a transaction). Don't add other position columns.
+- Never query `$user->projects()` for access: use `$user->accessibleProjects()` (applies API token project scope).
+- In tests, switching tokens needs `flushHeaders()` + `app('auth')->forgetGuards()`; headers and the Sanctum user persist within a test.
 - MySQL JSON columns reorder keys; compare JSON arrays in tests with `toEqual`, not `toBe`.
 
 ## Commands

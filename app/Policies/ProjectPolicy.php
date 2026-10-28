@@ -17,7 +17,13 @@ class ProjectPolicy
 
     public function create(User $user): Response
     {
-        return $this->writable($user) ?? Response::allow();
+        if ($denied = $this->writable($user)) {
+            return $denied;
+        }
+
+        return $user->tokenProjectIds() === null
+            ? Response::allow()
+            : Response::deny('This token is limited to specific projects, so it cannot create projects. Use a token with access to all projects.');
     }
 
     /** Create and edit issues, comments and labels: members and admins with a writable token. */

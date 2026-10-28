@@ -10,9 +10,10 @@ use App\Http\Controllers\Api\V1\LabelController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\ProjectMemberController;
 use App\Http\Controllers\Api\V1\SprintController;
+use App\Http\Middleware\Idempotent;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:api', Idempotent::class])->group(function () {
     Route::get('projects', [ProjectController::class, 'index']);
     Route::post('projects', [ProjectController::class, 'store']);
     Route::get('projects/{key}', [ProjectController::class, 'show']);
@@ -50,6 +51,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('me/issues', [IssueListController::class, 'mine']);
 
     Route::post('projects/{key}/issues', [IssueController::class, 'store']);
+    Route::post('projects/{key}/issues/bulk', [IssueController::class, 'bulkStore']);
+    // Before issues/{key} so "bulk" isn't read as an issue key.
+    Route::patch('issues/bulk', [IssueController::class, 'bulkUpdate']);
     Route::get('issues/{key}', [IssueController::class, 'show']);
     Route::patch('issues/{key}', [IssueController::class, 'update']);
     Route::delete('issues/{key}', [IssueController::class, 'destroy']);

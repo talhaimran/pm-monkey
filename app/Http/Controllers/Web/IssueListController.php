@@ -59,7 +59,7 @@ class IssueListController extends Controller
     public function dashboard(Request $request): Response
     {
         $user = $request->user();
-        $projects = $user->projects()->orderBy('key')->limit(50)->get();
+        $projects = $user->accessibleProjects()->orderBy('key')->limit(50)->get();
         $summaries = $this->dashboard->summaries($projects);
 
         return Inertia::render('Dashboard', [

@@ -11,7 +11,9 @@ use App\Models\Project;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -78,6 +80,46 @@ class IssueService
 
             return $issue;
         });
+    }
+
+    /**
+     * Create several issues in one transaction: all or nothing. Item errors are keyed "issues.{i}.{field}".
+     *
+     * @return Collection<int, Issue>
+     */
+    public function createMany(Project $project, User $actor, array $items): Collection
+    {
+        return DB::transaction(fn () => collect($items)->values()->map(
+            fn ($data, $i) => $this->forItem("issues.{$i}", fn () => $this->create($project, $actor, $data))
+        ));
+    }
+
+    /**
+     * Update several issues, each addressed by "key", in one transaction: all or nothing.
+     * Each issue is authorized separately. Item errors are keyed "updates.{i}.{field}".
+     *
+     * @return Collection<int, Issue>
+     */
+    public function updateMany(User $actor, array $items): Collection
+    {
+        return DB::transaction(fn () => collect($items)->values()->map(function ($data, $i) use ($actor) {
+            $issue = $this->forItem("updates.{$i}", fn () => $this->resolve($actor, $data['key']), as: 'key');
+            Gate::forUser($actor)->authorize('update', $issue);
+
+            return $this->forItem("updates.{$i}", fn () => $this->update($issue, $actor, collect($data)->except('key')->all()));
+        }));
+    }
+
+    /** Run one bulk item, re-keying its validation errors under $prefix (or $prefix.$as) and prefixing messages. */
+    private function forItem(string $prefix, callable $run, ?string $as = null): mixed
+    {
+        try {
+            return $run();
+        } catch (ValidationException $e) {
+            throw ValidationException::withMessages(collect($e->errors())->mapWithKeys(fn ($messages, $field) => [
+                "{$prefix}.".($as ?? $field) => array_map(fn ($m) => "[{$prefix}] {$m}", $messages),
+            ])->all());
+        }
     }
 
     /** Sub-tasks cascade at the DB level; issues in a deleted epic are unlinked. */
@@ -151,7 +193,7 @@ class IssueService
     {
         $query = $project
             ? $project->issues()->getQuery()
-            : Issue::whereIn('project_id', $user->projects()->select('projects.id'));
+            : Issue::whereIn('project_id', $user->accessibleProjects()->select('projects.id'));
 
         return $this->sort($this->filter($query, $params), $params['sort'] ?? null)
             ->with(self::DISPLAY)

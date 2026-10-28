@@ -29,7 +29,7 @@ class ProjectController extends Controller
         $user = $request->user();
 
         return Inertia::render('Projects/Index', [
-            'projects' => ProjectResource::collection($user->projects()->orderBy('key')->get())->resolve(),
+            'projects' => ProjectResource::collection($user->accessibleProjects()->orderBy('key')->get())->resolve(),
             'invitations' => ProjectInvitationResource::collection(
                 ProjectInvitation::with('project')->where('email', strtolower($user->email))->latest()->get()
             )->resolve(),

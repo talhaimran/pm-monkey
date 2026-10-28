@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Issues\BulkStoreIssueRequest;
+use App\Http\Requests\Issues\BulkUpdateIssueRequest;
 use App\Http\Requests\Issues\DestroyIssueRequest;
 use App\Http\Requests\Issues\StoreIssueRequest;
 use App\Http\Requests\Issues\UpdateIssueRequest;
@@ -10,6 +12,7 @@ use App\Http\Resources\ActivityResource;
 use App\Http\Resources\IssueResource;
 use App\Services\IssueService;
 use App\Services\ProjectService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -31,6 +34,30 @@ class IssueController extends Controller
         Gate::authorize('contribute', $project);
 
         return new IssueResource($this->issues->create($project, $request->user(), $request->validated()));
+    }
+
+    /**
+     * Create up to 50 issues in one project, all or nothing.
+     *
+     * Body: `{"issues": [{...same fields as create}, ...]}`. Errors are keyed `issues.{index}.{field}`.
+     */
+    public function bulkStore(BulkStoreIssueRequest $request, string $key): JsonResponse
+    {
+        $project = $this->projects->resolve($request->user(), $key);
+        Gate::authorize('contribute', $project);
+
+        return IssueResource::collection($this->issues->createMany($project, $request->user(), $request->validated('issues')))
+            ->response()->setStatusCode(201);
+    }
+
+    /**
+     * Update up to 50 issues across your projects, all or nothing.
+     *
+     * Body: `{"updates": [{"key": "WEB-1", ...fields to change}, ...]}`. Errors are keyed `updates.{index}.{field}`.
+     */
+    public function bulkUpdate(BulkUpdateIssueRequest $request): AnonymousResourceCollection
+    {
+        return IssueResource::collection($this->issues->updateMany($request->user(), $request->validated('updates')));
     }
 
     /** Get an issue by key (e.g. WEB-12) with sub-tasks, epic issues and comments. */
