@@ -36,7 +36,7 @@ SPEC.md is the source of truth. PROGRESS.md logs slice progress and decisions ma
 
 ## Commands
 - Dev servers: `composer run dev` (runs `php artisan dev`: server + queue + vite). Browser preview: `.claude/launch.json` entries `dev` (vite :5173) and `app` (artisan serve :8000).
-- Local login: `php artisan db:seed` creates test@example.com (factory password).
+- Demo data: `php artisan migrate:fresh --seed` (DemoSeeder) creates demo@example.com / password, project WEB (~29 issues, active sprint) and prints a demo API token. Re-running without fresh skips.
 - Tests: `php artisan test` (Pest), one file: `php artisan test tests/Feature/XTest.php`. Tests run on MySQL db `pm_monkey_test` (phpunit.xml), not SQLite, because row locks matter.
 - Lint: `vendor/bin/pint` (PHP); `npm run build` runs `tsc` as the TS check
 - Build frontend: `npm run build`

@@ -84,3 +84,13 @@
 - `tools/list` returns all 36 tools in one page (page size 100), because some clients ignore cursors.
 - Tests call the real transports. `tests/Feature/Mcp/McpHttpTest.php` sends JSON-RPC through the HTTP kernel: 401, initialize, tools/list, writes logged via mcp with the token name, read-only and scope errors, resources, rate limit. `tests/Integration/McpStdioTest.php` spawns `php artisan mcp:start pm` against the test DB (new Integration suite, DatabaseTruncation).
 - Manually checked against the dev app: curl to `/mcp` (36 tools, project_summary on WEB, 401 without a token) and a stdio run (initialize + my_issues) with a temporary token that was then revoked.
+
+## Slice 9: Seeders ✅
+- `php artisan migrate:fresh --seed` runs `DemoSeeder`, which builds everything through the real services (valid keys, ranks and activity log):
+  - Users: demo@example.com (admin), alex@example.com (member), sam@example.com (viewer). All use the password `password` (local only).
+  - Project WEB "Website Relaunch" with 5 labels and 3 epics, 29 issues (stories, tasks, bugs, 5 sub-tasks, points, due dates including one overdue) and 4 comments.
+  - "WEB Sprint 1" active (started 4 days ago, 15 issues) and "WEB Sprint 2" planned. The rest is in the backlog.
+  - A read-write "Demo token", printed once with REST, MCP-over-HTTP and stdio (`PM_MCP_TOKEN`) usage lines.
+- Running it again without `fresh` skips with a hint instead of failing on unique keys.
+- Tests: the seed shape, the printed token working against the real API (parsed from console output), and re-run safety.
+- Reseeded the dev DB, after backing it up to the session scratchpad (`pm_monkey-before-seed.sql`). The dashboard shows the seeded data.
