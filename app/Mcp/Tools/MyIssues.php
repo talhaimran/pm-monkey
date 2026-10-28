@@ -6,6 +6,7 @@ use App\Http\Resources\IssueCardResource;
 use App\Mcp\Tools\Concerns\RespondsWithJson;
 use App\Services\DashboardService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Support\Str;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
@@ -26,7 +27,7 @@ class MyIssues extends Tool
         $issues = $dashboard->myIssues($request->user(), $limit);
 
         return $this->result(
-            "You have {$issues->count()} open assigned issues".($issues->count() === $limit ? " (showing the first {$limit})" : '').'.',
+            "You have {$issues->count()} open assigned ".Str::plural('issue', $issues->count()).($issues->count() === $limit ? " (showing the first {$limit})" : '').'.',
             IssueCardResource::collection($issues)->resolve(),
         );
     }

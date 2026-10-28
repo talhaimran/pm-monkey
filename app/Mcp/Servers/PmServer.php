@@ -57,7 +57,10 @@ use Laravel\Mcp\Server\ServerContext;
     MD)]
 class PmServer extends Server
 {
-    public int $maxPaginationLength = 50;
+    // One page for tools/list: some MCP clients never request the next cursor.
+    public int $defaultPaginationLength = 100;
+
+    public int $maxPaginationLength = 100;
 
     protected array $tools = [
         ListProjects::class,

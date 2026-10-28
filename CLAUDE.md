@@ -41,7 +41,8 @@ SPEC.md is the source of truth. PROGRESS.md logs slice progress and decisions ma
 - Lint: `vendor/bin/pint` (PHP); `npm run build` runs `tsc` as the TS check
 - Build frontend: `npm run build`
 - Migrate/seed: `php artisan migrate`, `php artisan migrate:fresh --seed`
-- Local MCP server: `php artisan mcp:start pm` (exact name confirmed in slice 8)
+- MCP: HTTP `POST /mcp` (Sanctum bearer, `throttle:api`), stdio `PM_MCP_TOKEN=… php artisan mcp:start pm` (routes/ai.php). New tools must be added to `PmServer::$tools`.
+- Real-process tests live in `tests/Integration` (DatabaseTruncation, not RefreshDatabase, so spawned processes see committed rows).
 
 ## Per-slice checklist
 migrate → Pest suite green → `npm run build` → update PROGRESS.md → git commit.

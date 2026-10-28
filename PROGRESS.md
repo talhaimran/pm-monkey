@@ -76,3 +76,11 @@
 - Decision: MCP create tools don't take an idempotency key. The HTTP MCP endpoint is one JSON-RPC POST per call, so a per-call key would need a tool argument. Agents needing replay safety can use the REST API.
 - Test gotcha: `withHeader()`/`withToken()` persist across requests in one test, and Sanctum caches the guard user. Switch tokens with `flushHeaders()` + `app('auth')->forgetGuards()` (see `asToken()` in ApiGuardsTest).
 - Verified in the browser: created a WEB-only read-only token, called the real API with it (session cookie omitted: only WEB listed, write → 403 "read-only"), saw "Last used" update, and revoked it.
+
+## Slice 8: MCP servers ✅
+- Read vendor/laravel/mcp v1.1 before writing code (routes/ai.php auto-load, `Mcp::web`/`Mcp::local`, stateless HTTP transport, newline-delimited stdio, `boot()` hook, header validation, paginated tools/list). Findings are in the slice 8 plan.
+- Web: `POST /mcp` with `auth:sanctum` + `throttle:api`. Tokens, project scope, read-only and the rate limit match the REST API, and a 401 includes `WWW-Authenticate: Bearer realm="mcp"`.
+- Local: `php artisan mcp:start pm` runs `LocalPmServer`, which logs in during `boot()` as the owner of `PM_MCP_TOKEN`, so the token's limits apply on stdio too. A missing or invalid token stops start-up with a message telling you how to fix it.
+- `tools/list` returns all 36 tools in one page (page size 100), because some clients ignore cursors.
+- Tests call the real transports. `tests/Feature/Mcp/McpHttpTest.php` sends JSON-RPC through the HTTP kernel: 401, initialize, tools/list, writes logged via mcp with the token name, read-only and scope errors, resources, rate limit. `tests/Integration/McpStdioTest.php` spawns `php artisan mcp:start pm` against the test DB (new Integration suite, DatabaseTruncation).
+- Manually checked against the dev app: curl to `/mcp` (36 tools, project_summary on WEB, 401 without a token) and a stdio run (initialize + my_issues) with a temporary token that was then revoked.

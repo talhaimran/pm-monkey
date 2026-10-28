@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Services\IssueService;
 use App\Services\ProjectService;
+use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -24,6 +25,11 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
+
+// Tests that spawn real processes need committed rows, so they truncate instead of using transactions.
+pest()->extend(TestCase::class)
+    ->use(DatabaseTruncation::class)
+    ->in('Integration');
 
 /*
 |--------------------------------------------------------------------------
