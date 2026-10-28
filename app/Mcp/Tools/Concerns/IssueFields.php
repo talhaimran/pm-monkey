@@ -22,6 +22,7 @@ trait IssueFields
             'due_date' => $schema->string()->format('date')->nullable()->description('YYYY-MM-DD.'),
             'epic' => $schema->string()->nullable()->description('Key of an epic in the same project, e.g. WEB-3; null to unlink.'),
             'parent' => $schema->string()->nullable()->description('Key of the parent issue to make this a sub-task (one level deep); null to detach.'),
+            'sprint' => $schema->string()->nullable()->description('Name (or id) of a planned or active sprint; null for the backlog.'),
         ];
     }
 }

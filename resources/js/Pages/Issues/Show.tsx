@@ -222,6 +222,14 @@ export default function Show({
                         )}
                         {sidebarField('Priority', picker('priority', issue.priority, plain(options.priorities)), errors.priority)}
                         {sidebarField(
+                            'Sprint',
+                            picker('sprint', issue.sprint?.state === 'completed' ? '' : (issue.sprint?.name ?? ''), [
+                                { value: '', label: issue.sprint?.state === 'completed' ? `${issue.sprint.name} (completed)` : 'Backlog' },
+                                ...plain(options.sprints),
+                            ]),
+                            errors.sprint,
+                        )}
+                        {sidebarField(
                             'Assignee',
                             picker('assignee', issue.assignee?.email ?? '', [
                                 { value: '', label: 'Unassigned' },

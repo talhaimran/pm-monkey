@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\IssuePriority;
 use App\Enums\IssueType;
+use App\Enums\SprintState;
 use App\Models\Issue;
 use App\Models\Project;
 use App\Models\User;
@@ -15,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 class IssueService
 {
     /** Relations needed to render an issue (IssueResource) and its activity diff. */
-    public const DISPLAY = ['project', 'column', 'assignee', 'reporter', 'epic', 'parent', 'labels'];
+    public const DISPLAY = ['project', 'column', 'assignee', 'reporter', 'epic', 'parent', 'labels', 'sprint'];
 
     public function __construct(
         private ProjectService $projects,
@@ -116,6 +117,7 @@ class IssueService
 
     /**
      * Apply board/list filters: assignee (email or "unassigned"), type, priority, label (name),
+     * sprint (name, "active" or "backlog"),
      * q (title text or issue key such as WEB-12).
      */
     public function filter(Builder $query, Project $project, array $filters): Builder
@@ -126,6 +128,11 @@ class IssueService
                 : $q->whereHas('assignee', fn ($u) => $u->where('email', $assignee)))
             ->when($filters['type'] ?? null, fn ($q, $type) => $q->where('type', $type))
             ->when($filters['priority'] ?? null, fn ($q, $priority) => $q->where('priority', $priority))
+            ->when($filters['sprint'] ?? null, fn ($q, $sprint) => match (strtolower($sprint)) {
+                'backlog' => $q->whereNull('sprint_id'),
+                'active' => $q->whereHas('sprint', fn ($s) => $s->where('state', SprintState::Active->value)),
+                default => $q->whereHas('sprint', fn ($s) => $s->where('name', $sprint)),
+            })
             ->when($filters['label'] ?? null, fn ($q, $label) => $q->whereHas('labels', fn ($l) => $l->where('name', $label)))
             ->when(trim($filters['q'] ?? ''), function ($q, $search) use ($project) {
                 $number = preg_match('/^'.preg_quote($project->key, '/').'-(\d+)$/i', $search, $m) ? $m[1] : null;
@@ -165,6 +172,9 @@ class IssueService
         }
         if (array_key_exists('assignee', $data)) {
             $attributes['assignee_id'] = $data['assignee'] === null ? null : $this->resolveAssigneeId($project, $data['assignee']);
+        }
+        if (array_key_exists('sprint', $data)) {
+            $attributes['sprint_id'] = $data['sprint'] === null ? null : $this->resolveOpenSprintId($project, (string) $data['sprint']);
         }
         if (array_key_exists('labels', $data)) {
             $labelIds = $this->resolveLabelIds($project, $data['labels'] ?? []);
@@ -228,6 +238,21 @@ class IssueService
         if ($issue && $type !== IssueType::Epic && $issue->type === IssueType::Epic && $issue->epicIssues()->exists()) {
             $fail('type', "{$key($issue)} has issues linked to it as an epic; unlink them before changing its type.");
         }
+    }
+
+    private function resolveOpenSprintId(Project $project, string $ref): int
+    {
+        $sprints = $project->sprints()->orderBy('id')->get(['id', 'name', 'state']);
+        $sprint = $sprints->first(fn ($s) => (string) $s->id === trim($ref) || strcasecmp($s->name, trim($ref)) === 0);
+        $open = $sprints->where('state', '!=', SprintState::Completed);
+
+        if (! $sprint || $sprint->state === SprintState::Completed) {
+            $reason = $sprint ? "{$sprint->name} is completed" : "Unknown sprint \"{$ref}\"";
+            $valid = $open->isEmpty() ? "{$project->key} has no open sprints; create one first" : 'Open sprints: '.$open->pluck('name')->implode(', ');
+            throw ValidationException::withMessages(['sprint' => "{$reason}. {$valid}. Use null for the backlog."]);
+        }
+
+        return $sprint->id;
     }
 
     private function resolveColumnId(Project $project, string $name): int
@@ -307,6 +332,7 @@ class IssueService
             'due_date' => $issue->due_date?->format('Y-m-d'),
             'epic' => $key($issue->epic),
             'parent' => $key($issue->parent),
+            'sprint' => $issue->sprint?->name,
         ];
     }
 }

@@ -33,6 +33,7 @@ class IssueResource extends JsonResource
             'due_date' => $this->due_date?->format('Y-m-d'),
             'epic' => $link($this->epic),
             'parent' => $link($this->parent),
+            'sprint' => $this->sprint ? ['id' => $this->sprint->id, 'name' => $this->sprint->name, 'state' => $this->sprint->state->value] : null,
             'subtasks' => $this->whenLoaded('subtasks', fn () => $this->subtasks->map($child)->all()),
             'epic_issues' => $this->whenLoaded('epicIssues', fn () => $this->epicIssues->map($child)->all()),
             'comments' => $this->whenLoaded('comments', fn () => CommentResource::collection($this->comments)->resolve()),

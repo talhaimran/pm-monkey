@@ -5,15 +5,19 @@ namespace App\Mcp\Servers;
 use App\Mcp\Resources\IssueResource;
 use App\Mcp\Resources\ProjectResource;
 use App\Mcp\Tools\AddComment;
+use App\Mcp\Tools\CompleteSprint;
 use App\Mcp\Tools\CreateColumn;
 use App\Mcp\Tools\CreateIssue;
 use App\Mcp\Tools\CreateLabel;
 use App\Mcp\Tools\CreateProject;
+use App\Mcp\Tools\CreateSprint;
 use App\Mcp\Tools\DeleteColumn;
 use App\Mcp\Tools\DeleteComment;
 use App\Mcp\Tools\DeleteIssue;
 use App\Mcp\Tools\DeleteLabel;
 use App\Mcp\Tools\DeleteProject;
+use App\Mcp\Tools\DeleteSprint;
+use App\Mcp\Tools\GetBacklog;
 use App\Mcp\Tools\GetBoard;
 use App\Mcp\Tools\GetIssue;
 use App\Mcp\Tools\GetIssueActivity;
@@ -21,12 +25,16 @@ use App\Mcp\Tools\GetProject;
 use App\Mcp\Tools\ListColumns;
 use App\Mcp\Tools\ListLabels;
 use App\Mcp\Tools\ListProjects;
+use App\Mcp\Tools\ListSprints;
 use App\Mcp\Tools\MoveIssue;
+use App\Mcp\Tools\RankBacklog;
+use App\Mcp\Tools\StartSprint;
 use App\Mcp\Tools\UpdateColumn;
 use App\Mcp\Tools\UpdateComment;
 use App\Mcp\Tools\UpdateIssue;
 use App\Mcp\Tools\UpdateLabel;
 use App\Mcp\Tools\UpdateProject;
+use App\Mcp\Tools\UpdateSprint;
 use App\Services\ActivityLogger;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
@@ -70,6 +78,14 @@ class PmServer extends Server
         CreateColumn::class,
         UpdateColumn::class,
         DeleteColumn::class,
+        ListSprints::class,
+        CreateSprint::class,
+        UpdateSprint::class,
+        DeleteSprint::class,
+        StartSprint::class,
+        CompleteSprint::class,
+        GetBacklog::class,
+        RankBacklog::class,
     ];
 
     protected array $resources = [

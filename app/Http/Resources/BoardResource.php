@@ -28,6 +28,7 @@ class BoardResource extends JsonResource
             'title' => $issue->title,
             'type' => $issue->type->value,
             'priority' => $issue->priority->value,
+            'status' => $issue->column->name,
             'assignee' => $issue->assignee ? ['name' => $issue->assignee->name, 'email' => $issue->assignee->email] : null,
             'labels' => $issue->labels->pluck('name')->all(),
             'story_points' => $issue->story_points,

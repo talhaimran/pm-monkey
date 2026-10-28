@@ -83,6 +83,7 @@ export interface Issue {
     due_date: string | null;
     epic: IssueLink | null;
     parent: IssueLink | null;
+    sprint: { id: number; name: string; state: string } | null;
     subtasks?: IssueLink[];
     epic_issues?: IssueLink[];
     comments?: Comment[];
@@ -106,4 +107,5 @@ export interface IssueOptions {
     labels: Label[];
     types: string[];
     priorities: string[];
+    sprints: string[];
 }

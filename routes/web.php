@@ -7,6 +7,7 @@ use App\Http\Controllers\Web\IssueController;
 use App\Http\Controllers\Web\LabelController;
 use App\Http\Controllers\Web\ProjectController;
 use App\Http\Controllers\Web\ProjectMemberController;
+use App\Http\Controllers\Web\SprintController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -35,6 +36,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/issues/{key}', [IssueController::class, 'update'])->name('issues.update');
     Route::delete('/issues/{key}', [IssueController::class, 'destroy'])->name('issues.destroy');
     Route::post('/issues/{key}/move', [BoardController::class, 'move'])->name('issues.move');
+    Route::post('/issues/{key}/rank', [SprintController::class, 'rank'])->name('issues.rank');
     Route::post('/issues/{key}/comments', [IssueController::class, 'comment'])->name('issues.comments.store');
     Route::patch('/comments/{comment}', [IssueController::class, 'updateComment'])->name('comments.update');
     Route::delete('/comments/{comment}', [IssueController::class, 'destroyComment'])->name('comments.destroy');
@@ -45,6 +47,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/columns', [BoardController::class, 'storeColumn'])->name('columns.store');
         Route::patch('/columns/{column}', [BoardController::class, 'updateColumn'])->name('columns.update')->scopeBindings();
         Route::delete('/columns/{column}', [BoardController::class, 'destroyColumn'])->name('columns.destroy')->scopeBindings();
+        Route::get('/backlog', [SprintController::class, 'backlog'])->name('backlog');
+        Route::post('/sprints', [SprintController::class, 'store'])->name('sprints.store');
+        Route::patch('/sprints/{sprint}', [SprintController::class, 'update'])->name('sprints.update')->scopeBindings();
+        Route::delete('/sprints/{sprint}', [SprintController::class, 'destroy'])->name('sprints.destroy')->scopeBindings();
+        Route::post('/sprints/{sprint}/start', [SprintController::class, 'start'])->name('sprints.start')->scopeBindings();
+        Route::post('/sprints/{sprint}/complete', [SprintController::class, 'complete'])->name('sprints.complete')->scopeBindings();
         Route::get('/settings', [ProjectController::class, 'settings'])->name('settings');
         Route::post('/issues', [IssueController::class, 'store'])->name('issues.store');
         Route::post('/labels', [LabelController::class, 'store'])->name('labels.store');

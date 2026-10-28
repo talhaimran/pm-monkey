@@ -4,35 +4,19 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { IssueOptions, Project } from '@/types';
-import {
-    closestCorners,
-    DndContext,
-    DragEndEvent,
-    DragOverEvent,
-    DragOverlay,
-    DragStartEvent,
-    KeyboardSensor,
-    PointerSensor,
-    useDroppable,
-    useSensor,
-    useSensors,
-} from '@dnd-kit/core';
-import {
-    arrayMove,
-    SortableContext,
-    sortableKeyboardCoordinates,
-    useSortable,
-    verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
+import { placement, useLaneDroppable, useSortableLanes } from '@/Components/useSortableLanes';
+import { closestCorners, DndContext, DragOverlay } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Head, Link, router } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export interface Card {
     key: string;
     title: string;
     type: string;
     priority: string;
+    status: string;
     assignee: { name: string; email: string } | null;
     labels: string[];
     story_points: number | null;
@@ -45,9 +29,7 @@ interface BoardData {
     truncated: boolean;
 }
 
-type Filters = Partial<Record<'assignee' | 'type' | 'priority' | 'label' | 'q', string>>;
-
-const COLUMN_PREFIX = 'column:';
+type Filters = Partial<Record<'assignee' | 'type' | 'priority' | 'label' | 'q' | 'sprint', string>>;
 
 const typeColors: Record<string, string> = {
     bug: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
@@ -79,15 +61,17 @@ export default function Board({
     options: IssueOptions;
     can: { contribute: boolean };
 }) {
-    const [lanes, setLanes] = useState(() => toLanes(board));
-    const [active, setActive] = useState<Card | null>(null);
+    const source = useMemo(() => toLanes(board), [board]);
+    const { lanes, active, sensors, reset, handlers } = useSortableLanes(source, (key, lane, laneChanged, index, cards) =>
+        router.post(
+            route('issues.move', key),
+            { ...(laneChanged ? { status: lane } : {}), ...placement(index, cards) },
+            { preserveScroll: true, preserveState: true, onError: reset },
+        ),
+    );
     const [creating, setCreating] = useState(false);
     const [search, setSearch] = useState(filters.q ?? '');
-    const origin = useRef<string | null>(null);
     const columnNames = board.columns.map((c) => c.name);
-
-    // Server data wins after every reload (filters, moves by others, failed moves).
-    useEffect(() => setLanes(toLanes(board)), [board]);
 
     const applyFilters = (next: Filters) =>
         router.get(
@@ -102,72 +86,6 @@ export default function Board({
         return () => clearTimeout(t);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [search]);
-
-    const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-    );
-
-    const laneOf = (id: string): string | undefined =>
-        id.startsWith(COLUMN_PREFIX)
-            ? id.slice(COLUMN_PREFIX.length)
-            : Object.keys(lanes).find((name) => lanes[name].some((c) => c.key === id));
-
-    const onDragStart = ({ active }: DragStartEvent) => {
-        const lane = laneOf(String(active.id));
-        origin.current = lane ?? null;
-        setActive(lane ? lanes[lane].find((c) => c.key === active.id) ?? null : null);
-    };
-
-    // Move the card into the hovered column so the drop preview is right.
-    const onDragOver = ({ active, over }: DragOverEvent) => {
-        if (!over) return;
-        const from = laneOf(String(active.id));
-        const to = laneOf(String(over.id));
-        if (!from || !to || from === to) return;
-
-        setLanes((prev) => {
-            const card = prev[from].find((c) => c.key === active.id)!;
-            const target = prev[to];
-            const overIndex = target.findIndex((c) => c.key === over.id);
-            const index = overIndex === -1 ? target.length : overIndex;
-            return {
-                ...prev,
-                [from]: prev[from].filter((c) => c.key !== active.id),
-                [to]: [...target.slice(0, index), card, ...target.slice(index)],
-            };
-        });
-    };
-
-    const onDragEnd = ({ active, over }: DragEndEvent) => {
-        setActive(null);
-        const key = String(active.id);
-        const lane = laneOf(key);
-        if (!over || !lane) return setLanes(toLanes(board));
-
-        let cards = lanes[lane];
-        const from = cards.findIndex((c) => c.key === key);
-        const overIndex = cards.findIndex((c) => c.key === over.id);
-        if (overIndex !== -1 && overIndex !== from) {
-            cards = arrayMove(cards, from, overIndex);
-            setLanes((prev) => ({ ...prev, [lane]: cards }));
-        }
-
-        const index = cards.findIndex((c) => c.key === key);
-        const sameLane = lane === origin.current;
-        const original = toLanes(board)[lane] ?? [];
-        if (sameLane && original.findIndex((c) => c.key === key) === index) return;
-
-        // "after" (not an index) so reordering stays correct while filters hide cards.
-        router.post(
-            route('issues.move', key),
-            {
-                ...(sameLane ? {} : { status: lane }),
-                ...(index === 0 ? { position: 0 } : { after: cards[index - 1].key }),
-            },
-            { preserveScroll: true, preserveState: true, onError: () => setLanes(toLanes(board)) },
-        );
-    };
 
     const filterSelect = (name: keyof Filters, label: string, choices: { value: string; label: string }[]) => (
         <select
@@ -195,6 +113,12 @@ export default function Board({
                         <span className="font-mono text-indigo-600 dark:text-indigo-400">{project.key}</span> {project.name}
                     </h2>
                     <div className="flex items-center gap-3">
+                        <Link
+                            href={route('projects.backlog', project.key)}
+                            className="text-sm text-gray-600 underline hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                        >
+                            Backlog
+                        </Link>
                         <Link
                             href={route('projects.settings', project.key)}
                             className="text-sm text-gray-600 underline hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
@@ -225,6 +149,12 @@ export default function Board({
                     {filterSelect('type', 'Type', plain(options.types.filter((t) => t !== 'epic')))}
                     {filterSelect('priority', 'Priority', plain(options.priorities))}
                     {options.labels.length > 0 && filterSelect('label', 'Label', plain(options.labels.map((l) => l.name)))}
+                    {options.sprints.length > 0 &&
+                        filterSelect('sprint', 'Sprint', [
+                            { value: 'active', label: 'Active sprint' },
+                            { value: 'backlog', label: 'Backlog (no sprint)' },
+                            ...plain(options.sprints),
+                        ])}
                     {hasFilters && (
                         <SecondaryButton
                             onClick={() => {
@@ -243,17 +173,7 @@ export default function Board({
                     </p>
                 )}
 
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCorners}
-                    onDragStart={onDragStart}
-                    onDragOver={onDragOver}
-                    onDragEnd={onDragEnd}
-                    onDragCancel={() => {
-                        setActive(null);
-                        setLanes(toLanes(board));
-                    }}
-                >
+                <DndContext sensors={sensors} collisionDetection={closestCorners} {...handlers}>
                     <div className="flex gap-4 overflow-x-auto pb-4">
                         {columnNames.map((name) => (
                             <Lane key={name} name={name} cards={lanes[name] ?? []} draggable={can.contribute} />
@@ -271,7 +191,7 @@ export default function Board({
 }
 
 function Lane({ name, cards, draggable }: { name: string; cards: Card[]; draggable: boolean }) {
-    const { setNodeRef, isOver } = useDroppable({ id: COLUMN_PREFIX + name });
+    const { setNodeRef, isOver } = useLaneDroppable(name);
 
     return (
         <section

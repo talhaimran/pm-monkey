@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'project_id', 'number', 'title', 'description', 'type', 'priority', 'column_id',
-    'assignee_id', 'reporter_id', 'story_points', 'due_date', 'epic_id', 'parent_id', 'rank',
+    'assignee_id', 'reporter_id', 'story_points', 'due_date', 'epic_id', 'parent_id', 'sprint_id', 'rank',
 ])]
 class Issue extends Model
 {
@@ -56,6 +56,11 @@ class Issue extends Model
     public function epic(): BelongsTo
     {
         return $this->belongsTo(Issue::class, 'epic_id');
+    }
+
+    public function sprint(): BelongsTo
+    {
+        return $this->belongsTo(Sprint::class);
     }
 
     public function parent(): BelongsTo

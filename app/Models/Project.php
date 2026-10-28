@@ -31,6 +31,17 @@ class Project extends Model
         return $this->hasMany(Label::class)->orderBy('name');
     }
 
+    public function sprints(): HasMany
+    {
+        return $this->hasMany(Sprint::class);
+    }
+
+    /** Issues in the last column count as done (sprint progress, backlog, dashboard). */
+    public function doneColumnId(): ?int
+    {
+        return $this->columns()->reorder('position', 'desc')->value('id');
+    }
+
     public function invitations(): HasMany
     {
         return $this->hasMany(ProjectInvitation::class);

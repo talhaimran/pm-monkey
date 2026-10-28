@@ -17,6 +17,7 @@ class BoardFilterRequest extends FormRequest
             'priority' => ['nullable', Rule::enum(IssuePriority::class)],
             'label' => ['nullable', 'string', 'max:50'],
             'q' => ['nullable', 'string', 'max:100'],
+            'sprint' => ['nullable', 'string', 'max:100'],
         ];
     }
 

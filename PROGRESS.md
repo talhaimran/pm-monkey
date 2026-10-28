@@ -43,3 +43,15 @@
 - Columns: admins add, rename, reorder and delete them (API/MCP address columns by name). Deleting a column with issues needs `move_issues_to`. A project keeps at least one column. Moving issues out of a deleted column isn't recorded in the activity log.
 - MCP: get_board, move_issue, list_columns, create_column, update_column, delete_column.
 - Verified in the browser: dragged across columns (status updated and logged via web), reordered within a column (rank only, nothing logged), and the type filter.
+
+## Slice 5: Backlog and sprints ✅
+- Sprints: planned → active → completed, with a name (unique per project; "backlog" and "active" are reserved), goal and dates. Default names are "{KEY} Sprint N". Starting defaults to today through +14 days.
+- One active sprint per project: a service check under the project row lock, plus a unique nullable `active_project_id` set only while active. A stored generated column would be neater, but MySQL forbids cascading FKs on its base columns (error 1215), so the service sets the column.
+- "Done" = the last board column (`Project::doneColumnId()`). Completing needs `confirm: true` and `move_open_issues_to` ("backlog" or a planned sprint). Done issues stay with the sprint for history. Each moved issue gets an activity entry.
+- `sprint` is now an issue field (name or id, null for the backlog) in web, API and MCP, and is logged in diffs. Completed sprints can't receive issues or be edited. Only planned sprints can be deleted; their issues return to the backlog.
+- Backlog: open sprints (active first) plus unscheduled issues, ranked by the slice 4 `rank`. Epics are hidden, and done issues are hidden from the backlog section. Drag-to-rank works within and across sections (`POST /issues/{key}/rank` with `sprint`, `position` or `after`).
+- Board and issue filters gain `sprint` (a name, "active" or "backlog"). The issue page has a Sprint picker.
+- Members and admins manage sprints.
+- Refactor: board and backlog share `useSortableLanes` (dnd-kit multi-lane logic), and `RankService::positionAfter` serves both.
+- MCP: list_sprints, create_sprint, update_sprint, delete_sprint, start_sprint, complete_sprint, get_backlog, rank_backlog.
+- Verified in the browser: created a sprint, dragged an issue in (logged via web), started it, then completed it with the unfinished issue returning to the backlog.

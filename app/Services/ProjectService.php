@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\IssuePriority;
 use App\Enums\IssueType;
 use App\Enums\ProjectRole;
+use App\Enums\SprintState;
 use App\Models\Column;
 use App\Models\Project;
 use App\Models\User;
@@ -60,6 +61,7 @@ class ProjectService
                 ->map(fn ($u) => ['name' => $u->name, 'email' => $u->email])->all(),
             'labels' => $project->labels()->get(['id', 'name', 'color'])
                 ->map(fn ($l) => ['id' => $l->id, 'name' => $l->name, 'color' => $l->color])->all(),
+            'sprints' => $project->sprints()->where('state', '!=', SprintState::Completed->value)->orderBy('id')->pluck('name')->all(),
             'types' => IssueType::values(),
             'priorities' => IssuePriority::values(),
         ];

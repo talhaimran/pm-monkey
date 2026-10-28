@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\BacklogController;
 use App\Http\Controllers\Api\V1\BoardController;
 use App\Http\Controllers\Api\V1\ColumnController;
 use App\Http\Controllers\Api\V1\CommentController;
@@ -7,6 +8,7 @@ use App\Http\Controllers\Api\V1\IssueController;
 use App\Http\Controllers\Api\V1\LabelController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\ProjectMemberController;
+use App\Http\Controllers\Api\V1\SprintController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
@@ -32,12 +34,22 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::patch('projects/{key}/columns/{name}', [ColumnController::class, 'update']);
     Route::delete('projects/{key}/columns/{name}', [ColumnController::class, 'destroy']);
 
+    Route::get('projects/{key}/backlog', [BacklogController::class, 'show']);
+    Route::get('projects/{key}/sprints', [SprintController::class, 'index']);
+    Route::post('projects/{key}/sprints', [SprintController::class, 'store']);
+    Route::get('projects/{key}/sprints/{sprint}', [SprintController::class, 'show']);
+    Route::patch('projects/{key}/sprints/{sprint}', [SprintController::class, 'update']);
+    Route::delete('projects/{key}/sprints/{sprint}', [SprintController::class, 'destroy']);
+    Route::post('projects/{key}/sprints/{sprint}/start', [SprintController::class, 'start']);
+    Route::post('projects/{key}/sprints/{sprint}/complete', [SprintController::class, 'complete']);
+
     Route::post('projects/{key}/issues', [IssueController::class, 'store']);
     Route::get('issues/{key}', [IssueController::class, 'show']);
     Route::patch('issues/{key}', [IssueController::class, 'update']);
     Route::delete('issues/{key}', [IssueController::class, 'destroy']);
     Route::get('issues/{key}/activity', [IssueController::class, 'activity']);
     Route::post('issues/{key}/move', [BoardController::class, 'move']);
+    Route::post('issues/{key}/rank', [BacklogController::class, 'rank']);
 
     Route::post('issues/{key}/comments', [CommentController::class, 'store']);
     Route::patch('comments/{comment}', [CommentController::class, 'update']);

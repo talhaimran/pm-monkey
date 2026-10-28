@@ -24,6 +24,7 @@ class StoreIssueRequest extends FormRequest
             'due_date' => ['nullable', 'date_format:Y-m-d'],
             'epic' => ['nullable', 'string', 'max:30'],
             'parent' => ['nullable', 'string', 'max:30'],
+            'sprint' => ['nullable', 'string', 'max:100'],
         ];
     }
 

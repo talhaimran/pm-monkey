@@ -8,7 +8,6 @@ use App\Models\Project;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class BoardService
 {
@@ -26,7 +25,7 @@ class BoardService
     {
         $issues = $this->issues
             ->filter($project->issues()->where('type', '!=', IssueType::Epic->value)->getQuery(), $project, $filters)
-            ->with(['assignee', 'labels', 'parent'])
+            ->with(['assignee', 'labels', 'parent', 'column'])
             ->orderBy('rank')
             ->limit(self::LIMIT + 1)
             ->get()
@@ -59,7 +58,7 @@ class BoardService
                 ->where('type', '!=', IssueType::Epic->value);
 
             $position = match (true) {
-                isset($input['after']) => $this->positionAfter($issue, $siblings, $input['after']),
+                isset($input['after']) => $this->ranks->positionAfter($issue, $siblings, $input['after'], $issue->column->name),
                 isset($input['position']) => (int) $input['position'],
                 default => PHP_INT_MAX,
             };
@@ -68,21 +67,5 @@ class BoardService
 
             return $issue;
         });
-    }
-
-    private function positionAfter(Issue $issue, $siblings, string $key): int
-    {
-        $prefix = $issue->project->key.'-';
-        $number = stripos(trim($key), $prefix) === 0 ? substr(trim($key), strlen($prefix)) : null;
-        $ids = (clone $siblings)->orderBy('rank')->pluck('number')->values();
-        $index = ctype_digit((string) $number) ? $ids->search((int) $number) : false;
-
-        if ($index === false) {
-            throw ValidationException::withMessages([
-                'after' => "\"{$key}\" is not another issue in {$issue->column->name} of {$issue->project->key}; after must name an issue in the destination column.",
-            ]);
-        }
-
-        return $index + 1;
     }
 }
