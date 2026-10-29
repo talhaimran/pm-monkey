@@ -161,3 +161,18 @@ Plan: docs/superpowers/plans/2026-10-29-ui-jira-redesign.md. Per-step security r
 - Checked as a Viewer (sam@example.com): no Create, sub-task, "…", comment box, sprint buttons or drag on issue/backlog pages.
 - Process note: an unconfigured `prettier --write` reformatted 46 files to double quotes; reverted and the step's scripted edits re-applied. The repo has no Prettier config, so don't run it without `--single-quote --tab-width 4`.
 - Security review: class-name changes only, plus the logo/name link. No findings.
+
+### Final security review ✅
+- The claude-security plugin's scan could not run in this session (its pipeline needs the Workflow tool, which wasn't available), so per CLAUDE.md the whole repository was reviewed by hand against the checklist.
+- Checked: every web/API controller method and MCP tool authorizes through a Policy or a scoped resolver (bulk update authorizes per item in `IssueService::updateMany`; tokens are managed by the session owner only); read-only tokens are blocked in `ProjectPolicy::writable` for create/contribute/manage; project-scoped tokens are enforced by `accessibleProjects()` in issue/comment/project resolvers (comment ids included); raw SQL only interpolates enum values and an `asc`/`desc` derived from a prefix; no `$guarded = []`; HTML reaches the page only through the two server-sanitised Markdown sites; label colours are regex-validated hex before reaching inline styles; shared Inertia props expose the user model with password/remember token hidden; no secrets in tracked files or logs; CSRF on web, token-only API and /mcp.
+- New props from this redesign (`active_sprint`, issue page `project`) sit behind the existing view checks and expose only that project's data.
+- Findings: none new. Still open from the earlier review (informational): unauthenticated requests aren't rate-limited.
+
+### Shortcuts from the redesign
+- Issue opens as a page, not a modal over the board (`?selectedIssue=`).
+- Sidebar isn't collapsible.
+- No inline "+ Create issue" in board columns (IssueFormModal has no preset status).
+- Assignee avatar toggles list every member (add "+N" overflow past ~10).
+- Search and Your-work lozenges are gray (rows don't carry their project's column order).
+- Board shows all issues by default (unchanged behaviour); title is the sprint name only when filtered to the active sprint.
+- Welcome (guest `/`) page not restyled.
