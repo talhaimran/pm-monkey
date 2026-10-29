@@ -147,3 +147,9 @@ Plan: docs/superpowers/plans/2026-10-29-ui-jira-redesign.md. Per-step security r
 - Rows are one line: type icon, key (struck through when done), summary, status lozenge, points, priority, assignee (dashed circle when unassigned). Drag and rank behaviour unchanged; checked by dragging WEB-29 into Sprint 2 in the browser.
 - Collapse state is per page view (not saved).
 - Security review: presentational; sprint names and goals render as text. No findings.
+
+### Step 6: issue list and search ✅
+- `IssueTable` restyled in place: Type (icon), Key, Summary, Status (lozenge), Assignee (avatar + name), Priority (icon + name), Points, Updated; 40px rows, sortable headers with ↑/↓. Due date column dropped from the table (Jira's default list doesn't show it; sorting by due date still works through `sort`).
+- New optional `statuses` prop colours lozenges with the project's columns (project list passes them).
+- Shortcut (in code): cross-project Search and Dashboard rows have no column order, so their lozenges stay gray; add a status category to `IssueResource` to colour them.
+- Security review: presentational; no new data. No findings.

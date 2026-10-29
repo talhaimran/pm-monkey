@@ -46,14 +46,14 @@ export default function Issues({
         >
             <Head title={`${project.key} issues`} />
 
-            <div className="mx-auto max-w-7xl space-y-4 px-4 py-6 sm:px-6 lg:px-8">
+            <div className="space-y-4 px-4 pb-10 sm:px-6">
                 <IssueFilters
                     filters={filters}
                     options={options}
                     onApply={apply}
                     onClear={() => router.get(route('projects.issues.index', project.key), filters.sort ? { sort: filters.sort } : {}, { replace: true })}
                 />
-                <IssueTable issues={issues.data} sort={filters.sort} onSort={(sort) => apply({ sort })} />
+                <IssueTable issues={issues.data} statuses={options.columns} sort={filters.sort} onSort={(sort) => apply({ sort })} />
                 <Pagination page={issues} />
             </div>
 
