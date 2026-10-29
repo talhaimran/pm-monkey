@@ -141,3 +141,9 @@ Plan: docs/superpowers/plans/2026-10-29-ui-jira-redesign.md. Per-step security r
 - History keeps the source: a "VIA API" / "VIA MCP" chip plus the token name. Web changes show no chip, as in Jira.
 - Shortcut: the issue stays a page, not a modal over the board (`?selectedIssue=`); add the modal if triaging from the board without leaving it is wanted. Comments stay oldest first.
 - Security review: both `dangerouslySetInnerHTML` sites unchanged and still fed only by server-side `Str::markdown` with `html_input=strip` and `allow_unsafe_links=false` (existing `IssueWebTest` covers `<script>` and `javascript:`). Label colours go into `style` only as `backgroundColor` from server-validated hex. New prop exposes the project's own key and name behind the existing issue resolve/visibility check. No findings.
+
+### Step 5: backlog ✅
+- Each sprint and the backlog is a sunken container with a collapse chevron, name, dates, issue count, done/total points, Start sprint / Complete sprint, and a "…" menu (Edit sprint, Delete sprint for planned ones). "Create sprint" moved from the page header to the Backlog section header, as in Jira.
+- Rows are one line: type icon, key (struck through when done), summary, status lozenge, points, priority, assignee (dashed circle when unassigned). Drag and rank behaviour unchanged; checked by dragging WEB-29 into Sprint 2 in the browser.
+- Collapse state is per page view (not saved).
+- Security review: presentational; sprint names and goals render as text. No findings.
