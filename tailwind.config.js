@@ -43,6 +43,7 @@ export default {
             fontFamily: {
                 sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Oxygen', 'Ubuntu', '"Helvetica Neue"', 'sans-serif'],
             },
+            boxShadow: { card: '0 1px 1px rgb(9 30 66 / 25%), 0 0 1px rgb(9 30 66 / 31%)' },
             colors: Object.fromEntries(Object.keys(tokens).map((name) => [name, `var(--c-${name})`])),
         },
     },

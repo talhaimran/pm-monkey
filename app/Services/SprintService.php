@@ -115,6 +115,12 @@ class SprintService
         });
     }
 
+    /** The project's active sprint with issue/point stats, or null. */
+    public function active(Project $project): ?Sprint
+    {
+        return $this->withStats($project->sprints()->getQuery(), $project)->where('state', SprintState::Active->value)->first();
+    }
+
     /** Find a sprint by id or name (case-insensitive); 404 lists the project's sprints. */
     public function resolve(Project $project, string $ref): Sprint
     {

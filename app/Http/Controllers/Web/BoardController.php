@@ -9,12 +9,14 @@ use App\Http\Requests\Board\DeleteColumnRequest;
 use App\Http\Requests\Board\MoveIssueRequest;
 use App\Http\Resources\BoardResource;
 use App\Http\Resources\ProjectResource;
+use App\Http\Resources\SprintResource;
 use App\Models\Column;
 use App\Models\Project;
 use App\Services\BoardService;
 use App\Services\ColumnService;
 use App\Services\IssueService;
 use App\Services\ProjectService;
+use App\Services\SprintService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -27,16 +29,19 @@ class BoardController extends Controller
         private IssueService $issues,
         private BoardService $board,
         private ColumnService $columns,
+        private SprintService $sprints,
     ) {}
 
     public function show(BoardFilterRequest $request, Project $project): Response
     {
         Gate::authorize('view', $project);
         $filters = array_filter($request->validated());
+        $sprint = $this->sprints->active($project);
 
         return Inertia::render('Projects/Board', [
             'project' => (new ProjectResource($project))->resolve(),
             'board' => (new BoardResource($this->board->board($project, $filters)))->resolve(),
+            'active_sprint' => $sprint ? (new SprintResource($sprint))->resolve() : null,
             'filters' => (object) $filters,
             'options' => $this->projects->issueOptions($project),
             'can' => ['contribute' => $request->user()->can('contribute', $project)],

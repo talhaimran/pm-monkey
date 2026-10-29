@@ -125,3 +125,12 @@ Plan: docs/superpowers/plans/2026-10-29-ui-jira-redesign.md. Per-step security r
 - `AuthenticatedLayout` takes an optional `project`; with it, `ProjectNav` renders as a 240px left sidebar at `lg`+ and as a tab row under the top bar below that. `ProjectHeader` (same file) gives project pages breadcrumbs, a large title and actions.
 - Shortcut: the sidebar is not collapsible (`shortcut:` not needed in code, nothing half-built); add a toggle if people want more board width at 1024px.
 - Security review: layout only; user name/email render as text. No findings.
+
+### Step 3: board ✅
+- New prop `active_sprint` on `Projects/Board` from `SprintService::active()` (with issue/point stats), tested in `BoardMcpAndWebTest`. No other contract changes.
+- `CompleteSprintModal` moved out of Backlog into `Components/` (now used by Board and Backlog), unchanged in behaviour.
+- `IssueFilters` is a Jira toolbar: search, assignee avatar toggles (`aria-pressed`) plus "Unassigned", Type / Label / Priority / Sprint as gray pill selects that turn blue when set, "Clear filters".
+- Lanes: sunken background, `TO DO 3` headers, a check on the done column. Cards: title, label chips, type icon + key (struck through when done), points, priority, avatar. Dragging: tilted card with a brand outline, dashed placeholder in the source slot.
+- Decision: the board still shows all issues by default (unchanged behaviour). The title is the sprint name only when filtered to the active sprint; otherwise "KEY board" with a link to the sprint view, days left, and "Complete sprint".
+- Shortcut: every member gets an avatar toggle (fine for small teams; add "+N" overflow past ~10 members). Inline "+ Create issue" in columns not done (IssueFormModal has no preset status).
+- Security review: new prop goes through `Gate::authorize('view')` already on the route and only exposes the project's own sprint; text rendered as React text. No findings.

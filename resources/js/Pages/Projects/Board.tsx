@@ -1,9 +1,11 @@
 import Avatar from '@/Components/Avatar';
+import CompleteSprintModal from '@/Components/CompleteSprintModal';
 import IssueFilters, { Filters } from '@/Components/IssueFilters';
 import IssueFormModal from '@/Components/IssueFormModal';
 import IssueTypeIcon from '@/Components/IssueTypeIcon';
 import PriorityIcon from '@/Components/PriorityIcon';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton';
 import { ProjectHeader } from '@/Components/ProjectNav';
 import { useCreateShortcut } from '@/Components/useCreateShortcut';
 import { placement, useLaneDroppable, useSortableLanes } from '@/Components/useSortableLanes';
@@ -40,12 +42,14 @@ const toLanes = (board: BoardData) =>
 export default function Board({
     project,
     board,
+    active_sprint: sprint,
     filters,
     options,
     can,
 }: {
     project: Project;
     board: BoardData;
+    active_sprint: { id: number; name: string; goal: string | null; start_date: string | null; end_date: string | null } | null;
     filters: Filters;
     options: IssueOptions;
     can: { contribute: boolean };
@@ -59,9 +63,11 @@ export default function Board({
         ),
     );
     const [creating, setCreating] = useState(false);
+    const [completing, setCompleting] = useState(false);
     const openCreate = useCallback(() => setCreating(true), []);
     useCreateShortcut(openCreate, can.contribute);
     const columnNames = board.columns.map((c) => c.name);
+    const sprintOnly = !!sprint && (filters.sprint === 'active' || filters.sprint === sprint.name);
 
     const applyFilters = (next: Filters) =>
         router.get(
@@ -74,14 +80,28 @@ export default function Board({
         <AuthenticatedLayout
             project={project}
             header={
-                <ProjectHeader project={project} title={`${project.key} board`}>
+                // The board shows every issue unless filtered, so the sprint is the title only when the board is scoped to it.
+                <ProjectHeader project={project} title={sprintOnly ? sprint!.name : `${project.key} board`}>
+                    {sprint && (
+                        <span className="text-ink-subtle" title={sprint.end_date ? `${sprint.start_date} to ${sprint.end_date}` : undefined}>
+                            {!sprintOnly && (
+                                <Link href={route('projects.show', [project.key, { sprint: 'active' }])} className="font-medium text-brand hover:underline">
+                                    {sprint.name}
+                                </Link>
+                            )}
+                            {!sprintOnly && sprint.end_date && ' · '}
+                            {sprint.end_date && daysLeft(sprint.end_date)}
+                        </span>
+                    )}
+                    {sprint && can.contribute && <SecondaryButton onClick={() => setCompleting(true)}>Complete sprint</SecondaryButton>}
                     {can.contribute && <PrimaryButton onClick={openCreate}>Create issue</PrimaryButton>}
                 </ProjectHeader>
             }
         >
             <Head title={`${project.key} board`} />
 
-            <div className="px-4 py-4 sm:px-6 lg:px-8">
+            <div className="px-4 pb-4 sm:px-6">
+                {sprintOnly && sprint?.goal && <p className="-mt-1 mb-3 text-ink-subtle">{sprint.goal}</p>}
                 <div className="mb-4">
                     <IssueFilters
                         filters={filters}
@@ -93,21 +113,29 @@ export default function Board({
                 </div>
 
                 {board.truncated && (
-                    <p className="mb-3 rounded bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                    <p className="mb-3 rounded-[3px] bg-loz-progress px-3 py-2 text-loz-progress-ink">
                         Showing the first 500 issues. Use filters to narrow the board.
                     </p>
                 )}
 
                 <DndContext sensors={sensors} collisionDetection={closestCorners} {...handlers}>
-                    <div className="flex gap-4 overflow-x-auto pb-4">
+                    <div className="flex items-start gap-2 overflow-x-auto pb-4">
                         {columnNames.map((name) => (
-                            <Lane key={name} name={name} cards={lanes[name] ?? []} draggable={can.contribute} />
+                            <Lane key={name} name={name} done={name === columnNames.at(-1)} cards={lanes[name] ?? []} draggable={can.contribute} />
                         ))}
                     </div>
                     <DragOverlay>{active ? <CardView card={active} dragging /> : null}</DragOverlay>
                 </DndContext>
             </div>
 
+            {sprint && (
+                <CompleteSprintModal
+                    project={project}
+                    sprint={completing ? sprint : null}
+                    planned={options.sprints.filter((n) => n !== sprint.name)}
+                    onClose={() => setCompleting(false)}
+                />
+            )}
             {can.contribute && (
                 <IssueFormModal show={creating} onClose={() => setCreating(false)} projectKey={project.key} options={options} />
             )}
@@ -115,23 +143,33 @@ export default function Board({
     );
 }
 
-function Lane({ name, cards, draggable }: { name: string; cards: Card[]; draggable: boolean }) {
+const daysLeft = (end: string) => {
+    const days = Math.ceil((new Date(`${end}T23:59:59`).getTime() - Date.now()) / 86_400_000);
+    return days < 0 ? 'Sprint ended' : `${days} day${days === 1 ? '' : 's'} left`;
+};
+
+function Lane({ name, cards, done, draggable }: { name: string; cards: Card[]; done: boolean; draggable: boolean }) {
     const { setNodeRef, isOver } = useLaneDroppable(name);
 
     return (
         <section
             ref={setNodeRef}
             aria-label={`${name} column`}
-            className={`flex w-72 shrink-0 flex-col rounded-lg bg-gray-100 p-2 dark:bg-gray-800/60 ${isOver ? 'ring-2 ring-indigo-400' : ''}`}
+            className={`flex min-h-[calc(100vh-16rem)] w-[272px] shrink-0 flex-col rounded-md bg-sunken p-1.5 ${isOver ? 'outline outline-2 outline-brand' : ''}`}
         >
-            <h3 className="mb-2 flex items-center justify-between px-1 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
-                {name}
-                <span className="rounded-full bg-gray-200 px-2 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{cards.length}</span>
+            <h3 className="flex items-center gap-2 px-2 pb-2 pt-1.5 text-xs font-semibold uppercase text-ink-subtle">
+                <span className="truncate">{name}</span>
+                <span>{cards.length}</span>
+                {done && (
+                    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 text-success" aria-label="Done column">
+                        <path d="m3.5 8.5 3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                )}
             </h3>
             <SortableContext items={cards.map((c) => c.key)} strategy={verticalListSortingStrategy}>
-                <ul className="flex min-h-16 flex-col gap-2">
+                <ul className="flex min-h-16 flex-col gap-1">
                     {cards.map((card) => (
-                        <SortableCard key={card.key} card={card} disabled={!draggable} />
+                        <SortableCard key={card.key} card={card} done={done} disabled={!draggable} />
                     ))}
                 </ul>
             </SortableContext>
@@ -139,34 +177,31 @@ function Lane({ name, cards, draggable }: { name: string; cards: Card[]; draggab
     );
 }
 
-function SortableCard({ card, disabled }: { card: Card; disabled: boolean }) {
+function SortableCard({ card, done, disabled }: { card: Card; done: boolean; disabled: boolean }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.key, disabled });
 
     return (
-        <li
-            ref={setNodeRef}
-            style={{ transform: CSS.Transform.toString(transform), transition }}
-            className={isDragging ? 'opacity-40' : ''}
-            {...attributes}
-            {...listeners}
-        >
-            <CardView card={card} />
+        <li ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} {...attributes} {...listeners}>
+            {/* Jira leaves a sunken placeholder where the dragged card came from. */}
+            {isDragging ? <div className="h-20 rounded border-2 border-dashed border-line bg-sunken" /> : <CardView card={card} done={done} />}
         </li>
     );
 }
 
-function CardView({ card, dragging = false }: { card: Card; dragging?: boolean }) {
+function CardView({ card, done = false, dragging = false }: { card: Card; done?: boolean; dragging?: boolean }) {
     return (
         <div
-            className={`rounded-md bg-white p-3 text-sm shadow-sm dark:bg-gray-900 ${dragging ? 'rotate-2 shadow-lg ring-2 ring-indigo-400' : ''}`}
+            className={`rounded bg-raised p-3 text-ink shadow-card dark:shadow-none dark:ring-1 dark:ring-line hover:bg-sunken ${
+                dragging ? 'rotate-[3deg] shadow-xl outline outline-2 outline-brand' : ''
+            }`}
         >
-            <Link href={route('issues.show', card.key)} className="block font-medium text-gray-900 hover:underline dark:text-gray-100">
+            <Link href={route('issues.show', card.key)} className="block break-words hover:underline">
                 {card.title}
             </Link>
             {card.labels.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
                     {card.labels.map((l) => (
-                        <span key={l} className="rounded bg-gray-100 px-1.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                        <span key={l} className="max-w-full truncate rounded-[3px] border border-line px-1 text-xs text-ink-subtle">
                             {l}
                         </span>
                     ))}
@@ -174,10 +209,12 @@ function CardView({ card, dragging = false }: { card: Card; dragging?: boolean }
             )}
             <div className="mt-2 flex items-center gap-1.5 text-xs text-ink-subtle">
                 <IssueTypeIcon type={card.type} subtask={!!card.parent} />
-                <span className="font-semibold">{card.key}</span>
+                <span className={`font-semibold ${done ? 'line-through' : ''}`} title={card.parent ? `Sub-task of ${card.parent}` : undefined}>
+                    {card.key}
+                </span>
                 <span className="ml-auto flex items-center gap-1.5">
                     {card.story_points !== null && (
-                        <span className="rounded-full bg-neutral px-1.5 font-semibold text-ink" title="Story points">
+                        <span className="min-w-5 rounded-full bg-neutral px-1.5 text-center font-semibold text-ink" title="Story points">
                             {card.story_points}
                         </span>
                     )}

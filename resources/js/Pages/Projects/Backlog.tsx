@@ -1,3 +1,4 @@
+import CompleteSprintModal from '@/Components/CompleteSprintModal';
 import DangerButton from '@/Components/DangerButton';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -289,60 +290,6 @@ function SprintFormModal({ project, sprint, onClose }: { project: Project; sprin
                     <PrimaryButton disabled={form.processing}>{existing ? 'Save' : 'Create'}</PrimaryButton>
                 </div>
             </form>
-        </Modal>
-    );
-}
-
-function CompleteSprintModal({
-    project,
-    sprint,
-    planned,
-    onClose,
-}: {
-    project: Project;
-    sprint: SprintSection | null;
-    planned: string[];
-    onClose: () => void;
-}) {
-    const form = useForm({ confirm: true, move_open_issues_to: BACKLOG });
-
-    return (
-        <Modal show={sprint !== null} onClose={onClose}>
-            {sprint && (
-                <form
-                    className="space-y-4 p-6"
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        form.post(route('projects.sprints.complete', [project.key, sprint.id]), { preserveScroll: true, onSuccess: onClose });
-                    }}
-                >
-                    <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Complete {sprint.name}?</h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Done issues stay with the sprint. Unfinished issues move to the destination below. A completed sprint can't be reopened.
-                    </p>
-                    <div>
-                        <InputLabel htmlFor="move-to" value="Move unfinished issues to" />
-                        <select
-                            id="move-to"
-                            className={`${selectClass} mt-1 w-full`}
-                            value={form.data.move_open_issues_to}
-                            onChange={(e) => form.setData('move_open_issues_to', e.target.value)}
-                        >
-                            <option value={BACKLOG}>Backlog</option>
-                            {planned.map((name) => (
-                                <option key={name} value={name}>
-                                    {name}
-                                </option>
-                            ))}
-                        </select>
-                        <InputError className="mt-1" message={form.errors.move_open_issues_to ?? (form.errors as Record<string, string>).sprint} />
-                    </div>
-                    <div className="flex justify-end gap-3">
-                        <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
-                        <PrimaryButton disabled={form.processing}>Complete sprint</PrimaryButton>
-                    </div>
-                </form>
-            )}
         </Modal>
     );
 }
