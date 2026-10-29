@@ -34,6 +34,7 @@ test('issue page renders markdown safely', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('Issues/Show')
             ->where('issue.key', 'WEB-1')
+            ->where('project', ['key' => 'WEB', 'name' => $this->project->name])
             ->where('issue.description_html', fn ($html) => str_contains($html, '<strong>bold</strong>')
                 && ! str_contains($html, '<script>')
                 && ! str_contains($html, 'javascript:')));

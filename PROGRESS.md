@@ -134,3 +134,10 @@ Plan: docs/superpowers/plans/2026-10-29-ui-jira-redesign.md. Per-step security r
 - Decision: the board still shows all issues by default (unchanged behaviour). The title is the sprint name only when filtered to the active sprint; otherwise "KEY board" with a link to the sprint view, days left, and "Complete sprint".
 - Shortcut: every member gets an avatar toggle (fine for small teams; add "+N" overflow past ~10 members). Inline "+ Create issue" in columns not done (IssueFormModal has no preset status).
 - Security review: new prop goes through `Gate::authorize('view')` already on the route and only exposes the project's own sprint; text rendered as React text. No findings.
+
+### Step 4: issue page ✅
+- New prop `project` ({key, name}) on `Issues/Show` so the issue page gets the project sidebar and breadcrumbs; asserted in `IssueWebTest`.
+- Two columns. Left: breadcrumbs (Projects / name / epic or parent / key), click-to-edit summary, "+ Add sub-task", click-to-edit Description, Child issues / Issues in this epic with type icons and lozenges, Activity with "Comments" / "History" toggles and the comment box on top. Right: status as a lozenge-coloured select, "…" menu with Delete, bordered Details panel (Assignee, Reporter, Labels, Sprint, Story points, Priority, Due date, Epic or Parent, Type) using the existing inline saves, then Created / Updated.
+- History keeps the source: a "VIA API" / "VIA MCP" chip plus the token name. Web changes show no chip, as in Jira.
+- Shortcut: the issue stays a page, not a modal over the board (`?selectedIssue=`); add the modal if triaging from the board without leaving it is wanted. Comments stay oldest first.
+- Security review: both `dangerouslySetInnerHTML` sites unchanged and still fed only by server-side `Str::markdown` with `html_input=strip` and `allow_unsafe_links=false` (existing `IssueWebTest` covers `<script>` and `javascript:`). Label colours go into `style` only as `backgroundColor` from server-validated hex. New prop exposes the project's own key and name behind the existing issue resolve/visibility check. No findings.

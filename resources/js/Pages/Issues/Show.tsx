@@ -1,9 +1,15 @@
+import Avatar from '@/Components/Avatar';
 import DangerButton from '@/Components/DangerButton';
+import Dropdown from '@/Components/Dropdown';
 import InputError from '@/Components/InputError';
 import IssueFormModal, { selectClass } from '@/Components/IssueFormModal';
+import IssueTypeIcon from '@/Components/IssueTypeIcon';
 import Modal from '@/Components/Modal';
+import PriorityIcon from '@/Components/PriorityIcon';
 import PrimaryButton from '@/Components/PrimaryButton';
+import { ProjectHeader } from '@/Components/ProjectNav';
 import SecondaryButton from '@/Components/SecondaryButton';
+import StatusLozenge, { lozengeClass } from '@/Components/StatusLozenge';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { ActivityEntry, Comment, Issue, IssueLink, IssueOptions } from '@/types';
@@ -12,65 +18,75 @@ import { ReactNode, useState } from 'react';
 
 // Minimal Markdown styling without @tailwindcss/typography.
 const proseClass =
-    'text-sm text-gray-800 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_blockquote]:border-l-4 [&_blockquote]:pl-3 dark:text-gray-200 [&_a]:text-indigo-600 [&_code]:rounded [&_code]:bg-gray-100 [&_code]:px-1 dark:[&_code]:bg-gray-700 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_pre]:overflow-x-auto [&_ul]:list-disc [&_ul]:pl-5';
+    'break-words text-ink [&_a]:text-brand [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-line [&_blockquote]:pl-3 [&_code]:rounded [&_code]:bg-neutral [&_code]:px-1 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-sunken [&_pre]:p-2 [&_ul]:list-disc [&_ul]:pl-5';
+
+// Jira-style inline field: looks like text until hovered or focused.
+const inlineField = `${selectClass} w-full !border-transparent !bg-transparent hover:!bg-neutral focus:!border-brand focus:!bg-surface disabled:hover:!bg-transparent`;
 
 export default function Show({
     issue,
+    project,
     activity,
     options,
     can,
 }: {
     issue: Issue;
+    project: { key: string; name: string };
     activity: ActivityEntry[];
     options: IssueOptions;
     can: { contribute: boolean; manage: boolean };
 }) {
-    const errors = usePage().props.errors as Record<string, string>;
+    const page = usePage();
+    const errors = page.props.errors as Record<string, string>;
+    const me = page.props.auth.user;
     const [editingTitle, setEditingTitle] = useState(false);
     const [title, setTitle] = useState(issue.title);
     const [editingDescription, setEditingDescription] = useState(false);
     const [description, setDescription] = useState(issue.description ?? '');
     const [addingSubtask, setAddingSubtask] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
-    const [tab, setTab] = useState<'comments' | 'activity'>('comments');
+    const [tab, setTab] = useState<'comments' | 'history'>('comments');
     const comment = useForm({ body: '' });
 
     const save = (data: Record<string, unknown>, onSuccess?: () => void) =>
         router.patch(route('issues.update', issue.key), data as never, { preserveScroll: true, onSuccess });
 
-    const linkList = (title: string, items: IssueLink[] | undefined) =>
+    const linkList = (heading: string, items: IssueLink[] | undefined, subtasks = false) =>
         items && items.length > 0 ? (
-            <div>
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</h3>
-                <ul className="mt-2 divide-y divide-gray-100 rounded border border-gray-100 dark:divide-gray-700 dark:border-gray-700">
+            <section>
+                <h2 className="mb-2 font-semibold">{heading}</h2>
+                <ul className="divide-y divide-line rounded border border-line">
                     {items.map((s) => (
                         <li key={s.key}>
-                            <Link href={route('issues.show', s.key)} className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <span className="font-mono text-indigo-600 dark:text-indigo-400">{s.key}</span>
-                                <span className="flex-1 truncate text-gray-900 dark:text-gray-100">{s.title}</span>
-                                <span className="text-xs text-gray-500">{s.status}</span>
+                            <Link href={route('issues.show', s.key)} className="flex items-center gap-2 px-3 py-2 hover:bg-sunken">
+                                <IssueTypeIcon type={s.type ?? 'task'} subtask={subtasks} />
+                                <span className="shrink-0 text-ink-subtle">{s.key}</span>
+                                <span className="min-w-0 flex-1 truncate">{s.title}</span>
+                                {s.status && <StatusLozenge status={s.status} columns={options.columns} />}
                             </Link>
                         </li>
                     ))}
                 </ul>
-            </div>
+            </section>
         ) : null;
 
-    const sidebarField = (label: string, children: ReactNode, error?: string) => (
-        <div>
-            <dt className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">{label}</dt>
-            <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">{children}</dd>
-            <InputError className="mt-1" message={error} />
+    const field = (label: string, children: ReactNode, error?: string) => (
+        <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-start gap-2 py-1">
+            <dt className="pt-2 text-xs font-semibold text-ink-subtle">{label}</dt>
+            <dd className="min-h-8">
+                {children}
+                <InputError className="mt-1" message={error} />
+            </dd>
         </div>
     );
 
-    const picker = (field: string, value: string, choices: { value: string; label: string }[]) => (
+    const picker = (name: string, value: string, choices: { value: string; label: string }[], className = inlineField) => (
         <select
-            aria-label={field}
-            className={`${selectClass} w-full`}
+            aria-label={name}
+            className={className}
             value={value}
             disabled={!can.contribute}
-            onChange={(e) => save({ [field]: e.target.value === '' ? null : e.target.value })}
+            onChange={(e) => save({ [name]: e.target.value === '' ? null : e.target.value })}
         >
             {choices.map((c) => (
                 <option key={c.value} value={c.value}>
@@ -81,33 +97,18 @@ export default function Show({
     );
 
     const plain = (values: string[]) => values.map((v) => ({ value: v, label: v }));
+    const crumbs = [issue.epic, issue.parent].filter((l): l is IssueLink => !!l).map((l) => ({ label: l.key, href: route('issues.show', l.key) }));
 
     return (
         <AuthenticatedLayout
-            header={
-                <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                    <Link href={route('projects.show', issue.project)} className="font-mono hover:underline">
-                        {issue.project}
-                    </Link>
-                    {issue.epic && (
-                        <>
-                            / <Link href={route('issues.show', issue.epic.key)} className="hover:underline">{issue.epic.key}</Link>
-                        </>
-                    )}
-                    {issue.parent && (
-                        <>
-                            / <Link href={route('issues.show', issue.parent.key)} className="hover:underline">{issue.parent.key}</Link>
-                        </>
-                    )}
-                    / <span className="font-mono text-gray-800 dark:text-gray-200">{issue.key}</span>
-                </div>
-            }
+            project={project}
+            header={<ProjectHeader project={project} crumbs={[...crumbs, { label: issue.key, href: route('issues.show', issue.key) }]} />}
         >
             <Head title={`${issue.key} ${issue.title}`} />
 
-            <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-3 lg:px-8">
-                <div className="space-y-6 lg:col-span-2">
-                    <section className="space-y-4 rounded-lg bg-white p-4 shadow-sm sm:p-6 dark:bg-gray-800">
+            <div className="grid gap-8 px-4 pb-12 pt-2 sm:px-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+                <div className="min-w-0 space-y-6">
+                    <div>
                         {editingTitle ? (
                             <form
                                 onSubmit={(e) => {
@@ -116,72 +117,90 @@ export default function Show({
                                 }}
                                 className="flex gap-2"
                             >
-                                <TextInput className="flex-1 text-lg" value={title} onChange={(e) => setTitle(e.target.value)} isFocused required />
+                                <TextInput
+                                    aria-label="Summary"
+                                    className="flex-1 text-xl font-semibold"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Escape' && setEditingTitle(false)}
+                                    isFocused
+                                    required
+                                />
                                 <PrimaryButton>Save</PrimaryButton>
+                                <SecondaryButton onClick={() => setEditingTitle(false)}>Cancel</SecondaryButton>
                             </form>
                         ) : (
-                            <h1
-                                className={`text-xl font-semibold text-gray-900 dark:text-gray-100 ${can.contribute ? 'cursor-text' : ''}`}
-                                onClick={() => can.contribute && setEditingTitle(true)}
-                            >
-                                {issue.title}
+                            <h1 className="break-words text-2xl font-semibold">
+                                {can.contribute ? (
+                                    <button type="button" className="-mx-1 w-full rounded px-1 text-start hover:bg-neutral" onClick={() => setEditingTitle(true)} title="Edit summary">
+                                        {issue.title}
+                                    </button>
+                                ) : (
+                                    issue.title
+                                )}
                             </h1>
                         )}
                         <InputError message={errors.title} />
+                        {can.contribute && issue.type !== 'epic' && !issue.parent && (
+                            <SecondaryButton className="mt-3" onClick={() => setAddingSubtask(true)}>
+                                + Add sub-task
+                            </SecondaryButton>
+                        )}
+                    </div>
 
-                        <div>
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Description</h3>
-                                {can.contribute && !editingDescription && (
-                                    <button className="text-sm text-indigo-600 hover:underline dark:text-indigo-400" onClick={() => setEditingDescription(true)}>
-                                        Edit
-                                    </button>
-                                )}
-                            </div>
-                            {editingDescription ? (
-                                <div className="mt-2 space-y-2">
-                                    <textarea rows={8} className={`${selectClass} w-full font-mono`} value={description} onChange={(e) => setDescription(e.target.value)} />
-                                    <div className="flex gap-2">
-                                        <PrimaryButton onClick={() => save({ description: description || null }, () => setEditingDescription(false))}>
-                                            Save
-                                        </PrimaryButton>
-                                        <SecondaryButton onClick={() => setEditingDescription(false)}>Cancel</SecondaryButton>
-                                    </div>
-                                </div>
-                            ) : issue.description_html ? (
-                                <div className={proseClass} dangerouslySetInnerHTML={{ __html: issue.description_html }} />
-                            ) : (
-                                <p className="mt-2 text-sm italic text-gray-400">No description.</p>
-                            )}
-                        </div>
-
-                        {linkList('Issues in this epic', issue.epic_issues)}
-                        {issue.type !== 'epic' && !issue.parent && (
+                    <section>
+                        <h2 className="mb-1 font-semibold">Description</h2>
+                        {editingDescription ? (
                             <div className="space-y-2">
-                                {linkList('Sub-tasks', issue.subtasks)}
-                                {can.contribute && (
-                                    <SecondaryButton onClick={() => setAddingSubtask(true)}>Add sub-task</SecondaryButton>
+                                <textarea
+                                    rows={8}
+                                    aria-label="Description"
+                                    className={`${selectClass} w-full font-mono`}
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                />
+                                <div className="flex gap-2">
+                                    <PrimaryButton onClick={() => save({ description: description || null }, () => setEditingDescription(false))}>Save</PrimaryButton>
+                                    <SecondaryButton onClick={() => setEditingDescription(false)}>Cancel</SecondaryButton>
+                                </div>
+                            </div>
+                        ) : (
+                            <div
+                                className={`-mx-2 rounded px-2 py-1 ${can.contribute ? 'cursor-text hover:bg-sunken' : ''}`}
+                                onClick={() => can.contribute && setEditingDescription(true)}
+                            >
+                                {/* description_html is rendered server-side with html_input=strip and no unsafe links. */}
+                                {issue.description_html ? (
+                                    <div className={proseClass} dangerouslySetInnerHTML={{ __html: issue.description_html }} />
+                                ) : (
+                                    <p className="text-ink-subtle">{can.contribute ? 'Add a description…' : 'No description.'}</p>
                                 )}
                             </div>
                         )}
                     </section>
 
-                    <section className="rounded-lg bg-white p-4 shadow-sm sm:p-6 dark:bg-gray-800">
-                        <div className="flex gap-4 border-b border-gray-100 text-sm dark:border-gray-700">
-                            {(['comments', 'activity'] as const).map((t) => (
+                    {linkList('Issues in this epic', issue.epic_issues)}
+                    {linkList('Child issues', issue.subtasks, true)}
+
+                    <section>
+                        <h2 className="mb-2 font-semibold">Activity</h2>
+                        <div className="mb-4 flex items-center gap-1" role="tablist" aria-label="Activity">
+                            <span className="me-1 text-ink-subtle">Show:</span>
+                            {(['comments', 'history'] as const).map((t) => (
                                 <button
                                     key={t}
+                                    role="tab"
+                                    aria-selected={tab === t}
                                     onClick={() => setTab(t)}
-                                    className={`-mb-px border-b-2 pb-2 capitalize ${tab === t ? 'border-indigo-500 text-gray-900 dark:text-gray-100' : 'border-transparent text-gray-500'}`}
+                                    className={`h-7 rounded-[3px] px-2 font-medium ${tab === t ? 'bg-selected text-brand' : 'bg-neutral text-ink hover:bg-neutral-hover'}`}
                                 >
-                                    {t}
+                                    {t === 'comments' ? 'Comments' : 'History'}
                                 </button>
                             ))}
                         </div>
 
                         {tab === 'comments' ? (
-                            <div className="mt-4 space-y-4">
-                                {issue.comments?.map((c) => <CommentItem key={c.id} comment={c} canDelete={!!c.can_edit || can.manage} />)}
+                            <div className="space-y-5">
                                 {can.contribute && (
                                     <form
                                         onSubmit={(e) => {
@@ -191,20 +210,30 @@ export default function Show({
                                                 onSuccess: () => comment.reset(),
                                             });
                                         }}
-                                        className="space-y-2"
+                                        className="flex gap-3"
                                     >
-                                        <textarea
-                                            rows={3}
-                                            aria-label="Add a comment"
-                                            placeholder="Add a comment (Markdown)…"
-                                            className={`${selectClass} w-full`}
-                                            value={comment.data.body}
-                                            onChange={(e) => comment.setData('body', e.target.value)}
-                                        />
-                                        <InputError message={comment.errors.body} />
-                                        <PrimaryButton disabled={comment.processing || !comment.data.body.trim()}>Comment</PrimaryButton>
+                                        <Avatar name={me.name} email={me.email} size="md" />
+                                        <div className="flex-1 space-y-2">
+                                            <textarea
+                                                rows={comment.data.body ? 4 : 1}
+                                                aria-label="Add a comment"
+                                                placeholder="Add a comment… (Markdown)"
+                                                className={`${selectClass} w-full`}
+                                                value={comment.data.body}
+                                                onChange={(e) => comment.setData('body', e.target.value)}
+                                            />
+                                            <InputError message={comment.errors.body} />
+                                            {comment.data.body && (
+                                                <div className="flex gap-2">
+                                                    <PrimaryButton disabled={comment.processing || !comment.data.body.trim()}>Save</PrimaryButton>
+                                                    <SecondaryButton onClick={() => comment.reset()}>Cancel</SecondaryButton>
+                                                </div>
+                                            )}
+                                        </div>
                                     </form>
                                 )}
+                                {issue.comments?.length === 0 && !can.contribute && <p className="text-ink-subtle">No comments yet.</p>}
+                                {issue.comments?.map((c) => <CommentItem key={c.id} comment={c} canDelete={!!c.can_edit || can.manage} />)}
                             </div>
                         ) : (
                             <ActivityList entries={activity} />
@@ -212,128 +241,187 @@ export default function Show({
                     </section>
                 </div>
 
-                <aside className="space-y-4 rounded-lg bg-white p-4 shadow-sm sm:p-6 dark:bg-gray-800">
-                    <dl className="space-y-4">
-                        {sidebarField('Status', picker('status', issue.status, plain(options.columns)), errors.status)}
-                        {sidebarField(
-                            'Type',
-                            picker('type', issue.type, plain(issue.parent ? options.types.filter((t) => t !== 'epic') : options.types)),
-                            errors.type,
+                <aside className="space-y-4 lg:pt-1">
+                    <div className="flex items-center gap-2">
+                        {picker(
+                            'status',
+                            issue.status,
+                            plain(options.columns),
+                            `rounded-[3px] border-0 py-1.5 ps-3 pe-8 text-sm font-semibold focus:ring-2 focus:ring-brand disabled:opacity-100 ${lozengeClass(issue.status, options.columns)}`,
                         )}
-                        {sidebarField('Priority', picker('priority', issue.priority, plain(options.priorities)), errors.priority)}
-                        {sidebarField(
-                            'Sprint',
-                            picker('sprint', issue.sprint?.state === 'completed' ? '' : (issue.sprint?.name ?? ''), [
-                                { value: '', label: issue.sprint?.state === 'completed' ? `${issue.sprint.name} (completed)` : 'Backlog' },
-                                ...plain(options.sprints),
-                            ]),
-                            errors.sprint,
-                        )}
-                        {sidebarField(
-                            'Assignee',
-                            picker('assignee', issue.assignee?.email ?? '', [
-                                { value: '', label: 'Unassigned' },
-                                ...options.members.map((m) => ({ value: m.email, label: m.name })),
-                            ]),
-                            errors.assignee,
-                        )}
-                        {sidebarField(
-                            'Labels',
-                            <div className="flex flex-wrap gap-2">
-                                {options.labels.length === 0 && <span className="text-gray-400">No labels in project</span>}
-                                {options.labels.map((l) => {
-                                    const on = issue.labels.includes(l.name);
-                                    return (
-                                        <button
-                                            key={l.id}
-                                            type="button"
-                                            disabled={!can.contribute}
-                                            onClick={() => save({ labels: on ? issue.labels.filter((n) => n !== l.name) : [...issue.labels, l.name] })}
-                                            className={`rounded-full border px-2 py-0.5 text-xs ${on ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`}
-                                            style={on ? { backgroundColor: l.color, borderColor: l.color } : { borderColor: l.color }}
-                                            aria-pressed={on}
-                                        >
-                                            {l.name}
+                        {can.contribute && (
+                            <div className="ms-auto">
+                                <Dropdown>
+                                    <Dropdown.Trigger>
+                                        <button type="button" aria-label="More actions" className="flex h-8 w-8 items-center justify-center rounded-[3px] text-ink-subtle hover:bg-neutral">
+                                            <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true">
+                                                <circle cx="3" cy="8" r="1.5" fill="currentColor" />
+                                                <circle cx="8" cy="8" r="1.5" fill="currentColor" />
+                                                <circle cx="13" cy="8" r="1.5" fill="currentColor" />
+                                            </svg>
                                         </button>
-                                    );
-                                })}
-                            </div>,
-                            errors.labels,
+                                    </Dropdown.Trigger>
+                                    <Dropdown.Content>
+                                        <button
+                                            type="button"
+                                            className="block w-full border-l-2 border-transparent px-4 py-2 text-start text-danger hover:border-danger hover:bg-sunken"
+                                            onClick={() => setConfirmingDelete(true)}
+                                        >
+                                            Delete
+                                        </button>
+                                    </Dropdown.Content>
+                                </Dropdown>
+                            </div>
                         )}
-                        {sidebarField(
-                            'Story points',
-                            <TextInput
-                                type="number"
-                                min={0}
-                                className="w-full"
-                                defaultValue={issue.story_points ?? ''}
-                                disabled={!can.contribute}
-                                onBlur={(e) => {
-                                    const v = e.target.value === '' ? null : Number(e.target.value);
-                                    if (v !== issue.story_points) save({ story_points: v });
-                                }}
-                            />,
-                            errors.story_points,
-                        )}
-                        {sidebarField(
-                            'Due date',
-                            <TextInput
-                                type="date"
-                                className="w-full"
-                                defaultValue={issue.due_date ?? ''}
-                                disabled={!can.contribute}
-                                onChange={(e) => save({ due_date: e.target.value || null })}
-                            />,
-                            errors.due_date,
-                        )}
-                        {issue.type !== 'epic' &&
-                            sidebarField(
-                                'Epic',
+                    </div>
+                    <InputError message={errors.status} />
+
+                    <section className="rounded border border-line">
+                        <h2 className="border-b border-line px-4 py-3 font-semibold">Details</h2>
+                        <dl className="px-4 py-2">
+                            {field(
+                                'Assignee',
+                                <div className="flex items-center gap-1">
+                                    {issue.assignee && <Avatar name={issue.assignee.name} email={issue.assignee.email} />}
+                                    {picker('assignee', issue.assignee?.email ?? '', [
+                                        { value: '', label: 'Unassigned' },
+                                        ...options.members.map((m) => ({ value: m.email, label: m.name })),
+                                    ])}
+                                </div>,
+                                errors.assignee,
+                            )}
+                            {field(
+                                'Reporter',
+                                issue.reporter ? (
+                                    <span className="flex items-center gap-2 pt-1">
+                                        <Avatar name={issue.reporter.name} email={issue.reporter.email} />
+                                        {issue.reporter.name}
+                                    </span>
+                                ) : (
+                                    <span className="block pt-2 text-ink-subtle">None</span>
+                                ),
+                            )}
+                            {field(
+                                'Labels',
+                                <div className="flex flex-wrap gap-1 pt-1.5">
+                                    {options.labels.length === 0 && <span className="text-ink-subtle">None</span>}
+                                    {options.labels.map((l) => {
+                                        const on = issue.labels.includes(l.name);
+                                        return (
+                                            <button
+                                                key={l.id}
+                                                type="button"
+                                                disabled={!can.contribute}
+                                                onClick={() => save({ labels: on ? issue.labels.filter((n) => n !== l.name) : [...issue.labels, l.name] })}
+                                                className={`max-w-full truncate rounded-[3px] border px-1.5 text-xs ${on ? 'border-transparent bg-neutral-hover text-ink' : 'border-dashed border-line text-ink-subtle hover:text-ink'}`}
+                                                aria-pressed={on}
+                                                title={on ? `Remove ${l.name}` : `Add ${l.name}`}
+                                            >
+                                                <span className="me-1 inline-block h-2 w-2 rounded-full" style={{ backgroundColor: l.color }} />
+                                                {l.name}
+                                            </button>
+                                        );
+                                    })}
+                                </div>,
+                                errors.labels,
+                            )}
+                            {field(
+                                'Sprint',
+                                picker('sprint', issue.sprint?.state === 'completed' ? '' : (issue.sprint?.name ?? ''), [
+                                    { value: '', label: issue.sprint?.state === 'completed' ? `${issue.sprint.name} (completed)` : 'None' },
+                                    ...plain(options.sprints),
+                                ]),
+                                errors.sprint,
+                            )}
+                            {field(
+                                'Story points',
                                 <TextInput
-                                    className="w-full font-mono"
-                                    placeholder={`${issue.project}-1`}
-                                    defaultValue={issue.epic?.key ?? ''}
+                                    type="number"
+                                    min={0}
+                                    aria-label="Story points"
+                                    className={`${inlineField} py-1.5`}
+                                    placeholder="None"
+                                    defaultValue={issue.story_points ?? ''}
                                     disabled={!can.contribute}
                                     onBlur={(e) => {
-                                        const v = e.target.value.trim() || null;
-                                        if (v !== (issue.epic?.key ?? null)) save({ epic: v });
+                                        const v = e.target.value === '' ? null : Number(e.target.value);
+                                        if (v !== issue.story_points) save({ story_points: v });
                                     }}
                                 />,
-                                errors.epic,
+                                errors.story_points,
                             )}
-                        {sidebarField('Reporter', issue.reporter?.name ?? '—')}
-                        {sidebarField('Created', new Date(issue.created_at).toLocaleString())}
-                    </dl>
-                    <InputError message={errors.parent} />
-                    {can.contribute && (
-                        <DangerButton className="w-full justify-center" onClick={() => setConfirmingDelete(true)}>
-                            Delete issue
-                        </DangerButton>
-                    )}
+                            {field(
+                                'Priority',
+                                <div className="flex items-center gap-1">
+                                    <PriorityIcon priority={issue.priority} className="ms-1" />
+                                    {picker('priority', issue.priority, plain(options.priorities))}
+                                </div>,
+                                errors.priority,
+                            )}
+                            {field(
+                                'Due date',
+                                <TextInput
+                                    type="date"
+                                    aria-label="Due date"
+                                    className={`${inlineField} py-1.5`}
+                                    defaultValue={issue.due_date ?? ''}
+                                    disabled={!can.contribute}
+                                    onChange={(e) => save({ due_date: e.target.value || null })}
+                                />,
+                                errors.due_date,
+                            )}
+                            {issue.type !== 'epic' &&
+                                field(
+                                    issue.parent ? 'Parent' : 'Epic',
+                                    issue.parent ? (
+                                        <Link href={route('issues.show', issue.parent.key)} className="block truncate pt-2 text-brand hover:underline">
+                                            {issue.parent.key} {issue.parent.title}
+                                        </Link>
+                                    ) : (
+                                        <TextInput
+                                            aria-label="Epic key"
+                                            className={`${inlineField} py-1.5`}
+                                            placeholder={`None (e.g. ${issue.project}-1)`}
+                                            defaultValue={issue.epic?.key ?? ''}
+                                            disabled={!can.contribute}
+                                            onBlur={(e) => {
+                                                const v = e.target.value.trim() || null;
+                                                if (v !== (issue.epic?.key ?? null)) save({ epic: v });
+                                            }}
+                                        />
+                                    ),
+                                    errors.epic ?? errors.parent,
+                                )}
+                            {field(
+                                'Type',
+                                <div className="flex items-center gap-1">
+                                    <IssueTypeIcon type={issue.type} subtask={!!issue.parent} className="ms-1" />
+                                    {picker('type', issue.type, plain(issue.parent ? options.types.filter((t) => t !== 'epic') : options.types))}
+                                </div>,
+                                errors.type,
+                            )}
+                        </dl>
+                    </section>
+
+                    <p className="text-xs text-ink-subtle">
+                        Created {new Date(issue.created_at).toLocaleString()}
+                        <br />
+                        Updated {new Date(issue.updated_at).toLocaleString()}
+                    </p>
                 </aside>
             </div>
 
             {can.contribute && (
-                <IssueFormModal
-                    show={addingSubtask}
-                    onClose={() => setAddingSubtask(false)}
-                    projectKey={issue.project}
-                    options={options}
-                    parent={issue.key}
-                />
+                <IssueFormModal show={addingSubtask} onClose={() => setAddingSubtask(false)} projectKey={issue.project} options={options} parent={issue.key} />
             )}
 
             <Modal show={confirmingDelete} onClose={() => setConfirmingDelete(false)}>
                 <div className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Delete {issue.key}?</h2>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                        This also deletes its sub-tasks, comments and history. It cannot be undone.
-                    </p>
-                    <div className="mt-6 flex justify-end gap-3">
+                    <h2 className="text-xl font-semibold">Delete {issue.key}?</h2>
+                    <p className="mt-2 text-ink-subtle">This also deletes its sub-tasks, comments and history. It cannot be undone.</p>
+                    <div className="mt-6 flex justify-end gap-2">
                         <SecondaryButton onClick={() => setConfirmingDelete(false)}>Cancel</SecondaryButton>
-                        <DangerButton onClick={() => router.delete(route('issues.destroy', issue.key), { data: { confirm: true } })}>
-                            Delete
-                        </DangerButton>
+                        <DangerButton onClick={() => router.delete(route('issues.destroy', issue.key), { data: { confirm: true } })}>Delete</DangerButton>
                     </div>
                 </div>
             </Modal>
@@ -346,71 +434,81 @@ function CommentItem({ comment, canDelete }: { comment: Comment; canDelete: bool
     const form = useForm({ body: comment.body });
 
     return (
-        <div className="rounded border border-gray-100 p-3 dark:border-gray-700">
-            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                <span>
-                    <strong className="text-gray-700 dark:text-gray-300">{comment.author?.name ?? 'Deleted user'}</strong> ·{' '}
-                    {new Date(comment.created_at).toLocaleString()}
-                </span>
-                <span className="flex gap-3">
-                    {comment.can_edit && !editing && (
-                        <button className="hover:underline" onClick={() => setEditing(true)}>
-                            Edit
-                        </button>
-                    )}
-                    {canDelete && (
-                        <button
-                            className="text-red-600 hover:underline"
-                            onClick={() => router.delete(route('comments.destroy', comment.id), { preserveScroll: true })}
-                        >
-                            Delete
-                        </button>
-                    )}
-                </span>
-            </div>
-            {editing ? (
-                <form
-                    className="mt-2 space-y-2"
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        form.patch(route('comments.update', comment.id), { preserveScroll: true, onSuccess: () => setEditing(false) });
-                    }}
-                >
-                    <textarea rows={3} aria-label="Edit comment" className={`${selectClass} w-full`} value={form.data.body} onChange={(e) => form.setData('body', e.target.value)} />
-                    <div className="flex gap-2">
-                        <PrimaryButton disabled={form.processing}>Save</PrimaryButton>
-                        <SecondaryButton onClick={() => setEditing(false)}>Cancel</SecondaryButton>
+        <div className="flex gap-3">
+            {comment.author ? <Avatar name={comment.author.name} email={comment.author.email} size="md" /> : <span className="h-8 w-8 shrink-0 rounded-full bg-neutral" />}
+            <div className="min-w-0 flex-1">
+                <div className="text-ink-subtle">
+                    <strong className="font-semibold text-ink">{comment.author?.name ?? 'Deleted user'}</strong>{' '}
+                    <span className="text-xs">{new Date(comment.created_at).toLocaleString()}</span>
+                </div>
+                {editing ? (
+                    <form
+                        className="mt-1 space-y-2"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            form.patch(route('comments.update', comment.id), { preserveScroll: true, onSuccess: () => setEditing(false) });
+                        }}
+                    >
+                        <textarea rows={3} aria-label="Edit comment" className={`${selectClass} w-full`} value={form.data.body} onChange={(e) => form.setData('body', e.target.value)} />
+                        <div className="flex gap-2">
+                            <PrimaryButton disabled={form.processing}>Save</PrimaryButton>
+                            <SecondaryButton onClick={() => setEditing(false)}>Cancel</SecondaryButton>
+                        </div>
+                    </form>
+                ) : (
+                    // body_html is rendered server-side with html_input=strip and no unsafe links.
+                    <div className={proseClass} dangerouslySetInnerHTML={{ __html: comment.body_html ?? '' }} />
+                )}
+                {!editing && (comment.can_edit || canDelete) && (
+                    <div className="flex gap-3 text-xs font-medium text-ink-subtle">
+                        {comment.can_edit && (
+                            <button className="hover:underline" onClick={() => setEditing(true)}>
+                                Edit
+                            </button>
+                        )}
+                        {canDelete && (
+                            <button className="hover:underline" onClick={() => router.delete(route('comments.destroy', comment.id), { preserveScroll: true })}>
+                                Delete
+                            </button>
+                        )}
                     </div>
-                </form>
-            ) : (
-                <div className={`${proseClass} mt-1`} dangerouslySetInnerHTML={{ __html: comment.body_html ?? '' }} />
-            )}
+                )}
+            </div>
         </div>
     );
 }
 
 function ActivityList({ entries }: { entries: ActivityEntry[] }) {
-    const show = (v: unknown) => (v === null || v === undefined || v === '' ? 'none' : String(v));
+    const show = (v: unknown) => (v === null || v === undefined || v === '' ? 'None' : String(v));
+
+    if (entries.length === 0) return <p className="text-ink-subtle">No history yet.</p>;
 
     return (
-        <ul className="mt-4 space-y-3 text-sm">
+        <ul className="space-y-4">
             {entries.map((a) => (
-                <li key={a.id} className="text-gray-700 dark:text-gray-300">
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                        <strong className="text-gray-700 dark:text-gray-300">{a.user?.name ?? 'Someone'}</strong> {a.action} ·{' '}
-                        {new Date(a.created_at).toLocaleString()} ·{' '}
-                        <span className="rounded bg-gray-100 px-1 uppercase dark:bg-gray-700">{a.via}</span>
-                        {a.token_name && <span> token “{a.token_name}”</span>}
+                <li key={a.id} className="flex gap-3">
+                    {a.user ? <Avatar name={a.user.name} email={a.user.email} size="md" /> : <span className="h-8 w-8 shrink-0 rounded-full bg-neutral" />}
+                    <div className="min-w-0 flex-1">
+                        <div className="text-ink-subtle">
+                            <strong className="font-semibold text-ink">{a.user?.name ?? 'Someone'}</strong> {a.action}{' '}
+                            <span className="text-xs">{new Date(a.created_at).toLocaleString()}</span>
+                            {a.via !== 'web' && (
+                                <span className="ms-2 inline-block rounded-[3px] bg-loz-progress px-1 text-[11px] font-bold uppercase text-loz-progress-ink">
+                                    via {a.via}
+                                </span>
+                            )}
+                            {a.token_name && <span className="ms-1 text-xs">token “{a.token_name}”</span>}
+                        </div>
+                        {a.changes && (
+                            <ul className="mt-1 space-y-0.5">
+                                {Object.entries(a.changes).map(([name, c]) => (
+                                    <li key={name} className="break-words">
+                                        <span className="font-medium capitalize">{name.replace('_', ' ')}</span>: {show(c.from)} → {show(c.to)}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </div>
-                    {a.changes && (
-                        <ul className="mt-1 space-y-0.5 pl-3">
-                            {Object.entries(a.changes).map(([field, c]) => (
-                                <li key={field}>
-                                    <span className="font-medium">{field.replace('_', ' ')}</span>: {show(c.from)} → {show(c.to)}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
                 </li>
             ))}
         </ul>

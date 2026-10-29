@@ -50,6 +50,7 @@ class IssueController extends Controller
 
         return Inertia::render('Issues/Show', [
             'issue' => $data,
+            'project' => ['key' => $issue->project->key, 'name' => $issue->project->name],
             'activity' => ActivityResource::collection($issue->activities()->with('user')->latest('id')->limit(50)->get())->resolve(),
             'options' => $this->projects->issueOptions($issue->project),
             'can' => [
