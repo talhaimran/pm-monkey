@@ -45,4 +45,7 @@ SPEC.md is the source of truth. PROGRESS.md logs slice progress and decisions ma
 - Real-process tests live in `tests/Integration` (DatabaseTruncation, not RefreshDatabase, so spawned processes see committed rows).
 
 ## Per-slice checklist
-migrate → Pest suite green → `npm run build` → update PROGRESS.md → git commit.
+migrate → Pest suite green → `npm run build` → security review of the diff → update PROGRESS.md → git commit.
+
+## Security review (every slice/step)
+Run the claude-security plugin's "scan changes" on the diff. If it's unavailable, review the diff yourself for: authz/Policy gaps, API token scope and read-only bypasses, cross-project data leaks, mass assignment, XSS (rendered Markdown, dangerouslySetInnerHTML, user-supplied names/labels/comments), CSRF, injection, and secrets in code or logs. Prove each real finding with a failing test first, fix it, keep the test in tests/Feature/Security/, and log it in PROGRESS.md. Never commit with an open high or critical finding.
