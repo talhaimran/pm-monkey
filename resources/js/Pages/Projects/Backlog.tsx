@@ -5,7 +5,7 @@ import IssueFormModal, { selectClass } from '@/Components/IssueFormModal';
 import Modal from '@/Components/Modal';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
-import ProjectNav from '@/Components/ProjectNav';
+import { ProjectHeader } from '@/Components/ProjectNav';
 import TextInput from '@/Components/TextInput';
 import { useCreateShortcut } from '@/Components/useCreateShortcut';
 import { placement, useLaneDroppable, useSortableLanes } from '@/Components/useSortableLanes';
@@ -75,11 +75,12 @@ export default function Backlog({
 
     return (
         <AuthenticatedLayout
+            project={project}
             header={
-                <ProjectNav projectKey={project.key} name={project.name}>
+                <ProjectHeader project={project} title="Backlog">
                     {can.contribute && <SecondaryButton onClick={() => setEditing('new')}>Create sprint</SecondaryButton>}
                     {can.contribute && <PrimaryButton onClick={openCreate}>Create issue</PrimaryButton>}
-                </ProjectNav>
+                </ProjectHeader>
             }
         >
             <Head title={`${project.key} backlog`} />

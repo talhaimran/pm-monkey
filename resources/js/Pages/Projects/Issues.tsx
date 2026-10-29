@@ -3,7 +3,7 @@ import IssueFormModal from '@/Components/IssueFormModal';
 import IssueTable from '@/Components/IssueTable';
 import Pagination, { Paginated } from '@/Components/Pagination';
 import PrimaryButton from '@/Components/PrimaryButton';
-import ProjectNav from '@/Components/ProjectNav';
+import { ProjectHeader } from '@/Components/ProjectNav';
 import { useCreateShortcut } from '@/Components/useCreateShortcut';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Issue, IssueOptions, Project } from '@/types';
@@ -37,10 +37,11 @@ export default function Issues({
 
     return (
         <AuthenticatedLayout
+            project={project}
             header={
-                <ProjectNav projectKey={project.key} name={project.name}>
+                <ProjectHeader project={project} title="Issues">
                     {can.contribute && <PrimaryButton onClick={openCreate}>Create issue</PrimaryButton>}
-                </ProjectNav>
+                </ProjectHeader>
             }
         >
             <Head title={`${project.key} issues`} />

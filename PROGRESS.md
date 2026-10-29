@@ -118,3 +118,10 @@ Plan: docs/superpowers/plans/2026-10-29-ui-jira-redesign.md. Per-step security r
 - Breeze buttons: 32px, 3px radius, sentence case. Primary = brand, Secondary = neutral gray, Danger = red.
 - New shared components: IssueTypeIcon (sub-task wins over type), PriorityIcon, StatusLozenge (first column gray, last green, others blue; gray without columns), Avatar (initials, colour from email).
 - Security review: presentational only; Avatar/labels render as React text, no new HTML injection. No findings.
+
+### Step 2: app shell ✅
+- 56px top bar: logo + "PM Monkey", Your work, Projects, "+ Create", search with a `/` hint, theme toggle, avatar menu (Profile, API tokens, Log out).
+- "+ Create" and "c" share `requestCreate()`: a cancelable `pm:create-issue` event that page listeners (`useCreateShortcut`) claim with `preventDefault()`. Unclaimed (no project page, or a Viewer): "+ Create" goes to Projects, where you can create a project; "c" still does nothing.
+- `AuthenticatedLayout` takes an optional `project`; with it, `ProjectNav` renders as a 240px left sidebar at `lg`+ and as a tab row under the top bar below that. `ProjectHeader` (same file) gives project pages breadcrumbs, a large title and actions.
+- Shortcut: the sidebar is not collapsible (`shortcut:` not needed in code, nothing half-built); add a toggle if people want more board width at 1024px.
+- Security review: layout only; user name/email render as text. No findings.

@@ -4,7 +4,7 @@ import IssueFormModal from '@/Components/IssueFormModal';
 import IssueTypeIcon from '@/Components/IssueTypeIcon';
 import PriorityIcon from '@/Components/PriorityIcon';
 import PrimaryButton from '@/Components/PrimaryButton';
-import ProjectNav from '@/Components/ProjectNav';
+import { ProjectHeader } from '@/Components/ProjectNav';
 import { useCreateShortcut } from '@/Components/useCreateShortcut';
 import { placement, useLaneDroppable, useSortableLanes } from '@/Components/useSortableLanes';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -72,10 +72,11 @@ export default function Board({
 
     return (
         <AuthenticatedLayout
+            project={project}
             header={
-                <ProjectNav projectKey={project.key} name={project.name}>
+                <ProjectHeader project={project} title={`${project.key} board`}>
                     {can.contribute && <PrimaryButton onClick={openCreate}>Create issue</PrimaryButton>}
-                </ProjectNav>
+                </ProjectHeader>
             }
         >
             <Head title={`${project.key} board`} />

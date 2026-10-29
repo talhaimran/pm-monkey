@@ -4,7 +4,7 @@ import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
 import { selectClass } from '@/Components/IssueFormModal';
 import PrimaryButton from '@/Components/PrimaryButton';
-import ProjectNav from '@/Components/ProjectNav';
+import { ProjectHeader } from '@/Components/ProjectNav';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -70,9 +70,8 @@ export default function Settings({
 
     return (
         <AuthenticatedLayout
-            header={
-                <ProjectNav projectKey={project.key} name={project.name} />
-            }
+            project={project}
+            header={<ProjectHeader project={project} title="Project settings" />}
         >
             <Head title={`${project.key} settings`} />
 
