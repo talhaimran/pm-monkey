@@ -108,3 +108,13 @@
 - **Token expiry:** tokens can expire in 30, 90 (default in the UI) or 365 days, or never (`expires_in_days`, max 365). Sanctum rejects expired tokens on REST and `/mcp`, and `LocalPmServer` rejects them on stdio. The tokens page shows the expiry, or "Expired".
 - Each finding was proven with a throwaway exploit test first, and now has a regression test in `tests/Feature/Security/HardeningTest.php`.
 - Not changed: unauthenticated API/MCP calls aren't throttled (auth runs first; tokens are 40 random characters, so guessing isn't feasible), and production settings (debug, secure cookies, open registration) are documented in the README instead of hard-coded.
+
+## UI: Jira-style redesign
+Plan: docs/superpowers/plans/2026-10-29-ui-jira-redesign.md. Per-step security review is manual against the CLAUDE.md checklist; the claude-security plugin runs once at the end (user's call).
+
+### Step 1: tokens and shared components ✅
+- Colour tokens live in `tailwind.config.js` as `[light, dark]` pairs, emitted as CSS variables (`:root` / `.dark`) and exposed as Tailwind colours (`bg-surface`, `text-ink`, `bg-brand`…), so one class covers both themes. Extra tokens beyond the brief: `raised`, `neutral`, `input-line`, `on-brand` and lozenge pairs, using Atlassian-like values.
+- Figtree removed; system font stack; body is 14px via `text-sm` on `body` rather than shrinking `html`, so rem spacing stays the same.
+- Breeze buttons: 32px, 3px radius, sentence case. Primary = brand, Secondary = neutral gray, Danger = red.
+- New shared components: IssueTypeIcon (sub-task wins over type), PriorityIcon, StatusLozenge (first column gray, last green, others blue; gray without columns), Avatar (initials, colour from email).
+- Security review: presentational only; Avatar/labels render as React text, no new HTML injection. No findings.

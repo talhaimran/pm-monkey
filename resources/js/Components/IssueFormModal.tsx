@@ -9,7 +9,7 @@ import { useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
 export const selectClass =
-    'rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300';
+    'rounded-[3px] border-input-line bg-surface text-sm text-ink placeholder:text-ink-subtle hover:bg-sunken focus:border-brand focus:bg-surface focus:ring-1 focus:ring-brand py-1.5 pe-8';
 
 export default function IssueFormModal({
     show,

@@ -1,5 +1,8 @@
+import Avatar from '@/Components/Avatar';
 import IssueFilters, { Filters } from '@/Components/IssueFilters';
 import IssueFormModal from '@/Components/IssueFormModal';
+import IssueTypeIcon from '@/Components/IssueTypeIcon';
+import PriorityIcon from '@/Components/PriorityIcon';
 import PrimaryButton from '@/Components/PrimaryButton';
 import ProjectNav from '@/Components/ProjectNav';
 import { useCreateShortcut } from '@/Components/useCreateShortcut';
@@ -30,20 +33,6 @@ interface BoardData {
     truncated: boolean;
 }
 
-
-const typeColors: Record<string, string> = {
-    bug: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
-    story: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
-    task: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
-};
-
-const priorityArrows: Record<string, string> = {
-    lowest: '⇊',
-    low: '↓',
-    medium: '=',
-    high: '↑',
-    highest: '⇈',
-};
 
 const toLanes = (board: BoardData) =>
     Object.fromEntries(board.columns.map((c) => [c.name, c.issues])) as Record<string, Card[]>;
@@ -182,31 +171,17 @@ function CardView({ card, dragging = false }: { card: Card; dragging?: boolean }
                     ))}
                 </div>
             )}
-            <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                <span className={`rounded px-1.5 uppercase ${typeColors[card.type] ?? ''}`}>{card.type}</span>
-                <span className="font-mono">{card.key}</span>
-                {card.parent && <span title={`Sub-task of ${card.parent}`}>↳ {card.parent}</span>}
-                <span className="ml-auto flex items-center gap-2">
-                    <span title={`Priority: ${card.priority}`} aria-label={`Priority ${card.priority}`}>
-                        {priorityArrows[card.priority]}
-                    </span>
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-ink-subtle">
+                <IssueTypeIcon type={card.type} subtask={!!card.parent} />
+                <span className="font-semibold">{card.key}</span>
+                <span className="ml-auto flex items-center gap-1.5">
                     {card.story_points !== null && (
-                        <span className="rounded-full bg-gray-200 px-1.5 dark:bg-gray-700" title="Story points">
+                        <span className="rounded-full bg-neutral px-1.5 font-semibold text-ink" title="Story points">
                             {card.story_points}
                         </span>
                     )}
-                    {card.assignee && (
-                        <span
-                            className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200"
-                            title={card.assignee.name}
-                        >
-                            {card.assignee.name
-                                .split(' ')
-                                .map((p) => p[0])
-                                .slice(0, 2)
-                                .join('')}
-                        </span>
-                    )}
+                    <PriorityIcon priority={card.priority} />
+                    {card.assignee && <Avatar name={card.assignee.name} email={card.assignee.email} />}
                 </span>
             </div>
         </div>
