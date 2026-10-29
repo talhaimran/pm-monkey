@@ -65,8 +65,8 @@ export default function Settings({
             preserveScroll: true,
         });
 
-    const card = 'rounded-lg bg-white p-4 shadow-sm sm:p-6 dark:bg-gray-800';
-    const heading = 'font-medium text-gray-900 dark:text-gray-100';
+    const card = 'rounded border border-line bg-surface p-4 sm:p-6 ';
+    const heading = 'text-base font-semibold text-ink ';
 
     return (
         <AuthenticatedLayout
@@ -75,7 +75,7 @@ export default function Settings({
         >
             <Head title={`${project.key} settings`} />
 
-            <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+            <div className="max-w-4xl space-y-6 px-4 pb-10 sm:px-6">
                 <section className={card}>
                     <h3 className={heading}>Details</h3>
                     <form onSubmit={saveDetails} className="mt-4 space-y-4">
@@ -112,12 +112,12 @@ export default function Settings({
                 <section className={card}>
                     <h3 className={heading}>Members</h3>
                     <InputError className="mt-2" message={pageErrors.role ?? pageErrors.member} />
-                    <ul className="mt-4 divide-y divide-gray-100 dark:divide-gray-700">
+                    <ul className="mt-4 divide-y divide-line">
                         {project.members?.map((m) => (
                             <li key={m.id} className="flex flex-wrap items-center gap-3 py-2 text-sm">
                                 <div className="min-w-0 flex-1">
-                                    <div className="text-gray-900 dark:text-gray-100">{m.name}</div>
-                                    <div className="truncate text-gray-500 dark:text-gray-400">{m.email}</div>
+                                    <div className="text-ink">{m.name}</div>
+                                    <div className="truncate text-ink-subtle">{m.email}</div>
                                 </div>
                                 {can.manage ? (
                                     <>
@@ -138,7 +138,7 @@ export default function Settings({
                                         </SecondaryButton>
                                     </>
                                 ) : (
-                                    <span className="text-xs uppercase text-gray-500">{m.role}</span>
+                                    <span className="text-xs uppercase text-ink-subtle">{m.role}</span>
                                 )}
                             </li>
                         ))}
@@ -176,7 +176,7 @@ export default function Settings({
                                     >
                                         ↓
                                     </SecondaryButton>
-                                    <span className="text-gray-500 dark:text-gray-400">{c.issue_count} issues</span>
+                                    <span className="text-ink-subtle">{c.issue_count} issues</span>
                                     {c.issue_count > 0 && (
                                         <select
                                             aria-label={`Move ${c.name} issues to`}
@@ -234,9 +234,9 @@ export default function Settings({
                     <h3 className={heading}>Labels</h3>
                     <InputError className="mt-2" message={pageErrors.name} />
                     <ul className="mt-4 flex flex-wrap gap-2">
-                        {labels.length === 0 && <li className="text-sm text-gray-500">No labels yet.</li>}
+                        {labels.length === 0 && <li className="text-sm text-ink-subtle">No labels yet.</li>}
                         {labels.map((l) => (
-                            <li key={l.id} className="flex items-center gap-2 rounded-full border px-3 py-1 text-sm text-gray-800 dark:text-gray-200" style={{ borderColor: l.color }}>
+                            <li key={l.id} className="flex items-center gap-2 rounded-full border px-3 py-1 text-sm text-ink" style={{ borderColor: l.color }}>
                                 {can.contribute && (
                                     <input
                                         type="color"
@@ -253,7 +253,7 @@ export default function Settings({
                                 {can.contribute && (
                                     <button
                                         aria-label={`Delete label ${l.name}`}
-                                        className="text-gray-400 hover:text-red-600"
+                                        className="text-ink-subtle hover:text-danger"
                                         onClick={() => router.delete(route('projects.labels.destroy', [project.key, l.id]), { preserveScroll: true })}
                                     >
                                         ×
@@ -276,7 +276,7 @@ export default function Settings({
                             <input
                                 type="color"
                                 aria-label="New label color"
-                                className="h-10 w-10 cursor-pointer rounded border-gray-300 dark:border-gray-700"
+                                className="h-10 w-10 cursor-pointer rounded border-line"
                                 value={newLabel.data.color}
                                 onChange={(e) => newLabel.setData('color', e.target.value)}
                             />
@@ -329,9 +329,9 @@ export default function Settings({
                         </form>
 
                         {invitations.length > 0 && (
-                            <ul className="mt-4 divide-y divide-gray-100 text-sm dark:divide-gray-700">
+                            <ul className="mt-4 divide-y divide-line text-sm">
                                 {invitations.map((inv) => (
-                                    <li key={inv.id} className="flex items-center justify-between gap-3 py-2 text-gray-700 dark:text-gray-300">
+                                    <li key={inv.id} className="flex items-center justify-between gap-3 py-2 text-ink">
                                         <span>
                                             {inv.email} · {inv.role} · pending
                                         </span>
@@ -354,8 +354,8 @@ export default function Settings({
 
                 {can.manage && (
                     <section className={card}>
-                        <h3 className="font-medium text-red-600 dark:text-red-400">Delete project</h3>
-                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                        <h3 className="text-base font-semibold text-danger">Delete project</h3>
+                        <p className="mt-1 text-sm text-ink-subtle">
                             Permanently deletes {project.key} and all of its issues.
                         </p>
                         <DangerButton className="mt-4" onClick={() => setConfirmingDelete(true)}>
@@ -367,10 +367,10 @@ export default function Settings({
 
             <Modal show={confirmingDelete} onClose={() => setConfirmingDelete(false)}>
                 <div className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                    <h2 className="text-xl font-semibold text-ink">
                         Delete {project.key}?
                     </h2>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    <p className="mt-1 text-sm text-ink-subtle">
                         This cannot be undone.
                     </p>
                     <div className="mt-6 flex justify-end gap-3">

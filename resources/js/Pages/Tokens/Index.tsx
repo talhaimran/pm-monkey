@@ -18,7 +18,7 @@ interface Token {
     created_at: string;
 }
 
-const card = 'rounded-lg bg-white p-4 shadow-sm sm:p-6 dark:bg-gray-800';
+const card = 'rounded border border-line bg-surface p-4 sm:p-6 ';
 
 export default function Index({
     tokens,
@@ -54,39 +54,39 @@ export default function Index({
     };
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">API tokens</h2>}>
+        <AuthenticatedLayout header={<h1 className="text-2xl font-semibold text-ink">API tokens</h1>}>
             <Head title="API tokens" />
 
-            <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+            <div className="max-w-4xl space-y-6 px-4 pb-10 sm:px-6">
                 <section className={card}>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-ink-subtle">
                         Tokens let scripts and AI agents use PM Monkey as you, through the REST API or MCP. Send a token as{' '}
-                        <code className="rounded bg-gray-100 px-1 dark:bg-gray-700">Authorization: Bearer &lt;token&gt;</code>.
+                        <code className="rounded bg-sunken px-1">Authorization: Bearer &lt;token&gt;</code>.
                     </p>
                     <dl className="mt-3 grid gap-1 text-sm sm:grid-cols-[8rem_1fr]">
-                        <dt className="text-gray-500">REST API</dt>
-                        <dd className="font-mono text-gray-800 dark:text-gray-200">{endpoints.api}</dd>
-                        <dt className="text-gray-500">API docs</dt>
+                        <dt className="text-ink-subtle">REST API</dt>
+                        <dd className="font-mono text-ink">{endpoints.api}</dd>
+                        <dt className="text-ink-subtle">API docs</dt>
                         <dd>
-                            <a href={endpoints.docs} className="text-indigo-600 underline dark:text-indigo-400">
+                            <a href={endpoints.docs} className="text-brand underline">
                                 {endpoints.docs}
                             </a>
                         </dd>
-                        <dt className="text-gray-500">MCP (HTTP)</dt>
-                        <dd className="font-mono text-gray-800 dark:text-gray-200">{endpoints.mcp}</dd>
+                        <dt className="text-ink-subtle">MCP (HTTP)</dt>
+                        <dd className="font-mono text-ink">{endpoints.mcp}</dd>
                     </dl>
                 </section>
 
                 {flashToken && (
-                    <section className="rounded-lg border border-green-300 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950" role="status">
-                        <h3 className="font-medium text-green-900 dark:text-green-200">Copy your new token now. It won't be shown again.</h3>
+                    <section className="rounded-lg border border-success bg-loz-done p-4" role="status">
+                        <h3 className="font-medium text-success">Copy your new token now. It won't be shown again.</h3>
                         <div className="mt-2 flex gap-2">
                             <input
                                 readOnly
                                 aria-label="New API token"
                                 value={flashToken}
                                 onFocus={(e) => e.target.select()}
-                                className="flex-1 rounded-md border-gray-300 font-mono text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                                className="flex-1 rounded-[3px] border-input-line bg-surface font-mono text-sm text-ink"
                             />
                             <SecondaryButton onClick={copy}>{copied ? 'Copied' : 'Copy'}</SecondaryButton>
                         </div>
@@ -94,7 +94,7 @@ export default function Index({
                 )}
 
                 <section className={card}>
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100">Create a token</h3>
+                    <h3 className="text-base font-semibold text-ink">Create a token</h3>
                     <form onSubmit={submit} className="mt-4 space-y-4">
                         <div>
                             <InputLabel htmlFor="token-name" value="Name" />
@@ -110,8 +110,8 @@ export default function Index({
                         </div>
 
                         <fieldset>
-                            <legend className="text-sm font-medium text-gray-700 dark:text-gray-300">Access</legend>
-                            <div className="mt-1 flex flex-wrap gap-4 text-sm text-gray-700 dark:text-gray-300">
+                            <legend className="text-sm font-medium text-ink">Access</legend>
+                            <div className="mt-1 flex flex-wrap gap-4 text-sm text-ink">
                                 {(['read', 'write'] as const).map((a) => (
                                     <label key={a} className="flex items-center gap-2">
                                         <input type="radio" name="access" checked={form.data.access === a} onChange={() => form.setData('access', a)} />
@@ -123,13 +123,13 @@ export default function Index({
                         </fieldset>
 
                         <fieldset>
-                            <legend className="text-sm font-medium text-gray-700 dark:text-gray-300">Projects</legend>
-                            <label className="mt-1 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                            <legend className="text-sm font-medium text-ink">Projects</legend>
+                            <label className="mt-1 flex items-center gap-2 text-sm text-ink">
                                 <input type="checkbox" className="rounded" checked={allProjects} onChange={(e) => setAllProjects(e.target.checked)} />
                                 All my projects (including ones I join later)
                             </label>
                             {!allProjects && (
-                                <div className="mt-2 flex flex-wrap gap-3 text-sm text-gray-700 dark:text-gray-300">
+                                <div className="mt-2 flex flex-wrap gap-3 text-sm text-ink">
                                     {projects.map((p) => (
                                         <label key={p.key} className="flex items-center gap-2">
                                             <input type="checkbox" className="rounded" checked={form.data.projects.includes(p.key)} onChange={() => toggleProject(p.key)} />
@@ -145,7 +145,7 @@ export default function Index({
                             <InputLabel htmlFor="token-expiry" value="Expires" />
                             <select
                                 id="token-expiry"
-                                className="mt-1 rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                className="mt-1 rounded-[3px] border-input-line bg-surface text-sm text-ink focus:border-brand focus:ring-1 focus:ring-brand"
                                 value={form.data.expires_in_days}
                                 onChange={(e) => form.setData('expires_in_days', e.target.value)}
                             >
@@ -162,16 +162,16 @@ export default function Index({
                 </section>
 
                 <section className={card}>
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100">Your tokens</h3>
+                    <h3 className="text-base font-semibold text-ink">Your tokens</h3>
                     {tokens.length === 0 ? (
-                        <p className="mt-2 text-sm text-gray-500">No tokens yet.</p>
+                        <p className="mt-2 text-sm text-ink-subtle">No tokens yet.</p>
                     ) : (
-                        <ul className="mt-3 divide-y divide-gray-100 dark:divide-gray-700">
+                        <ul className="mt-3 divide-y divide-line">
                             {tokens.map((t) => (
                                 <li key={t.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3 text-sm">
                                     <div className="min-w-0 flex-1">
-                                        <div className="font-medium text-gray-900 dark:text-gray-100">{t.name}</div>
-                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        <div className="font-medium text-ink">{t.name}</div>
+                                        <div className="text-xs text-ink-subtle">
                                             {t.access === 'write' ? 'Read and write' : 'Read-only'} ·{' '}
                                             {t.projects === null ? 'All projects' : t.projects.length ? t.projects.join(', ') : 'No projects left'} · Last used{' '}
                                             {t.last_used_at ? new Date(t.last_used_at).toLocaleString() : 'never'} · Created{' '}
@@ -179,15 +179,15 @@ export default function Index({
                                             {t.expires_at === null ? (
                                                 'Never expires'
                                             ) : new Date(t.expires_at) < new Date() ? (
-                                                <span className="font-medium text-red-600 dark:text-red-400">Expired</span>
+                                                <span className="font-medium text-danger">Expired</span>
                                             ) : (
-                                                `Expires ${new Date(t.expires_at).toLocaleDateString()}`
+`Expires ${new Date(t.expires_at).toLocaleDateString()}`
                                             )}
                                         </div>
                                     </div>
                                     <DangerButton
                                         onClick={() =>
-                                            confirm(`Revoke "${t.name}"? Anything using it stops working immediately.`) &&
+                                            confirm(`Revoke"${t.name}"? Anything using it stops working immediately.`) &&
                                             router.delete(route('tokens.destroy', t.id), { preserveScroll: true })
                                         }
                                     >

@@ -1,6 +1,7 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import { ProjectAvatar } from '@/Components/ProjectNav';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Invitation, Project } from '@/types';
@@ -29,28 +30,28 @@ export default function Index({
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                <h1 className="text-2xl font-semibold text-ink">
                     Projects
-                </h2>
+                </h1>
             }
         >
             <Head title="Projects" />
 
-            <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+            <div className="space-y-6 px-4 pb-10 sm:px-6">
                 {invitations.length > 0 && (
-                    <section className="rounded-lg bg-indigo-50 p-4 shadow-sm dark:bg-indigo-950">
-                        <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                    <section className="rounded border border-line bg-selected p-4">
+                        <h3 className="text-base font-semibold text-ink">
                             Pending invitations
                         </h3>
                         {!verified && (
-                            <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                            <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-ink">
                                 Verify your email address to accept invitations.
                                 {linkSent ? (
                                     <span className="font-medium">Verification link sent; check your inbox.</span>
                                 ) : (
                                     <button
                                         type="button"
-                                        className="text-indigo-700 underline dark:text-indigo-300"
+                                        className="text-brand underline"
                                         onClick={() =>
                                             router.post(route('verification.send'), {}, { preserveScroll: true, onSuccess: () => setLinkSent(true) })
                                         }
@@ -60,11 +61,11 @@ export default function Index({
                                 )}
                             </p>
                         )}
-                        <ul className="mt-2 divide-y divide-indigo-100 dark:divide-indigo-900">
+                        <ul className="mt-2 divide-y divide-line">
                             {invitations.map((inv) => (
                                 <li
                                     key={inv.id}
-                                    className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm text-gray-700 dark:text-gray-300"
+                                    className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm text-ink"
                                 >
                                     <span>
                                         <strong>{inv.project?.name}</strong> (
@@ -86,8 +87,8 @@ export default function Index({
                     </section>
                 )}
 
-                <section className="rounded-lg bg-white p-4 shadow-sm sm:p-6 dark:bg-gray-800">
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                <section className="rounded border border-line bg-surface p-4 sm:p-6">
+                    <h3 className="text-base font-semibold text-ink">
                         New project
                     </h3>
                     <form
@@ -127,26 +128,27 @@ export default function Index({
                     </form>
                 </section>
 
-                <section className="overflow-hidden rounded-lg bg-white shadow-sm dark:bg-gray-800">
+                <section className="overflow-hidden rounded border border-line bg-surface">
                     {projects.length === 0 ? (
-                        <p className="p-6 text-sm text-gray-500 dark:text-gray-400">
+                        <p className="p-6 text-sm text-ink-subtle">
                             You're not in any projects yet. Create one above.
                         </p>
                     ) : (
-                        <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+                        <ul className="divide-y divide-line">
                             {projects.map((p) => (
                                 <li key={p.id}>
                                     <Link
                                         href={route('projects.show', p.key)}
-                                        className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 sm:px-6 dark:hover:bg-gray-700"
+                                        className="flex items-center gap-4 px-4 py-3 hover:bg-sunken sm:px-6"
                                     >
-                                        <span className="w-16 font-mono text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-                                            {p.key}
-                                        </span>
-                                        <span className="flex-1 text-gray-900 dark:text-gray-100">
+                                        <ProjectAvatar projectKey={p.key} />
+                                        <span className="min-w-0 flex-1 truncate font-medium text-brand">
                                             {p.name}
                                         </span>
-                                        <span className="text-xs uppercase text-gray-500 dark:text-gray-400">
+                                        <span className="w-16 text-ink-subtle">
+                                            {p.key}
+                                        </span>
+                                        <span className="text-xs uppercase text-ink-subtle">
                                             {p.my_role}
                                         </span>
                                     </Link>

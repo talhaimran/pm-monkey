@@ -17,6 +17,9 @@ const tokens = {
     neutral: ['#F1F2F4', '#2C333A'], // default buttons, chips
     'neutral-hover': ['#DCDFE4', '#38414A'],
     danger: ['#C9372C', '#F87168'],
+    'danger-subtle': ['#FFECEB', '#42221F'],
+    'warning-subtle': ['#FFF7D6', '#533F04'],
+    'warning-ink': ['#7F5F01', '#F5CD47'],
     success: ['#22A06B', '#4BCE97'],
     'loz-todo': ['#DCDFE4', '#454F59'],
     'loz-todo-ink': ['#44546F', '#B6C2CF'],

@@ -73,8 +73,8 @@ export default function IssueFormModal({
     return (
         <Modal show={show} onClose={onClose} maxWidth="2xl">
             <form onSubmit={submit} className="space-y-4 p-6">
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    {parent ? `New sub-task of ${parent}` : `New issue in ${projectKey}`}
+                <h2 className="text-xl font-semibold text-ink">
+                    {parent ?`New sub-task of ${parent}` :`New issue in ${projectKey}`}
                 </h2>
 
                 {field(
@@ -154,10 +154,10 @@ export default function IssueFormModal({
 
                 {options.labels.length > 0 && (
                     <fieldset>
-                        <legend className="text-sm font-medium text-gray-700 dark:text-gray-300">Labels</legend>
+                        <legend className="text-sm font-medium text-ink">Labels</legend>
                         <div className="mt-1 flex flex-wrap gap-2">
                             {options.labels.map((l) => (
-                                <label key={l.id} className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300">
+                                <label key={l.id} className="flex items-center gap-1 text-sm text-ink">
                                     <input type="checkbox" className="rounded" checked={form.data.labels.includes(l.name)} onChange={() => toggleLabel(l.name)} />
                                     {l.name}
                                 </label>

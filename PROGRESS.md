@@ -153,3 +153,11 @@ Plan: docs/superpowers/plans/2026-10-29-ui-jira-redesign.md. Per-step security r
 - New optional `statuses` prop colours lozenges with the project's columns (project list passes them).
 - Shortcut (in code): cross-project Search and Dashboard rows have no column order, so their lozenges stay gray; add a status category to `IssueResource` to colour them.
 - Security review: presentational; no new data. No findings.
+
+### Step 7: remaining pages ✅
+- Your work (Dashboard), Projects, Project settings, API tokens, Profile and the auth pages now use tokens only: hard-coded gray/indigo/red/green/amber classes were mapped to tokens by script (dark: variants dropped, since tokens switch themselves), then hand-tuned: large page titles, bordered panels instead of shadows, left-aligned content. Added tokens `danger-subtle`, `warning-subtle`, `warning-ink`.
+- Projects list rows get the project avatar; guest pages show the brand-coloured logo and "PM Monkey".
+- No layout rewrites. `Welcome.tsx` (the guest `/` page, still Breeze's Laravel landing) is left as is: out of the brief's list.
+- Checked as a Viewer (sam@example.com): no Create, sub-task, "…", comment box, sprint buttons or drag on issue/backlog pages.
+- Process note: an unconfigured `prettier --write` reformatted 46 files to double quotes; reverted and the step's scripted edits re-applied. The repo has no Prettier config, so don't run it without `--single-quote --tab-width 4`.
+- Security review: class-name changes only, plus the logo/name link. No findings.
