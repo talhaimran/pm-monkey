@@ -1,4 +1,4 @@
-# PM Monkey
+# PmOps
 
 A lightweight, self-hosted, Jira-like project tracker that people use through a web UI and AI agents use through an MCP server and a documented REST API.
 
@@ -22,7 +22,7 @@ On macOS: `brew install php composer mysql node && brew services start mysql`.
 ## Setup
 
 ```bash
-git clone <this repo> pm-monkey && cd pm-monkey
+git clone <this repo> PM-Ops && cd PM-Ops
 composer install
 npm install
 cp .env.example .env
@@ -140,13 +140,13 @@ Use the **absolute path** to `php` (`which php`, e.g. `/opt/homebrew/bin/php`) a
 stdio (Claude Code starts the server itself):
 
 ```bash
-claude mcp add pm-monkey --env PM_MCP_TOKEN=<token> -- /opt/homebrew/bin/php /path/to/pm-monkey/artisan mcp:start pm
+claude mcp add pm-ops --env PM_MCP_TOKEN=<token> -- /opt/homebrew/bin/php /path/to/PM-Ops/artisan mcp:start pm
 ```
 
 HTTP (the app must be running):
 
 ```bash
-claude mcp add --transport http pm-monkey http://localhost:8000/mcp --header "Authorization: Bearer <token>"
+claude mcp add --transport http pm-ops http://localhost:8000/mcp --header "Authorization: Bearer <token>"
 ```
 
 Add `--scope user` to make it available in every project, or `--scope project` to write a shareable `.mcp.json`. For a shared `.mcp.json`, reference an environment variable instead of pasting the token:
@@ -154,10 +154,10 @@ Add `--scope user` to make it available in every project, or `--scope project` t
 ```json
 {
   "mcpServers": {
-    "pm-monkey": {
+    "pm-ops": {
       "type": "http",
       "url": "http://localhost:8000/mcp",
-      "headers": { "Authorization": "Bearer ${PM_MONKEY_TOKEN}" }
+      "headers": { "Authorization": "Bearer ${PM_OPS_TOKEN}" }
     }
   }
 }
@@ -174,9 +174,9 @@ stdio (recommended):
 ```json
 {
   "mcpServers": {
-    "pm-monkey": {
+    "pm-ops": {
       "command": "/opt/homebrew/bin/php",
-      "args": ["/path/to/pm-monkey/artisan", "mcp:start", "pm"],
+      "args": ["/path/to/PM-Ops/artisan", "mcp:start", "pm"],
       "env": { "PM_MCP_TOKEN": "<token>" }
     }
   }
@@ -188,7 +188,7 @@ HTTP, through the `mcp-remote` bridge (a third-party npm package, needs Node), w
 ```json
 {
   "mcpServers": {
-    "pm-monkey-http": {
+    "pm-ops-http": {
       "command": "npx",
       "args": ["-y", "mcp-remote", "http://localhost:8000/mcp", "--header", "Authorization:${PM_AUTH}"],
       "env": { "PM_AUTH": "Bearer <token>" }
@@ -227,3 +227,11 @@ Also not done:
 - The board and backlog load at most 500 and 1000 issues, with a notice when they're cut off.
 - There's no in-app list of keyboard shortcuts.
 - MCP tools don't take an idempotency key; use the REST API when you need replay safety.
+
+## License
+
+This project is licensed under the [GNU Affero General Public License v3.0 only](LICENSE) (`AGPL-3.0-only`). Copyright (C) 2026 ogmnt.io.
+
+- You can use, self-host and change it freely.
+- If you change the code and let other people use your version over a network, you must offer those users the source code of your version under the same licence.
+- Contributions need a signed Contributor License Agreement (CLA) before they can be merged. The process will be announced.

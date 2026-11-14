@@ -89,7 +89,7 @@ export default function Authenticated({
                 <div className="flex h-14 items-center gap-1 px-3 sm:px-4">
                     <Link href="/" className="me-3 flex shrink-0 items-center gap-2 rounded px-1 py-1 hover:bg-neutral">
                         <ApplicationLogo className="h-6 w-auto fill-current text-brand" />
-                        <span className="hidden font-semibold text-ink md:inline">PM Monkey</span>
+                        <span className="hidden font-semibold text-ink md:inline">PmOps</span>
                     </Link>
 
                     <div className="hidden h-full items-center gap-1 sm:flex">

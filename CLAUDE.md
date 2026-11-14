@@ -17,6 +17,7 @@ UI follows docs/design-system (start with README.md); spec 5.1 wins on conflicts
 - dedoc/scramble: OpenAPI at /docs/api and /docs/api.json
 - dnd-kit (drag and drop), Pest (tests)
 - No other heavy dependencies without asking the user
+- Core is AGPL-3.0; never add code or dependencies with incompatible licences; ask first.
 
 ## Architecture rules
 - Business logic only in `app/Services` / `app/Actions`. Inertia controllers, API controllers (`/api/v1`), and MCP tools are thin and call the same services. Never duplicate logic.

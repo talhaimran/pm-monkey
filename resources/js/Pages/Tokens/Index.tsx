@@ -60,7 +60,7 @@ export default function Index({
             <div className="max-w-4xl space-y-6 px-4 pb-10 sm:px-6">
                 <section className={card}>
                     <p className="text-sm text-ink-subtle">
-                        Tokens let scripts and AI agents use PM Monkey as you, through the REST API or MCP. Send a token as{' '}
+                        Tokens let scripts and AI agents use PmOps as you, through the REST API or MCP. Send a token as{' '}
                         <code className="rounded bg-sunken px-1">Authorization: Bearer &lt;token&gt;</code>.
                     </p>
                     <dl className="mt-3 grid gap-1 text-sm sm:grid-cols-[8rem_1fr]">
