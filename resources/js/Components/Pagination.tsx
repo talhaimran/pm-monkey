@@ -9,15 +9,15 @@ export interface Paginated<T> {
 export default function Pagination({ page }: { page: Paginated<unknown> }) {
     const link = (href: string | null, label: string) =>
         href ? (
-            <Link href={href} preserveScroll className="flex h-8 items-center rounded-[3px] bg-neutral px-3 font-medium hover:bg-neutral-hover">
+            <Link href={href} preserveScroll className="flex h-8 items-center rounded-[3px] bg-card-2 px-3 font-medium hover:bg-well">
                 {label}
             </Link>
         ) : (
-            <span className="flex h-8 items-center rounded-[3px] px-3 font-medium text-ink-subtle opacity-50">{label}</span>
+            <span className="flex h-8 items-center rounded-[3px] px-3 font-medium text-muted opacity-50">{label}</span>
         );
 
     return (
-        <div className="flex items-center justify-between text-ink-subtle">
+        <div className="flex items-center justify-between text-muted">
             <span>{page.meta.total ? `${page.meta.from}–${page.meta.to} of ${page.meta.total}` : 'No issues'}</span>
             <span className="flex gap-2">
                 {link(page.links.prev, 'Previous')}

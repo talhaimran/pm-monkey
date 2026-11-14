@@ -1,7 +1,7 @@
 const styles = {
-    todo: 'bg-loz-todo text-loz-todo-ink',
-    progress: 'bg-loz-progress text-loz-progress-ink',
-    done: 'bg-loz-done text-loz-done-ink',
+    todo: 'tint-slate ',
+    progress: 'tint-amber ',
+    done: 'tint-good ',
 };
 
 /** Lozenge colours for a status: first column (or unknown columns) gray, last green, others blue. */

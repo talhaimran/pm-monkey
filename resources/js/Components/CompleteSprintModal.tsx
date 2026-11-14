@@ -30,8 +30,8 @@ export default function CompleteSprintModal({
                         form.post(route('projects.sprints.complete', [project.key, sprint.id]), { preserveScroll: true, onSuccess: onClose });
                     }}
                 >
-                    <h2 className="text-xl font-semibold text-ink">Complete {sprint.name}?</h2>
-                    <p className="text-ink-subtle">
+                    <h2 className="text-xl font-semibold text-text">Complete {sprint.name}?</h2>
+                    <p className="text-muted">
                         Done issues stay with the sprint. Unfinished issues move to the destination below. A completed sprint can't be reopened.
                     </p>
                     <div>

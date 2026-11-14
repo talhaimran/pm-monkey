@@ -32,13 +32,13 @@ function GlobalSearch({ id, className = '' }: { id: string; className?: string }
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={(e) => e.key === 'Escape' && e.currentTarget.blur()}
                 placeholder="Search"
-                className="w-full rounded-[3px] border-input-line bg-surface py-1 pe-8 ps-8 text-sm text-ink placeholder:text-ink-subtle hover:bg-sunken focus:border-brand focus:ring-1 focus:ring-brand"
+                className="w-full rounded-[3px] border-line-2 bg-bg py-1 pe-8 ps-8 text-sm text-text placeholder:text-muted hover:bg-card-2 focus:border-primary focus:ring-1 focus:ring-primary"
             />
-            <svg viewBox="0 0 16 16" className="pointer-events-none absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" aria-hidden="true">
+            <svg viewBox="0 0 16 16" className="pointer-events-none absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true">
                 <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
                 <path d="m10.5 10.5 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
-            <kbd className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 rounded border border-line px-1 text-[11px] text-ink-subtle">/</kbd>
+            <kbd className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 rounded border border-line px-1 text-[11px] text-muted">/</kbd>
         </form>
     );
 }
@@ -84,12 +84,12 @@ export default function Authenticated({
     );
 
     return (
-        <div className="min-h-screen bg-surface">
-            <nav className="sticky top-0 z-30 border-b border-line bg-surface">
+        <div className="min-h-screen bg-bg">
+            <nav className="sticky top-0 z-30 border-b border-line bg-bg">
                 <div className="flex h-14 items-center gap-1 px-3 sm:px-4">
-                    <Link href="/" className="me-3 flex shrink-0 items-center gap-2 rounded px-1 py-1 hover:bg-neutral">
-                        <ApplicationLogo className="h-6 w-auto fill-current text-brand" />
-                        <span className="hidden font-semibold text-ink md:inline">PmOps</span>
+                    <Link href="/" className="me-3 flex shrink-0 items-center gap-2 rounded px-1 py-1 hover:bg-card-2">
+                        <ApplicationLogo className="h-6 w-auto fill-current text-primary" />
+                        <span className="hidden font-semibold text-text md:inline">PmOps</span>
                     </Link>
 
                     <div className="hidden h-full items-center gap-1 sm:flex">
@@ -109,15 +109,15 @@ export default function Authenticated({
                         <ThemeToggle />
                         <Dropdown>
                             <Dropdown.Trigger>
-                                <button type="button" className="rounded-full p-1 hover:bg-neutral focus:outline-none focus-visible:ring-2 focus-visible:ring-brand" aria-label="Account menu">
+                                <button type="button" className="rounded-full p-1 hover:bg-card-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label="Account menu">
                                     <Avatar name={user.name} email={user.email} />
                                 </button>
                             </Dropdown.Trigger>
 
                             <Dropdown.Content>
                                 <div className="border-b border-line px-4 py-2">
-                                    <div className="truncate font-semibold text-ink">{user.name}</div>
-                                    <div className="truncate text-xs text-ink-subtle">{user.email}</div>
+                                    <div className="truncate font-semibold text-text">{user.name}</div>
+                                    <div className="truncate text-xs text-muted">{user.email}</div>
                                 </div>
                                 <Dropdown.Link href={route('profile.edit')}>Profile</Dropdown.Link>
                                 <Dropdown.Link href={route('tokens.index')}>API tokens</Dropdown.Link>
@@ -137,7 +137,7 @@ export default function Authenticated({
                             onClick={() => setShowingNavigationDropdown((previousState) => !previousState)}
                             aria-label="Menu"
                             aria-expanded={showingNavigationDropdown}
-                            className="inline-flex items-center justify-center rounded p-2 text-ink-subtle hover:bg-neutral focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                            className="inline-flex items-center justify-center rounded p-2 text-muted hover:bg-card-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
                             <svg className="h-5 w-5" stroke="currentColor" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                                 <path
@@ -166,8 +166,8 @@ export default function Authenticated({
                         <div className="flex items-center gap-3 px-4">
                             <Avatar name={user.name} email={user.email} size="md" />
                             <div className="min-w-0">
-                                <div className="truncate font-medium text-ink">{user.name}</div>
-                                <div className="truncate text-xs text-ink-subtle">{user.email}</div>
+                                <div className="truncate font-medium text-text">{user.name}</div>
+                                <div className="truncate text-xs text-muted">{user.email}</div>
                             </div>
                         </div>
 
@@ -184,7 +184,7 @@ export default function Authenticated({
 
             <div className="flex">
                 {project && (
-                    <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 overflow-y-auto border-e border-line bg-sunken lg:block">
+                    <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 overflow-y-auto border-e border-line bg-card-2 lg:block">
                         <ProjectNav projectKey={project.key} name={project.name} />
                     </aside>
                 )}

@@ -83,9 +83,9 @@ export default function Board({
                 // The board shows every issue unless filtered, so the sprint is the title only when the board is scoped to it.
                 <ProjectHeader project={project} title={sprintOnly ? sprint!.name : `${project.key} board`}>
                     {sprint && (
-                        <span className="text-ink-subtle" title={sprint.end_date ? `${sprint.start_date} to ${sprint.end_date}` : undefined}>
+                        <span className="text-muted" title={sprint.end_date ? `${sprint.start_date} to ${sprint.end_date}` : undefined}>
                             {!sprintOnly && (
-                                <Link href={route('projects.show', [project.key, { sprint: 'active' }])} className="font-medium text-brand hover:underline">
+                                <Link href={route('projects.show', [project.key, { sprint: 'active' }])} className="font-medium text-primary hover:underline">
                                     {sprint.name}
                                 </Link>
                             )}
@@ -101,7 +101,7 @@ export default function Board({
             <Head title={`${project.key} board`} />
 
             <div className="px-4 pb-4 sm:px-6">
-                {sprintOnly && sprint?.goal && <p className="-mt-1 mb-3 text-ink-subtle">{sprint.goal}</p>}
+                {sprintOnly && sprint?.goal && <p className="-mt-1 mb-3 text-muted">{sprint.goal}</p>}
                 <div className="mb-4">
                     <IssueFilters
                         filters={filters}
@@ -113,7 +113,7 @@ export default function Board({
                 </div>
 
                 {board.truncated && (
-                    <p className="mb-3 rounded-[3px] bg-loz-progress px-3 py-2 text-loz-progress-ink">
+                    <p className="mb-3 rounded-[3px] tint-amber px-3 py-2 ">
                         Showing the first 500 issues. Use filters to narrow the board.
                     </p>
                 )}
@@ -155,13 +155,13 @@ function Lane({ name, cards, done, draggable }: { name: string; cards: Card[]; d
         <section
             ref={setNodeRef}
             aria-label={`${name} column`}
-            className={`flex min-h-[calc(100vh-16rem)] w-[272px] shrink-0 flex-col rounded-md bg-sunken p-1.5 ${isOver ? 'outline outline-2 outline-brand' : ''}`}
+            className={`flex min-h-[calc(100vh-16rem)] w-[272px] shrink-0 flex-col rounded-md bg-card-2 p-1.5 ${isOver ? 'outline outline-2 outline-primary' : ''}`}
         >
-            <h3 className="flex items-center gap-2 px-2 pb-2 pt-1.5 text-xs font-semibold uppercase text-ink-subtle">
+            <h3 className="flex items-center gap-2 px-2 pb-2 pt-1.5 text-xs font-semibold uppercase text-muted">
                 <span className="truncate">{name}</span>
                 <span>{cards.length}</span>
                 {done && (
-                    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 text-success" aria-label="Done column">
+                    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 text-t-good" aria-label="Done column">
                         <path d="m3.5 8.5 3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 )}
@@ -183,7 +183,7 @@ function SortableCard({ card, done, disabled }: { card: Card; done: boolean; dis
     return (
         <li ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} {...attributes} {...listeners}>
             {/* Jira leaves a sunken placeholder where the dragged card came from. */}
-            {isDragging ? <div className="h-20 rounded border-2 border-dashed border-line bg-sunken" /> : <CardView card={card} done={done} />}
+            {isDragging ? <div className="h-20 rounded border-2 border-dashed border-line bg-card-2" /> : <CardView card={card} done={done} />}
         </li>
     );
 }
@@ -191,8 +191,8 @@ function SortableCard({ card, done, disabled }: { card: Card; done: boolean; dis
 function CardView({ card, done = false, dragging = false }: { card: Card; done?: boolean; dragging?: boolean }) {
     return (
         <div
-            className={`rounded bg-raised p-3 text-ink shadow-card dark:shadow-none dark:ring-1 dark:ring-line hover:bg-sunken ${
-                dragging ? 'rotate-[3deg] shadow-xl outline outline-2 outline-brand' : ''
+            className={`rounded bg-card p-3 text-text shadow-xs dark:shadow-none dark:ring-1 dark:ring-line hover:bg-card-2 ${
+                dragging ? 'rotate-[3deg] shadow-xl outline outline-2 outline-primary' : ''
             }`}
         >
             <Link href={route('issues.show', card.key)} className="block break-words hover:underline">
@@ -201,20 +201,20 @@ function CardView({ card, done = false, dragging = false }: { card: Card; done?:
             {card.labels.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
                     {card.labels.map((l) => (
-                        <span key={l} className="max-w-full truncate rounded-[3px] border border-line px-1 text-xs text-ink-subtle">
+                        <span key={l} className="max-w-full truncate rounded-[3px] border border-line px-1 text-xs text-muted">
                             {l}
                         </span>
                     ))}
                 </div>
             )}
-            <div className="mt-2 flex items-center gap-1.5 text-xs text-ink-subtle">
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-muted">
                 <IssueTypeIcon type={card.type} subtask={!!card.parent} />
                 <span className={`font-semibold ${done ? 'line-through' : ''}`} title={card.parent ? `Sub-task of ${card.parent}` : undefined}>
                     {card.key}
                 </span>
                 <span className="ml-auto flex items-center gap-1.5">
                     {card.story_points !== null && (
-                        <span className="min-w-5 rounded-full bg-neutral px-1.5 text-center font-semibold text-ink" title="Story points">
+                        <span className="min-w-5 rounded-full bg-card-2 px-1.5 text-center font-semibold text-text" title="Story points">
                             {card.story_points}
                         </span>
                     )}

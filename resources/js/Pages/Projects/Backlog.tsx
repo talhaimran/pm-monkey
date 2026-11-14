@@ -92,7 +92,7 @@ export default function Backlog({
             <div className="space-y-4 px-4 pb-10 sm:px-6">
                 <InputError message={errors.sprint ?? errors.after} />
                 {backlog.truncated && (
-                    <p className="rounded-[3px] bg-loz-progress px-3 py-2 text-loz-progress-ink">Showing the first 1000 issues.</p>
+                    <p className="rounded-[3px] tint-amber px-3 py-2 ">Showing the first 1000 issues.</p>
                 )}
 
                 <DndContext sensors={sensors} collisionDetection={closestCorners} {...handlers}>
@@ -119,8 +119,8 @@ export default function Backlog({
                             actions={
                                 <>
                                     <span className="hidden items-center gap-1 sm:flex" title="Story points: done / total">
-                                        <span className="rounded-full bg-loz-done px-1.5 text-xs font-semibold text-loz-done-ink">{sprint.points_done}</span>
-                                        <span className="rounded-full bg-neutral px-1.5 text-xs font-semibold">{sprint.points_total}</span>
+                                        <span className="rounded-full tint-good px-1.5 text-xs font-semibold ">{sprint.points_done}</span>
+                                        <span className="rounded-full bg-card-2 px-1.5 text-xs font-semibold">{sprint.points_total}</span>
                                     </span>
                                     {can.contribute && sprint.state === 'planned' && (
                                         <SecondaryButton
@@ -137,7 +137,7 @@ export default function Backlog({
                                     {can.contribute && (
                                         <Dropdown>
                                             <Dropdown.Trigger>
-                                                <button type="button" aria-label={`${sprint.name} actions`} className="flex h-8 w-8 items-center justify-center rounded-[3px] text-ink-subtle hover:bg-neutral">
+                                                <button type="button" aria-label={`${sprint.name} actions`} className="flex h-8 w-8 items-center justify-center rounded-[3px] text-muted hover:bg-card-2">
                                                     <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true">
                                                         <circle cx="3" cy="8" r="1.5" fill="currentColor" />
                                                         <circle cx="8" cy="8" r="1.5" fill="currentColor" />
@@ -152,7 +152,7 @@ export default function Backlog({
                                                 {sprint.state === 'planned' && (
                                                     <button
                                                         type="button"
-                                                        className={`${menuItem} text-danger`}
+                                                        className={`${menuItem} text-t-bad`}
                                                         onClick={() => router.delete(sprintRoute('projects.sprints.destroy', sprint), { preserveScroll: true })}
                                                     >
                                                         Delete sprint
@@ -195,7 +195,7 @@ export default function Backlog({
 }
 
 const shortDate = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
-const menuItem = 'block w-full border-l-2 border-transparent px-4 py-2 text-start hover:border-brand hover:bg-sunken';
+const menuItem = 'block w-full border-l-2 border-transparent px-4 py-2 text-start hover:border-primary hover:bg-card-2';
 
 function Section({
     lane,
@@ -223,29 +223,29 @@ function Section({
         <section
             ref={setNodeRef}
             aria-label={lane === BACKLOG ? 'Backlog' : `Sprint ${lane}`}
-            className={`rounded bg-sunken p-2 ${isOver ? 'outline outline-2 outline-brand' : ''}`}
+            className={`rounded bg-card-2 p-2 ${isOver ? 'outline outline-2 outline-primary' : ''}`}
         >
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 py-1">
                 <button
                     type="button"
                     onClick={() => setOpen(!open)}
                     aria-expanded={open}
-                    className="flex min-w-0 items-center gap-1 rounded-[3px] px-1 py-1 hover:bg-neutral"
+                    className="flex min-w-0 items-center gap-1 rounded-[3px] px-1 py-1 hover:bg-card-2"
                 >
-                    <svg viewBox="0 0 16 16" className={`h-4 w-4 shrink-0 text-ink-subtle transition-transform ${open ? 'rotate-90' : ''}`} aria-hidden="true">
+                    <svg viewBox="0 0 16 16" className={`h-4 w-4 shrink-0 text-muted transition-transform ${open ? 'rotate-90' : ''}`} aria-hidden="true">
                         <path d="m6 4 4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     <h3 className="truncate font-semibold">{title}</h3>
                 </button>
-                <span className="flex flex-wrap gap-2 text-ink-subtle">{meta}</span>
+                <span className="flex flex-wrap gap-2 text-muted">{meta}</span>
                 <span className="ms-auto flex items-center gap-2">{actions}</span>
-                {goal && <p className="w-full ps-7 text-ink-subtle">{goal}</p>}
+                {goal && <p className="w-full ps-7 text-muted">{goal}</p>}
             </div>
             {open && (
                 <SortableContext items={cards.map((c) => c.key)} strategy={verticalListSortingStrategy}>
                     <ul className="mt-1 flex min-h-10 flex-col gap-px">
                         {cards.length === 0 && (
-                            <li className="rounded border-2 border-dashed border-line p-3 text-center text-ink-subtle">
+                            <li className="rounded border-2 border-dashed border-line p-3 text-center text-muted">
                                 {lane === BACKLOG ? 'Your backlog is empty.' : 'Plan a sprint by dragging issues here.'}
                             </li>
                         )}
@@ -278,19 +278,19 @@ function SortableRow({ card, columns, disabled }: { card: Card; columns: string[
 function Row({ card, columns, dragging = false }: { card: Card; columns: string[]; dragging?: boolean }) {
     return (
         <div
-            className={`flex h-10 items-center gap-2 bg-raised px-3 shadow-card hover:bg-selected dark:shadow-none ${
-                dragging ? 'rounded outline outline-2 outline-brand shadow-xl' : ''
+            className={`flex h-10 items-center gap-2 bg-card px-3 shadow-xs hover:bg-well dark:shadow-none ${
+                dragging ? 'rounded outline outline-2 outline-primary shadow-xl' : ''
             }`}
         >
             <IssueTypeIcon type={card.type} subtask={!!card.parent} />
-            <Link href={route('issues.show', card.key)} className={`shrink-0 text-ink-subtle hover:underline ${card.status === columns.at(-1) ? 'line-through' : ''}`}>
+            <Link href={route('issues.show', card.key)} className={`shrink-0 text-muted hover:underline ${card.status === columns.at(-1) ? 'line-through' : ''}`}>
                 {card.key}
             </Link>
             <span className="min-w-0 flex-1 truncate">{card.title}</span>
             <span className="hidden max-w-32 sm:block">
                 <StatusLozenge status={card.status} columns={columns} />
             </span>
-            <span className="min-w-5 rounded-full bg-neutral px-1.5 text-center text-xs font-semibold" title="Story points">
+            <span className="min-w-5 rounded-full bg-card-2 px-1.5 text-center text-xs font-semibold" title="Story points">
                 {card.story_points ?? '-'}
             </span>
             <PriorityIcon priority={card.priority} />

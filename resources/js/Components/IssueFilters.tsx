@@ -32,7 +32,7 @@ export default function IssueFilters({
     const select = (name: keyof Filters, label: string, choices: { value: string; label: string }[]) => (
         <select
             aria-label={label}
-            className={`${selectClass} w-auto !border-transparent font-medium ${filters[name] ? '!bg-selected !text-brand' : '!bg-neutral hover:!bg-neutral-hover'}`}
+            className={`${selectClass} w-auto !border-transparent font-medium ${filters[name] ? '!bg-well !text-primary' : '!bg-card-2 hover:!bg-well'}`}
             value={filters[name] ?? ''}
             onChange={(e) => onApply({ [name]: e.target.value })}
         >
@@ -48,12 +48,12 @@ export default function IssueFilters({
     const active = Object.entries(filters).some(([k, v]) => k !== 'sort' && v);
     const toggle = (assignee: string) => onApply({ assignee: filters.assignee === assignee ? '' : assignee });
     const ring = (on: boolean) =>
-        `rounded-full ring-2 transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-brand ${on ? 'z-10 ring-brand' : 'ring-surface'}`;
+        `rounded-full ring-2 transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-primary ${on ? 'z-10 ring-primary' : 'ring-bg'}`;
 
     return (
         <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-                <svg viewBox="0 0 16 16" className="pointer-events-none absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" aria-hidden="true">
+                <svg viewBox="0 0 16 16" className="pointer-events-none absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true">
                     <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
                     <path d="m10.5 10.5 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
@@ -85,7 +85,7 @@ export default function IssueFilters({
                     aria-pressed={filters.assignee === 'unassigned'}
                     aria-label="Unassigned"
                     title="Unassigned"
-                    className={`${ring(filters.assignee === 'unassigned')} flex h-8 w-8 items-center justify-center bg-neutral text-ink-subtle`}
+                    className={`${ring(filters.assignee === 'unassigned')} flex h-8 w-8 items-center justify-center bg-card-2 text-muted`}
                     onClick={() => toggle('unassigned')}
                 >
                     <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true">
@@ -106,7 +106,7 @@ export default function IssueFilters({
             {active && (
                 <button
                     type="button"
-                    className="h-8 rounded-[3px] px-2 text-sm font-medium text-ink-subtle hover:bg-neutral hover:text-ink"
+                    className="h-8 rounded-[3px] px-2 text-sm font-medium text-muted hover:bg-card-2 hover:text-text"
                     onClick={() => {
                         setSearch('');
                         onClear();

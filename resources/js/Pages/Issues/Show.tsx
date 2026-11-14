@@ -18,10 +18,10 @@ import { ReactNode, useState } from 'react';
 
 // Minimal Markdown styling without @tailwindcss/typography.
 const proseClass =
-    'break-words text-ink [&_a]:text-brand [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-line [&_blockquote]:pl-3 [&_code]:rounded [&_code]:bg-neutral [&_code]:px-1 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-sunken [&_pre]:p-2 [&_ul]:list-disc [&_ul]:pl-5';
+    'break-words text-text [&_a]:text-primary [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-line [&_blockquote]:pl-3 [&_code]:rounded [&_code]:bg-card-2 [&_code]:px-1 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-card-2 [&_pre]:p-2 [&_ul]:list-disc [&_ul]:pl-5';
 
 // Jira-style inline field: looks like text until hovered or focused.
-const inlineField = `${selectClass} w-full !border-transparent !bg-transparent hover:!bg-neutral focus:!border-brand focus:!bg-surface disabled:hover:!bg-transparent`;
+const inlineField = `${selectClass} w-full !border-transparent !bg-transparent hover:!bg-card-2 focus:!border-primary focus:!bg-bg disabled:hover:!bg-transparent`;
 
 export default function Show({
     issue,
@@ -58,9 +58,9 @@ export default function Show({
                 <ul className="divide-y divide-line rounded border border-line">
                     {items.map((s) => (
                         <li key={s.key}>
-                            <Link href={route('issues.show', s.key)} className="flex items-center gap-2 px-3 py-2 hover:bg-sunken">
+                            <Link href={route('issues.show', s.key)} className="flex items-center gap-2 px-3 py-2 hover:bg-card-2">
                                 <IssueTypeIcon type={s.type ?? 'task'} subtask={subtasks} />
-                                <span className="shrink-0 text-ink-subtle">{s.key}</span>
+                                <span className="shrink-0 text-muted">{s.key}</span>
                                 <span className="min-w-0 flex-1 truncate">{s.title}</span>
                                 {s.status && <StatusLozenge status={s.status} columns={options.columns} />}
                             </Link>
@@ -72,7 +72,7 @@ export default function Show({
 
     const field = (label: string, children: ReactNode, error?: string) => (
         <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-start gap-2 py-1">
-            <dt className="pt-2 text-xs font-semibold text-ink-subtle">{label}</dt>
+            <dt className="pt-2 text-xs font-semibold text-muted">{label}</dt>
             <dd className="min-h-8">
                 {children}
                 <InputError className="mt-1" message={error} />
@@ -132,7 +132,7 @@ export default function Show({
                         ) : (
                             <h1 className="break-words text-2xl font-semibold">
                                 {can.contribute ? (
-                                    <button type="button" className="-mx-1 w-full rounded px-1 text-start hover:bg-neutral" onClick={() => setEditingTitle(true)} title="Edit summary">
+                                    <button type="button" className="-mx-1 w-full rounded px-1 text-start hover:bg-card-2" onClick={() => setEditingTitle(true)} title="Edit summary">
                                         {issue.title}
                                     </button>
                                 ) : (
@@ -166,14 +166,14 @@ export default function Show({
                             </div>
                         ) : (
                             <div
-                                className={`-mx-2 rounded px-2 py-1 ${can.contribute ? 'cursor-text hover:bg-sunken' : ''}`}
+                                className={`-mx-2 rounded px-2 py-1 ${can.contribute ? 'cursor-text hover:bg-card-2' : ''}`}
                                 onClick={() => can.contribute && setEditingDescription(true)}
                             >
                                 {/* description_html is rendered server-side with html_input=strip and no unsafe links. */}
                                 {issue.description_html ? (
                                     <div className={proseClass} dangerouslySetInnerHTML={{ __html: issue.description_html }} />
                                 ) : (
-                                    <p className="text-ink-subtle">{can.contribute ? 'Add a description…' : 'No description.'}</p>
+                                    <p className="text-muted">{can.contribute ? 'Add a description…' : 'No description.'}</p>
                                 )}
                             </div>
                         )}
@@ -185,14 +185,14 @@ export default function Show({
                     <section>
                         <h2 className="mb-2 font-semibold">Activity</h2>
                         <div className="mb-4 flex items-center gap-1" role="tablist" aria-label="Activity">
-                            <span className="me-1 text-ink-subtle">Show:</span>
+                            <span className="me-1 text-muted">Show:</span>
                             {(['comments', 'history'] as const).map((t) => (
                                 <button
                                     key={t}
                                     role="tab"
                                     aria-selected={tab === t}
                                     onClick={() => setTab(t)}
-                                    className={`h-7 rounded-[3px] px-2 font-medium ${tab === t ? 'bg-selected text-brand' : 'bg-neutral text-ink hover:bg-neutral-hover'}`}
+                                    className={`h-7 rounded-[3px] px-2 font-medium ${tab === t ? 'bg-well text-primary' : 'bg-card-2 text-text hover:bg-well'}`}
                                 >
                                     {t === 'comments' ? 'Comments' : 'History'}
                                 </button>
@@ -232,7 +232,7 @@ export default function Show({
                                         </div>
                                     </form>
                                 )}
-                                {issue.comments?.length === 0 && !can.contribute && <p className="text-ink-subtle">No comments yet.</p>}
+                                {issue.comments?.length === 0 && !can.contribute && <p className="text-muted">No comments yet.</p>}
                                 {issue.comments?.map((c) => <CommentItem key={c.id} comment={c} canDelete={!!c.can_edit || can.manage} />)}
                             </div>
                         ) : (
@@ -247,13 +247,13 @@ export default function Show({
                             'status',
                             issue.status,
                             plain(options.columns),
-                            `rounded-[3px] border-0 py-1.5 ps-3 pe-8 text-sm font-semibold focus:ring-2 focus:ring-brand disabled:opacity-100 ${lozengeClass(issue.status, options.columns)}`,
+                            `rounded-[3px] border-0 py-1.5 ps-3 pe-8 text-sm font-semibold focus:ring-2 focus:ring-primary disabled:opacity-100 ${lozengeClass(issue.status, options.columns)}`,
                         )}
                         {can.contribute && (
                             <div className="ms-auto">
                                 <Dropdown>
                                     <Dropdown.Trigger>
-                                        <button type="button" aria-label="More actions" className="flex h-8 w-8 items-center justify-center rounded-[3px] text-ink-subtle hover:bg-neutral">
+                                        <button type="button" aria-label="More actions" className="flex h-8 w-8 items-center justify-center rounded-[3px] text-muted hover:bg-card-2">
                                             <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true">
                                                 <circle cx="3" cy="8" r="1.5" fill="currentColor" />
                                                 <circle cx="8" cy="8" r="1.5" fill="currentColor" />
@@ -264,7 +264,7 @@ export default function Show({
                                     <Dropdown.Content>
                                         <button
                                             type="button"
-                                            className="block w-full border-l-2 border-transparent px-4 py-2 text-start text-danger hover:border-danger hover:bg-sunken"
+                                            className="block w-full border-l-2 border-transparent px-4 py-2 text-start text-t-bad hover:border-c-bad hover:bg-card-2"
                                             onClick={() => setConfirmingDelete(true)}
                                         >
                                             Delete
@@ -298,13 +298,13 @@ export default function Show({
                                         {issue.reporter.name}
                                     </span>
                                 ) : (
-                                    <span className="block pt-2 text-ink-subtle">None</span>
+                                    <span className="block pt-2 text-muted">None</span>
                                 ),
                             )}
                             {field(
                                 'Labels',
                                 <div className="flex flex-wrap gap-1 pt-1.5">
-                                    {options.labels.length === 0 && <span className="text-ink-subtle">None</span>}
+                                    {options.labels.length === 0 && <span className="text-muted">None</span>}
                                     {options.labels.map((l) => {
                                         const on = issue.labels.includes(l.name);
                                         return (
@@ -313,7 +313,7 @@ export default function Show({
                                                 type="button"
                                                 disabled={!can.contribute}
                                                 onClick={() => save({ labels: on ? issue.labels.filter((n) => n !== l.name) : [...issue.labels, l.name] })}
-                                                className={`max-w-full truncate rounded-[3px] border px-1.5 text-xs ${on ? 'border-transparent bg-neutral-hover text-ink' : 'border-dashed border-line text-ink-subtle hover:text-ink'}`}
+                                                className={`max-w-full truncate rounded-[3px] border px-1.5 text-xs ${on ? 'border-transparent bg-well text-text' : 'border-dashed border-line text-muted hover:text-text'}`}
                                                 aria-pressed={on}
                                                 title={on ? `Remove ${l.name}` : `Add ${l.name}`}
                                             >
@@ -374,7 +374,7 @@ export default function Show({
                                 field(
                                     issue.parent ? 'Parent' : 'Epic',
                                     issue.parent ? (
-                                        <Link href={route('issues.show', issue.parent.key)} className="block truncate pt-2 text-brand hover:underline">
+                                        <Link href={route('issues.show', issue.parent.key)} className="block truncate pt-2 text-primary hover:underline">
                                             {issue.parent.key} {issue.parent.title}
                                         </Link>
                                     ) : (
@@ -403,7 +403,7 @@ export default function Show({
                         </dl>
                     </section>
 
-                    <p className="text-xs text-ink-subtle">
+                    <p className="text-xs text-muted">
                         Created {new Date(issue.created_at).toLocaleString()}
                         <br />
                         Updated {new Date(issue.updated_at).toLocaleString()}
@@ -418,7 +418,7 @@ export default function Show({
             <Modal show={confirmingDelete} onClose={() => setConfirmingDelete(false)}>
                 <div className="p-6">
                     <h2 className="text-xl font-semibold">Delete {issue.key}?</h2>
-                    <p className="mt-2 text-ink-subtle">This also deletes its sub-tasks, comments and history. It cannot be undone.</p>
+                    <p className="mt-2 text-muted">This also deletes its sub-tasks, comments and history. It cannot be undone.</p>
                     <div className="mt-6 flex justify-end gap-2">
                         <SecondaryButton onClick={() => setConfirmingDelete(false)}>Cancel</SecondaryButton>
                         <DangerButton onClick={() => router.delete(route('issues.destroy', issue.key), { data: { confirm: true } })}>Delete</DangerButton>
@@ -435,10 +435,10 @@ function CommentItem({ comment, canDelete }: { comment: Comment; canDelete: bool
 
     return (
         <div className="flex gap-3">
-            {comment.author ? <Avatar name={comment.author.name} email={comment.author.email} size="md" /> : <span className="h-8 w-8 shrink-0 rounded-full bg-neutral" />}
+            {comment.author ? <Avatar name={comment.author.name} email={comment.author.email} size="md" /> : <span className="h-8 w-8 shrink-0 rounded-full bg-card-2" />}
             <div className="min-w-0 flex-1">
-                <div className="text-ink-subtle">
-                    <strong className="font-semibold text-ink">{comment.author?.name ?? 'Deleted user'}</strong>{' '}
+                <div className="text-muted">
+                    <strong className="font-semibold text-text">{comment.author?.name ?? 'Deleted user'}</strong>{' '}
                     <span className="text-xs">{new Date(comment.created_at).toLocaleString()}</span>
                 </div>
                 {editing ? (
@@ -460,7 +460,7 @@ function CommentItem({ comment, canDelete }: { comment: Comment; canDelete: bool
                     <div className={proseClass} dangerouslySetInnerHTML={{ __html: comment.body_html ?? '' }} />
                 )}
                 {!editing && (comment.can_edit || canDelete) && (
-                    <div className="flex gap-3 text-xs font-medium text-ink-subtle">
+                    <div className="flex gap-3 text-xs font-medium text-muted">
                         {comment.can_edit && (
                             <button className="hover:underline" onClick={() => setEditing(true)}>
                                 Edit
@@ -481,19 +481,19 @@ function CommentItem({ comment, canDelete }: { comment: Comment; canDelete: bool
 function ActivityList({ entries }: { entries: ActivityEntry[] }) {
     const show = (v: unknown) => (v === null || v === undefined || v === '' ? 'None' : String(v));
 
-    if (entries.length === 0) return <p className="text-ink-subtle">No history yet.</p>;
+    if (entries.length === 0) return <p className="text-muted">No history yet.</p>;
 
     return (
         <ul className="space-y-4">
             {entries.map((a) => (
                 <li key={a.id} className="flex gap-3">
-                    {a.user ? <Avatar name={a.user.name} email={a.user.email} size="md" /> : <span className="h-8 w-8 shrink-0 rounded-full bg-neutral" />}
+                    {a.user ? <Avatar name={a.user.name} email={a.user.email} size="md" /> : <span className="h-8 w-8 shrink-0 rounded-full bg-card-2" />}
                     <div className="min-w-0 flex-1">
-                        <div className="text-ink-subtle">
-                            <strong className="font-semibold text-ink">{a.user?.name ?? 'Someone'}</strong> {a.action}{' '}
+                        <div className="text-muted">
+                            <strong className="font-semibold text-text">{a.user?.name ?? 'Someone'}</strong> {a.action}{' '}
                             <span className="text-xs">{new Date(a.created_at).toLocaleString()}</span>
                             {a.via !== 'web' && (
-                                <span className="ms-2 inline-block rounded-[3px] bg-loz-progress px-1 text-[11px] font-bold uppercase text-loz-progress-ink">
+                                <span className="ms-2 inline-block rounded-[3px] tint-amber px-1 text-[11px] font-bold uppercase ">
                                     via {a.via}
                                 </span>
                             )}

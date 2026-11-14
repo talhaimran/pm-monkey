@@ -1,3 +1,8 @@
+import '@fontsource/urbanist/400.css';
+import '@fontsource/urbanist/500.css';
+import '@fontsource/urbanist/600.css';
+import '@fontsource/urbanist/700.css';
+import '@fontsource/urbanist/800.css';
 import '../css/app.css';
 
 import { createInertiaApp } from '@inertiajs/react';
@@ -19,6 +24,6 @@ createInertiaApp({
         root.render(<App {...props} />);
     },
     progress: {
-        color: '#4B5563',
+        color: 'var(--primary)',
     },
 });

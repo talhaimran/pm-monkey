@@ -9,7 +9,7 @@ import { useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
 export const selectClass =
-    'rounded-[3px] border-input-line bg-surface text-sm text-ink placeholder:text-ink-subtle hover:bg-sunken focus:border-brand focus:bg-surface focus:ring-1 focus:ring-brand py-1.5 pe-8';
+    'rounded-[3px] border-line-2 bg-bg text-sm text-text placeholder:text-muted hover:bg-card-2 focus:border-primary focus:bg-bg focus:ring-1 focus:ring-primary py-1.5 pe-8';
 
 export default function IssueFormModal({
     show,
@@ -73,7 +73,7 @@ export default function IssueFormModal({
     return (
         <Modal show={show} onClose={onClose} maxWidth="2xl">
             <form onSubmit={submit} className="space-y-4 p-6">
-                <h2 className="text-xl font-semibold text-ink">
+                <h2 className="text-xl font-semibold text-text">
                     {parent ?`New sub-task of ${parent}` :`New issue in ${projectKey}`}
                 </h2>
 
@@ -154,10 +154,10 @@ export default function IssueFormModal({
 
                 {options.labels.length > 0 && (
                     <fieldset>
-                        <legend className="text-sm font-medium text-ink">Labels</legend>
+                        <legend className="text-sm font-medium text-text">Labels</legend>
                         <div className="mt-1 flex flex-wrap gap-2">
                             {options.labels.map((l) => (
-                                <label key={l.id} className="flex items-center gap-1 text-sm text-ink">
+                                <label key={l.id} className="flex items-center gap-1 text-sm text-text">
                                     <input type="checkbox" className="rounded" checked={form.data.labels.includes(l.name)} onChange={() => toggleLabel(l.name)} />
                                     {l.name}
                                 </label>

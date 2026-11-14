@@ -23,7 +23,7 @@ const settings = [
 /** Square project avatar: the key's first letter on brand colour. */
 export function ProjectAvatar({ projectKey, className = 'h-6 w-6 text-xs' }: { projectKey: string; className?: string }) {
     return (
-        <span aria-hidden="true" className={`flex shrink-0 items-center justify-center rounded bg-brand font-bold text-on-brand ${className}`}>
+        <span aria-hidden="true" className={`flex shrink-0 items-center justify-center rounded bg-primary font-bold text-on-primary ${className}`}>
             {projectKey[0]}
         </span>
     );
@@ -43,11 +43,11 @@ export default function ProjectNav({ projectKey, name, compact = false }: { proj
                 aria-current={current ? 'page' : undefined}
                 className={
                     compact
-                        ? `whitespace-nowrap border-b-2 px-2 py-2.5 text-sm font-medium ${current ? 'border-brand text-brand' : 'border-transparent text-ink-subtle hover:text-ink'}`
+                        ? `whitespace-nowrap border-b-2 px-2 py-2.5 text-sm font-medium ${current ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-text'}`
                         : `relative flex h-9 items-center gap-3 rounded-[3px] px-3 text-sm font-medium ${
                               current
-                                  ? 'bg-selected text-brand before:absolute before:inset-y-2 before:start-0 before:w-0.5 before:rounded before:bg-brand'
-                                  : 'text-ink-subtle hover:bg-neutral hover:text-ink'
+                                  ? 'bg-well text-primary before:absolute before:inset-y-2 before:start-0 before:w-0.5 before:rounded before:bg-primary'
+                                  : 'text-muted hover:bg-card-2 hover:text-text'
                           }`
                 }
             >
@@ -70,11 +70,11 @@ export default function ProjectNav({ projectKey, name, compact = false }: { proj
             <div className="mb-4 flex items-center gap-2 px-1 py-2">
                 <ProjectAvatar projectKey={projectKey} className="h-8 w-8 text-sm" />
                 <div className="min-w-0">
-                    <div className="truncate font-semibold text-ink">{name}</div>
-                    <div className="truncate text-xs text-ink-subtle">Software project</div>
+                    <div className="truncate font-semibold text-text">{name}</div>
+                    <div className="truncate text-xs text-muted">Software project</div>
                 </div>
             </div>
-            <div className="px-3 pb-1 text-[11px] font-bold uppercase text-ink-subtle">Planning</div>
+            <div className="px-3 pb-1 text-[11px] font-bold uppercase text-muted">Planning</div>
             {links.map(item)}
             <div className="my-3 border-t border-line" />
             {item(settings)}
@@ -102,11 +102,11 @@ export function ProjectHeader({
 
     return (
         <div>
-            <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1 text-sm text-ink-subtle">
+            <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1 text-sm text-muted">
                 {trail.map((c, i) => (
                     <span key={c.href} className="flex items-center gap-1">
                         {i > 0 && <span aria-hidden="true">/</span>}
-                        <Link href={c.href} className="hover:text-ink hover:underline">
+                        <Link href={c.href} className="hover:text-text hover:underline">
                             {c.label}
                         </Link>
                     </span>
@@ -114,7 +114,7 @@ export function ProjectHeader({
             </nav>
             {title !== undefined && (
                 <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
-                    <h1 className="min-w-0 break-words text-2xl font-semibold text-ink">{title}</h1>
+                    <h1 className="min-w-0 break-words text-2xl font-semibold text-text">{title}</h1>
                     {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
                 </div>
             )}
