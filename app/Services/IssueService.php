@@ -192,6 +192,16 @@ class IssueService
         return $issue->setRelation('project', $project);
     }
 
+    /** The issue for the peek drawer (?issue=KEY): null for anything the user can't open, never an error. */
+    public function peek(User $user, mixed $key): ?Issue
+    {
+        try {
+            return is_string($key) && $key !== '' ? $this->resolve($user, $key) : null;
+        } catch (ValidationException) {
+            return null;
+        }
+    }
+
     /** Load what IssueResource needs for the full single-issue view. */
     public function loadFull(Issue $issue): Issue
     {

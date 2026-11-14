@@ -15,6 +15,7 @@ import StatusLozenge from '@/Components/StatusLozenge';
 import TextInput from '@/Components/TextInput';
 import { useCreateShortcut } from '@/Components/useCreateShortcut';
 import { placement, useLaneDroppable, useSortableLanes } from '@/Components/useSortableLanes';
+import { issueUrl } from '@/issueUrl';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { IssueOptions, Project } from '@/types';
 import { closestCorners, DndContext, DragOverlay } from '@dnd-kit/core';
@@ -278,7 +279,7 @@ function Row({ card, columns, dragging = false }: { card: Card; columns: string[
             }`}
         >
             <IssueTypeIcon type={card.type} subtask={!!card.parent} />
-            <Link href={route('issues.show', card.key)} className={`shrink-0 text-muted hover:underline ${card.status === columns.at(-1) ? 'line-through' : ''}`}>
+            <Link href={issueUrl(card.key)} className={`shrink-0 text-muted hover:underline ${card.status === columns.at(-1) ? 'line-through' : ''}`}>
                 {card.key}
             </Link>
             <span className="min-w-0 flex-1 truncate">{card.title}</span>

@@ -2,10 +2,11 @@ import Avatar from '@/Components/Avatar';
 import IssueTypeIcon from '@/Components/IssueTypeIcon';
 import PriorityIcon from '@/Components/PriorityIcon';
 import StatusLozenge from '@/Components/StatusLozenge';
+import { issueUrl, onPeekClick } from '@/issueUrl';
 import { Issue } from '@/types';
 import { Link } from '@inertiajs/react';
 
-type Column = { sort?: string; label: string; className?: string; cell: (i: Issue, statuses?: string[]) => React.ReactNode };
+type Column = { sort?: string; label: string; className?: string; cell: (i: Issue, statuses?: string[], peek?: boolean) => React.ReactNode };
 
 const columns: Column[] = [
     { sort: 'type', label: 'Type', className: 'w-12', cell: (i) => <IssueTypeIcon type={i.type} subtask={!!i.parent} /> },
@@ -14,7 +15,7 @@ const columns: Column[] = [
         label: 'Key',
         className: 'w-24 whitespace-nowrap',
         cell: (i) => (
-            <Link href={route('issues.show', i.key)} className="text-primary hover:underline">
+            <Link href={issueUrl(i.key)} className="text-primary hover:underline">
                 {i.key}
             </Link>
         ),
@@ -23,8 +24,9 @@ const columns: Column[] = [
         sort: 'title',
         label: 'Summary',
         className: 'min-w-48',
-        cell: (i) => (
-            <Link href={route('issues.show', i.key)} className="line-clamp-1 hover:text-primary hover:underline">
+        // The summary peeks where the page has a drawer; the key always goes to the full page.
+        cell: (i, _statuses, peek) => (
+            <Link href={issueUrl(i.key)} onClick={peek ? onPeekClick(i.key) : undefined} className="line-clamp-1 hover:text-primary hover:underline">
                 {i.title}
             </Link>
         ),
@@ -69,7 +71,19 @@ const columns: Column[] = [
  * Pass the project's `statuses` (column names) to colour status lozenges.
  * shortcut: cross-project search passes none, so its lozenges are gray; add a status category to IssueResource if that matters.
  */
-export default function IssueTable({ issues, sort, onSort, statuses }: { issues: Issue[]; sort?: string; onSort?: (sort: string) => void; statuses?: string[] }) {
+export default function IssueTable({
+    issues,
+    sort,
+    onSort,
+    statuses,
+    peek = false,
+}: {
+    issues: Issue[];
+    sort?: string;
+    onSort?: (sort: string) => void;
+    statuses?: string[];
+    peek?: boolean;
+}) {
     const current = sort ?? '-key';
 
     return (
@@ -114,7 +128,7 @@ export default function IssueTable({ issues, sort, onSort, statuses }: { issues:
                         <tr key={i.id} className="h-10 hover:bg-card-2">
                             {columns.map((c) => (
                                 <td key={c.label} className={`px-2 py-1.5 ${c.className ?? ''}`}>
-                                    {c.cell(i, statuses)}
+                                    {c.cell(i, statuses, peek)}
                                 </td>
                             ))}
                         </tr>

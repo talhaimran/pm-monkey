@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Web\Concerns\PresentsIssue;
 use App\Http\Requests\Board\BoardFilterRequest;
 use App\Http\Requests\Board\ColumnRequest;
 use App\Http\Requests\Board\DeleteColumnRequest;
@@ -25,6 +26,8 @@ use Inertia\Response;
 
 class BoardController extends Controller
 {
+    use PresentsIssue;
+
     public function __construct(
         private ProjectService $projects,
         private IssueService $issues,
@@ -41,6 +44,7 @@ class BoardController extends Controller
         $sprint = $this->sprints->active($project);
 
         return Inertia::render('Projects/Board', [
+            'peek' => $this->peek($request),
             'project' => (new ProjectResource($project))->resolve(),
             'board' => (new BoardResource($this->board->board($project, $filters)))->resolve(),
             'active_sprint' => $sprint ? (new SprintResource($sprint))->resolve() : null,

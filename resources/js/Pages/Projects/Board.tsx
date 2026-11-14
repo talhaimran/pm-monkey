@@ -10,6 +10,8 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import { ProjectHeader } from '@/Components/ProjectNav';
 import { useCreateShortcut } from '@/Components/useCreateShortcut';
 import { placement, useLaneDroppable, useSortableLanes } from '@/Components/useSortableLanes';
+import { issueUrl, onPeekClick } from '@/issueUrl';
+import IssueDrawer from '@/Components/IssueDrawer';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { IssueOptions, Project } from '@/types';
 import { closestCorners, DndContext, DragOverlay } from '@dnd-kit/core';
@@ -140,6 +142,7 @@ export default function Board({
             {can.contribute && (
                 <IssueFormModal show={creating} onClose={() => setCreating(false)} projectKey={project.key} options={options} />
             )}
+            <IssueDrawer />
         </AuthenticatedLayout>
     );
 }
@@ -194,7 +197,7 @@ function CardView({ card, done = false, dragging = false }: { card: Card; done?:
                 dragging ? 'rotate-[3deg] shadow-xl outline outline-2 outline-primary' : ''
             }`}
         >
-            <Link href={route('issues.show', card.key)} className="block break-words hover:underline">
+            <Link href={issueUrl(card.key)} onClick={onPeekClick(card.key)} className="block break-words hover:underline">
                 {card.title}
             </Link>
             {card.labels.length > 0 && (
