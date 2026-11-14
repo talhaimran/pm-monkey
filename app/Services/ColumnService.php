@@ -69,9 +69,8 @@ class ColumnService
         }
 
         DB::transaction(function () use ($column, $target, $others) {
-            if ($target) {
-                $column->issues()->update(['column_id' => $target->id]);
-            }
+            // Soft-deleted issues move too (to the first column when no target was needed), so they can still be restored.
+            $column->issues()->withTrashed()->update(['column_id' => ($target ?? $others->sortBy('position')->first())->id]);
             $column->delete();
             $this->resequence($others);
         });

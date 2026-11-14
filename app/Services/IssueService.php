@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\IssuePriority;
 use App\Enums\IssueType;
 use App\Enums\SprintState;
+use App\Models\Activity;
 use App\Models\Column;
 use App\Models\Issue;
 use App\Models\Project;
@@ -122,14 +123,55 @@ class IssueService
         }
     }
 
-    /** Sub-tasks cascade at the DB level; issues in a deleted epic are unlinked. */
-    public function delete(Issue $issue): void
+    /**
+     * Soft delete: the issue and its sub-tasks disappear everywhere but keep their rows, keys and history
+     * until issues:purge removes them. Issues in a deleted epic keep their link; the epic just isn't shown.
+     */
+    public function delete(Issue $issue, User $actor): Activity
     {
-        $issue->delete();
+        return DB::transaction(function () use ($issue, $actor) {
+            // One timestamp for the issue and its sub-tasks, so restore() can tell them from sub-tasks deleted earlier.
+            // shortcut: second precision, so a sub-task deleted in the same second as its parent is restored with it.
+            $at = now()->startOfSecond();
+            Issue::where(fn ($q) => $q->whereKey($issue->id)->orWhere('parent_id', $issue->id))->update(['deleted_at' => $at]);
+            $issue->setAttribute('deleted_at', $at)->syncOriginal();
+
+            return $this->activity->log($issue, $actor, 'deleted');
+        });
+    }
+
+    /** Bring a deleted issue back, with the sub-tasks that were deleted along with it. */
+    public function restore(Issue $issue, User $actor): Issue
+    {
+        $issue->loadMissing('project');
+        $parent = $issue->parent_id ? Issue::onlyTrashed()->find($issue->parent_id) : null;
+
+        if ($parent) {
+            throw ValidationException::withMessages([
+                'issue' => "{$issue->key} is a sub-task of {$issue->project->key}-{$parent->number}, which is deleted. Restore {$issue->project->key}-{$parent->number} first.",
+            ]);
+        }
+
+        return DB::transaction(function () use ($issue, $actor) {
+            Issue::onlyTrashed()
+                ->where(fn ($q) => $q->whereKey($issue->id)->orWhere('parent_id', $issue->id))
+                ->where('deleted_at', $issue->deleted_at)
+                ->restore();
+            $issue->setAttribute('deleted_at', null)->syncOriginal();
+            $this->activity->log($issue, $actor, 'restored');
+
+            return $issue;
+        });
+    }
+
+    /** Find a deleted issue by key, with the same errors as resolve(). */
+    public function resolveDeleted(User $user, string $key): Issue
+    {
+        return $this->resolve($user, $key, deleted: true);
     }
 
     /** Find an issue by key ("WEB-12", case-insensitive) in a project the user belongs to. */
-    public function resolve(User $user, string $key): Issue
+    public function resolve(User $user, string $key, bool $deleted = false): Issue
     {
         if (! preg_match('/^([A-Za-z][A-Za-z0-9]{1,9})-(\d+)$/', trim($key), $m)) {
             throw ValidationException::withMessages([
@@ -138,7 +180,7 @@ class IssueService
         }
 
         $project = $this->projects->resolve($user, $m[1]);
-        $issue = $project->issues()->where('number', $m[2])->first();
+        $issue = $project->issues()->when($deleted, fn ($q) => $q->onlyTrashed())->where('number', $m[2])->first();
 
         if (! $issue) {
             throw ValidationException::withMessages([

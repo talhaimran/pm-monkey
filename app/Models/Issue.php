@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
     'project_id', 'number', 'title', 'description', 'type', 'priority', 'column_id',
@@ -17,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class Issue extends Model
 {
+    use SoftDeletes;
+
     protected function casts(): array
     {
         return [

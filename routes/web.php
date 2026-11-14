@@ -40,6 +40,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/issues/{key}', [IssueController::class, 'show'])->name('issues.show');
     Route::patch('/issues/{key}', [IssueController::class, 'update'])->name('issues.update');
     Route::delete('/issues/{key}', [IssueController::class, 'destroy'])->name('issues.destroy');
+    Route::post('/issues/{key}/restore', [IssueController::class, 'restore'])->name('issues.restore');
+    Route::post('/comments/{comment}/restore', [IssueController::class, 'restoreComment'])->name('comments.restore');
     Route::post('/issues/{key}/move', [BoardController::class, 'move'])->name('issues.move');
     Route::post('/issues/{key}/rank', [SprintController::class, 'rank'])->name('issues.rank');
     Route::post('/issues/{key}/comments', [IssueController::class, 'comment'])->name('issues.comments.store');

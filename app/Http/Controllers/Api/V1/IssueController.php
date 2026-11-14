@@ -80,7 +80,7 @@ class IssueController extends Controller
     {
         $issue = $this->issues->resolve($request->user(), $key);
         Gate::authorize('delete', $issue);
-        $this->issues->delete($issue);
+        $this->issues->delete($issue, $request->user());
 
         return response()->noContent();
     }

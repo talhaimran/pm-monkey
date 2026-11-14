@@ -73,9 +73,27 @@ class IssueController extends Controller
     {
         $issue = $this->issues->resolve($request->user(), $key);
         Gate::authorize('delete', $issue);
-        $this->issues->delete($issue);
+        $this->issues->delete($issue, $request->user());
 
         return redirect()->route('projects.show', $issue->project->key);
+    }
+
+    public function restore(Request $request, string $key): RedirectResponse
+    {
+        $issue = $this->issues->resolveDeleted($request->user(), $key);
+        Gate::authorize('delete', $issue);
+        $this->issues->restore($issue, $request->user());
+
+        return back();
+    }
+
+    public function restoreComment(Request $request, int $comment): RedirectResponse
+    {
+        $comment = $this->comments->resolve($request->user(), $comment, deleted: true);
+        Gate::authorize('delete', $comment);
+        $this->comments->restore($comment);
+
+        return back();
     }
 
     public function comment(CommentRequest $request, string $key): RedirectResponse

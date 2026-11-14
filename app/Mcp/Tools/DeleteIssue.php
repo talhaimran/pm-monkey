@@ -15,7 +15,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[Name('delete_issue')]
-#[Description('Permanently delete an issue with its sub-tasks, comments and history (requires confirm: true).')]
+#[Description('Delete an issue and its sub-tasks (requires confirm: true). They disappear everywhere; a project member can restore them in the web app for 30 days.')]
 #[IsDestructive]
 class DeleteIssue extends Tool
 {
@@ -29,7 +29,7 @@ class DeleteIssue extends Tool
         $rules = new DestroyIssueRequest;
         $request->validate($rules->rules(), $rules->messages());
         $key = $issue->key;
-        $issues->delete($issue);
+        $issues->delete($issue, $request->user());
 
         return $this->result("Deleted {$key}.", ['deleted' => $key]);
     }
@@ -38,7 +38,7 @@ class DeleteIssue extends Tool
     {
         return [
             'issue' => $schema->string()->description('Issue key, e.g. WEB-12.')->required(),
-            'confirm' => $schema->boolean()->description('Must be true. Deletion cannot be undone.')->required(),
+            'confirm' => $schema->boolean()->description('Must be true. Only a person can restore the issue, from the web app.')->required(),
         ];
     }
 }

@@ -5,10 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['issue_id', 'user_id', 'body'])]
 class Comment extends Model
 {
+    use SoftDeletes;
+
     public function issue(): BelongsTo
     {
         return $this->belongsTo(Issue::class);
