@@ -1,7 +1,9 @@
+import { Trash2 } from 'lucide-react';
 import DangerButton from '@/Components/DangerButton';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
-import Modal from '@/Components/Modal';
+import EmptyState from '@/Components/EmptyState';
+import WarningConfirm from '@/Components/WarningConfirm';
 import { selectClass } from '@/Components/IssueFormModal';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { ProjectHeader } from '@/Components/ProjectNav';
@@ -18,6 +20,7 @@ export default function Settings({
     roles,
     labels,
     columns,
+    deletedIssues,
     can,
 }: {
     project: Project;
@@ -25,6 +28,7 @@ export default function Settings({
     roles: ProjectRole[];
     labels: Label[];
     columns: { id: number; name: string; position: number; issue_count: number }[];
+    deletedIssues: { key: string; title: string; deleted_at: string; deleted_by: string | null }[];
     can: { manage: boolean; contribute: boolean };
 }) {
     const { errors: pageErrors } = usePage().props as { errors: Record<string, string> };
@@ -65,8 +69,8 @@ export default function Settings({
             preserveScroll: true,
         });
 
-    const card = 'rounded-ctl border border-line bg-bg p-4 sm:p-6 ';
-    const heading = 'text-body font-semibold text-text ';
+    const card = 'rounded-card bg-card p-5 shadow sm:p-6 ';
+    const heading = 'text-lg text-text ';
 
     return (
         <AuthenticatedLayout
@@ -354,7 +358,35 @@ export default function Settings({
 
                 {can.manage && (
                     <section className={card}>
-                        <h3 className="text-body font-semibold text-t-bad">Delete project</h3>
+                        <h3 className={heading}>Deleted issues</h3>
+                        <p className="mt-1 text-sm text-muted">Deleted issues can be restored for 30 days, then they are removed for good.</p>
+                        {deletedIssues.length === 0 ? (
+                            <div className="mt-4">
+                                <EmptyState icon={Trash2} title="Nothing deleted in the last 30 days." />
+                            </div>
+                        ) : (
+                            <ul className="mt-3 divide-y divide-line">
+                                {deletedIssues.map((d) => (
+                                    <li key={d.key} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                                        <span className="text-2xs text-muted">{d.key}</span>
+                                        <span className="min-w-0 flex-1 truncate text-md text-text">{d.title}</span>
+                                        <span className="text-sm text-muted">
+                                            Deleted {new Date(d.deleted_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                                            {d.deleted_by && ` by ${d.deleted_by}`}
+                                        </span>
+                                        <SecondaryButton onClick={() => router.post(route('issues.restore', d.key), {}, { preserveScroll: true })}>
+                                            Restore <span className="sr-only">{d.key}</span>
+                                        </SecondaryButton>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </section>
+                )}
+
+                {can.manage && (
+                    <section className={card}>
+                        <h3 className="text-lg text-t-bad">Delete project</h3>
                         <p className="mt-1 text-sm text-muted">
                             Permanently deletes {project.key} and all of its issues.
                         </p>
@@ -365,28 +397,14 @@ export default function Settings({
                 )}
             </div>
 
-            <Modal show={confirmingDelete} onClose={() => setConfirmingDelete(false)}>
-                <div className="p-6">
-                    <h2 className="text-heading-2xl text-text">
-                        Delete {project.key}?
-                    </h2>
-                    <p className="mt-1 text-sm text-muted">
-                        This cannot be undone.
-                    </p>
-                    <div className="mt-6 flex justify-end gap-3">
-                        <SecondaryButton onClick={() => setConfirmingDelete(false)}>Cancel</SecondaryButton>
-                        <DangerButton
-                            onClick={() =>
-                                router.delete(route('projects.destroy', project.key), {
-                                    data: { confirm: true },
-                                })
-                            }
-                        >
-                            Delete
-                        </DangerButton>
-                    </div>
-                </div>
-            </Modal>
+            <WarningConfirm
+                open={confirmingDelete}
+                title={`Delete ${project.key}?`}
+                warnings={[{ text: `${project.name} and all of its issues are deleted for good.`, reason: 'This cannot be undone, and deleted issues cannot be restored.' }]}
+                confirmLabel="Delete project"
+                onCancel={() => setConfirmingDelete(false)}
+                onConfirm={() => router.delete(route('projects.destroy', project.key), { data: { confirm: true } })}
+            />
         </AuthenticatedLayout>
     );
 }

@@ -18,7 +18,7 @@ interface Token {
     created_at: string;
 }
 
-const card = 'rounded-ctl border border-line bg-bg p-4 sm:p-6 ';
+const card = 'rounded-card bg-card p-5 shadow sm:p-6 ';
 
 export default function Index({
     tokens,
@@ -94,7 +94,7 @@ export default function Index({
                 )}
 
                 <section className={card}>
-                    <h3 className="text-body font-semibold text-text">Create a token</h3>
+                    <h3 className="text-lg text-text">Create a token</h3>
                     <form onSubmit={submit} className="mt-4 space-y-4">
                         <div>
                             <InputLabel htmlFor="token-name" value="Name" />
@@ -162,7 +162,7 @@ export default function Index({
                 </section>
 
                 <section className={card}>
-                    <h3 className="text-body font-semibold text-text">Your tokens</h3>
+                    <h3 className="text-lg text-text">Your tokens</h3>
                     {tokens.length === 0 ? (
                         <p className="mt-2 text-sm text-muted">No tokens yet.</p>
                     ) : (

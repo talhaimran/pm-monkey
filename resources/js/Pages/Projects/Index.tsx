@@ -1,3 +1,5 @@
+import EmptyState from '@/Components/EmptyState';
+import { FolderKanban } from 'lucide-react';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -39,8 +41,8 @@ export default function Index({
 
             <div className="space-y-6 px-4 pb-10 md:px-8">
                 {invitations.length > 0 && (
-                    <section className="rounded-ctl border border-line bg-well p-4">
-                        <h3 className="text-body font-semibold text-text">
+                    <section className="rounded-card tint-info p-5">
+                        <h3 className="text-lg text-text">
                             Pending invitations
                         </h3>
                         {!verified && (
@@ -87,8 +89,8 @@ export default function Index({
                     </section>
                 )}
 
-                <section className="rounded-ctl border border-line bg-bg p-4 sm:p-6">
-                    <h3 className="text-body font-semibold text-text">
+                <section className="rounded-card bg-card p-5 shadow sm:p-6">
+                    <h3 className="text-lg text-text">
                         New project
                     </h3>
                     <form
@@ -128,11 +130,11 @@ export default function Index({
                     </form>
                 </section>
 
-                <section className="overflow-hidden rounded-ctl border border-line bg-bg">
+                <section className="overflow-hidden rounded-card bg-card shadow">
                     {projects.length === 0 ? (
-                        <p className="p-6 text-sm text-muted">
-                            You're not in any projects yet. Create one above.
-                        </p>
+                        <div className="p-5">
+                            <EmptyState icon={FolderKanban} title="No projects yet." hint="Create your first project with the form above." />
+                        </div>
                     ) : (
                         <ul className="divide-y divide-line">
                             {projects.map((p) => (

@@ -46,10 +46,11 @@ test('a deleted issue is absent from every web screen', function () {
     $this->issues->delete($gone, $this->admin);
     $this->actingAs($this->admin);
 
-    foreach (['/projects/WEB', '/projects/WEB/backlog', '/projects/WEB/issues', '/search?q=Vanish', '/dashboard', '/projects', '/projects/WEB/settings'] as $url) {
+    foreach (['/projects/WEB', '/projects/WEB/backlog', '/projects/WEB/issues', '/search?q=Vanish', '/dashboard', '/projects'] as $url) {
         $this->get($url)->assertOk()->assertDontSee('Vanishes');
     }
     $this->get('/issues/WEB-2')->assertSessionHasErrors('issue');
+    // Project settings lists it only under the Admin's "Deleted issues" (see DeletedIssuesTest); counts leave it out.
     $this->get('/projects/WEB/settings')->assertInertia(fn (Assert $page) => $page->where('columns.0.issue_count', 1));
 });
 

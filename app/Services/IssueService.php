@@ -165,6 +165,29 @@ class IssueService
         });
     }
 
+    /**
+     * Deleted issues of a project, newest first, for the Admin list in project settings.
+     *
+     * @return list<array{key: string, title: string, deleted_at: string, deleted_by: ?string}>
+     */
+    public function deleted(Project $project): array
+    {
+        return $project->issues()->onlyTrashed()
+            // Sub-tasks deleted with their parent come back with it, so only the parent is listed.
+            ->where(fn ($q) => $q->whereNull('parent_id')->orWhereHas('parent'))
+            ->with(['activities' => fn ($q) => $q->where('action', 'deleted')->with('user')->latest('id')])
+            ->latest('deleted_at')
+            ->limit(200)
+            ->get()
+            ->map(fn (Issue $issue) => [
+                'key' => "{$project->key}-{$issue->number}",
+                'title' => $issue->title,
+                'deleted_at' => $issue->deleted_at->toIso8601String(),
+                'deleted_by' => $issue->activities->first()?->user?->name,
+            ])
+            ->all();
+    }
+
     /** Find a deleted issue by key, with the same errors as resolve(). */
     public function resolveDeleted(User $user, string $key): Issue
     {
