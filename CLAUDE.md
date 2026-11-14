@@ -37,6 +37,15 @@ UI follows docs/design-system (start with README.md); spec 5.1 wins on conflicts
 - In tests, switching tokens needs `flushHeaders()` + `app('auth')->forgetGuards()`; headers and the Sanctum user persist within a test.
 - MySQL JSON columns reorder keys; compare JSON arrays in tests with `toEqual`, not `toBe`.
 
+## UI rules (step U)
+- Tokens: `tailwind.config.js` reads `docs/design-system/tokens.json`; use the token classes (`bg-card`, `text-muted`, `tint-amber`, `rounded-ctl`, `h-control-h`…). No hex colours, no default Tailwind colours, no `/40`-style opacity on token colours (they are CSS variables). `tests/Feature/Ui/DesignTokensTest.php` enforces this.
+- Motion: timings only from `resources/js/motion.ts` (`transition('drawerIn')`), never number literals in components. Reduced motion is handled there and in `app.css`.
+- Icons: `lucide-react` only. Dialogs: `Modal` / `WarningConfirm` (Headless UI). Empty lists: `EmptyState`.
+- Undo: a reversible web change flashes `undo` (`UndoService`), the `Toaster` sends it back with `undo_of`. Web-only; API/MCP input shapes don't carry it.
+- Deletes are soft (`deleted_at` on issues and comments). `IssueService::delete($issue, $actor)` / `restore()`; project deletion is the only hard delete besides `issues:purge`.
+- Issue URLs come from `resources/js/issueUrl.ts`; a page that can peek passes `'peek' => $this->peek($request)` (`PresentsIssue`) and renders `<IssueDrawer />`.
+- Frontend unit tests: `npm test` (Node's built-in runner, `resources/js/**/*.test.ts`).
+
 ## Commands
 - Dev servers: `composer run dev` (runs `php artisan dev`: server + queue + vite). Browser preview: `.claude/launch.json` entries `dev` (vite :5173) and `app` (artisan serve :8000).
 - Demo data: `php artisan migrate:fresh --seed` (DemoSeeder) creates demo@example.com / password, project WEB (~29 issues, active sprint) and prints a demo API token. Re-running without fresh skips.

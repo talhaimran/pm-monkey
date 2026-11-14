@@ -18,7 +18,7 @@ import { ElementType, ReactNode, useState } from 'react';
 const proseClass =
     'break-words text-text [&_a]:text-primary [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-line [&_blockquote]:pl-3 [&_code]:rounded-ctl [&_code]:bg-card-2 [&_code]:px-1 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-ctl [&_pre]:bg-card-2 [&_pre]:p-2 [&_ul]:list-disc [&_ul]:pl-5';
 
-// Jira-style inline field: looks like text until hovered or focused.
+// Inline field: looks like text until hovered or focused.
 const inlineField = `${selectClass} w-full !border-transparent !bg-transparent hover:!bg-card-2 focus:!border-primary focus:!bg-bg disabled:hover:!bg-transparent`;
 
 /** What the server sends for one issue, to the full page and to the peek drawer alike (PresentsIssue). */
@@ -128,7 +128,7 @@ export default function IssueView({
                         ) : (
                             <Heading className="break-words text-heading-3xl text-text">
                                 {can.contribute ? (
-                                    <button type="button" className="-mx-1 w-full rounded-ctl px-1 text-start hover:bg-card-2" onClick={() => setEditingTitle(true)} title="Edit summary">
+                                    <button type="button" className="-mx-1 min-h-control-h-sm w-full rounded-sm px-1 py-0.5 text-start hover:bg-card-2" onClick={() => setEditingTitle(true)} title="Edit summary">
                                         {issue.title}
                                     </button>
                                 ) : (
@@ -150,7 +150,7 @@ export default function IssueView({
                             'status',
                             issue.status,
                             plain(options.columns),
-                            `rounded-ctl border-0 py-1.5 ps-3 pe-8 text-sm font-semibold disabled:opacity-100 ${lozengeClass(issue.status, options.columns)}`,
+                            `h-control-h-sm rounded-pill border-0 py-0 pe-8 ps-3 text-xs disabled:opacity-100 ${lozengeClass(issue.status, options.columns)}`,
                         )}
                         {can.contribute && (
                             <div className="ms-auto">
@@ -175,8 +175,8 @@ export default function IssueView({
                     </div>
                     <InputError message={errors.status} />
 
-                    <section className="rounded-ctl border border-line">
-                        <h2 className="border-b border-line px-4 py-3 font-semibold">Details</h2>
+                    <section className="rounded-card bg-card-2">
+                        <h2 className="px-4 pt-3 text-lg text-text">Details</h2>
                         <dl className="px-4 py-2">
                             {field(
                                 'Assignee',
@@ -212,7 +212,7 @@ export default function IssueView({
                                                 type="button"
                                                 disabled={!can.contribute}
                                                 onClick={() => save({ labels: on ? issue.labels.filter((n) => n !== l.name) : [...issue.labels, l.name] })}
-                                                className={`max-w-full truncate rounded-ctl border px-1.5 text-xs ${on ? 'border-transparent bg-well text-text' : 'border-dashed border-line text-muted hover:text-text'}`}
+                                                className={`inline-flex h-control-h-sm max-w-full items-center truncate rounded-pill border px-2.5 text-xs ${on ? 'border-transparent bg-well text-text' : 'border-dashed border-line-2 text-muted hover:text-text'}`}
                                                 aria-pressed={on}
                                                 title={on ? `Remove ${l.name}` : `Add ${l.name}`}
                                             >
@@ -356,7 +356,7 @@ export default function IssueView({
                                     role="tab"
                                     aria-selected={tab === t}
                                     onClick={() => setTab(t)}
-                                    className={`h-7 rounded-ctl px-2 font-medium ${tab === t ? 'bg-well text-primary' : 'bg-card-2 text-text hover:bg-well'}`}
+                                    className={`h-control-h-sm rounded-sm px-3 text-md ${tab === t ? 'bg-well text-primary' : 'text-muted hover:bg-card-2 hover:text-text'}`}
                                 >
                                     {t === 'comments' ? 'Comments' : 'History'}
                                 </button>
@@ -444,14 +444,14 @@ function CommentItem({ comment, canDelete }: { comment: Comment; canDelete: bool
                     <div className={proseClass} dangerouslySetInnerHTML={{ __html: comment.body_html ?? '' }} />
                 )}
                 {!editing && (comment.can_edit || canDelete) && (
-                    <div className="flex gap-3 text-xs font-medium text-muted">
+                    <div className="-ms-2 flex gap-1 text-sm text-muted">
                         {comment.can_edit && (
-                            <button className="hover:underline" onClick={() => setEditing(true)}>
+                            <button type="button" className="inline-flex h-control-h-sm items-center rounded-sm px-2 hover:bg-card-2 hover:text-text" onClick={() => setEditing(true)}>
                                 Edit
                             </button>
                         )}
                         {canDelete && (
-                            <button className="hover:underline" onClick={() => router.delete(route('comments.destroy', comment.id), { preserveScroll: true })}>
+                            <button type="button" className="inline-flex h-control-h-sm items-center rounded-sm px-2 hover:bg-card-2 hover:text-text" onClick={() => router.delete(route('comments.destroy', comment.id), { preserveScroll: true })}>
                                 Delete
                             </button>
                         )}

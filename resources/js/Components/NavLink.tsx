@@ -1,6 +1,6 @@
 import { InertiaLinkProps, Link } from '@inertiajs/react';
 
-/** Top bar link; the active one gets a brand underline like Jira's. */
+/** shortcut: unused since the sidebar shell (step U); kept because step U deletes no files. Remove with ResponsiveNavLink. */
 export default function NavLink({ active = false, className = '', children, ...props }: InertiaLinkProps & { active: boolean }) {
     return (
         <Link
