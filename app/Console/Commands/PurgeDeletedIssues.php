@@ -20,8 +20,9 @@ class PurgeDeletedIssues extends Command
         $before = now()->subDays(self::DAYS);
         $issues = 0;
 
+        // eachById, not each: rows are deleted while paging, and offset paging would skip every other page.
         // Sub-tasks go with their parent at the DB level, so a row may already be gone when its turn comes.
-        Issue::onlyTrashed()->where('deleted_at', '<', $before)->with('project')->each(function (Issue $issue) use (&$issues) {
+        Issue::onlyTrashed()->where('deleted_at', '<', $before)->with('project')->eachById(function (Issue $issue) use (&$issues) {
             // shortcut: purges go to the application log, move to AuditLogger when the audit log lands (step 0).
             Log::info('issue.purged', ['key' => $issue->key, 'title' => $issue->title, 'deleted_at' => $issue->deleted_at->toIso8601String()]);
             $issues += (int) $issue->forceDelete();

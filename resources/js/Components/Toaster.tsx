@@ -22,7 +22,10 @@ export default function Toaster() {
     const dismiss = useCallback((id: number) => setToasts((current) => current.filter((t) => t.id !== id)), []);
 
     useEffect(() => {
-        if (flash?.undo) add({ message: flash.undo.message, tone: 'plain', undo: flash.undo });
+        if (!flash?.undo) return;
+        add({ message: flash.undo.message, tone: 'plain', undo: flash.undo });
+        // Take it out of this history entry, or Back would bring the page back with the old toast and a stale Undo.
+        router.replace({ props: (props) => ({ ...props, flash: { ...(props.flash as object), undo: null } }), preserveScroll: true, preserveState: true });
     }, [flash?.undo, add]);
 
     useEffect(() => {
