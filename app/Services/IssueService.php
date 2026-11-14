@@ -56,9 +56,10 @@ class IssueService
         });
     }
 
-    public function update(Issue $issue, User $actor, array $data): Issue
+    /** $action is 'updated', or 'undid' when the web UI's Undo sends a change back. */
+    public function update(Issue $issue, User $actor, array $data, string $action = 'updated'): Issue
     {
-        return DB::transaction(function () use ($issue, $actor, $data) {
+        return DB::transaction(function () use ($issue, $actor, $data, $action) {
             $issue->loadMissing(self::DISPLAY);
             $before = $this->snapshot($issue);
             [$attributes, $labelIds] = $this->resolveInput($issue->project, $data, $issue);
@@ -76,7 +77,7 @@ class IssueService
                 ->all();
 
             if ($changes) {
-                $this->activity->log($issue, $actor, 'updated', $changes);
+                $this->activity->log($issue, $actor, $action, $changes);
             }
 
             return $issue;

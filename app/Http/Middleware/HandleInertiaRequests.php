@@ -36,6 +36,8 @@ class HandleInertiaRequests extends Middleware
             ],
             'flash' => [
                 'token' => fn () => $request->session()->get('token'),
+                // {message, method, url, data}: what the toast sends back when the person picks Undo (UndoService).
+                'undo' => fn () => $request->session()->get('undo'),
             ],
         ];
     }

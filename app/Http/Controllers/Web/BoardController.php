@@ -17,6 +17,7 @@ use App\Services\ColumnService;
 use App\Services\IssueService;
 use App\Services\ProjectService;
 use App\Services\SprintService;
+use App\Services\UndoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -30,6 +31,7 @@ class BoardController extends Controller
         private BoardService $board,
         private ColumnService $columns,
         private SprintService $sprints,
+        private UndoService $undo,
     ) {}
 
     public function show(BoardFilterRequest $request, Project $project): Response
@@ -52,9 +54,24 @@ class BoardController extends Controller
     {
         $issue = $this->issues->resolve($request->user(), $key);
         Gate::authorize('update', $issue);
-        $this->board->move($issue, $request->user(), $request->validated());
+        $undoOf = $request->validate(['undo_of' => ['nullable', 'integer']])['undo_of'] ?? null;
 
-        return back();
+        if ($undoOf) {
+            $this->undo->guard($issue, (int) $undoOf);
+            $this->board->move($issue, $request->user(), $request->validated(), 'undid');
+
+            return back();
+        }
+
+        $before = $this->undo->forMove($issue);
+        $issue = $this->board->move($issue, $request->user(), $request->validated());
+
+        return back()->with('undo', [
+            'message' => $before['status'] === $issue->column->name ? "{$issue->key} moved" : "{$issue->key} moved to {$issue->column->name}",
+            'method' => 'post',
+            'url' => route('issues.move', $issue->key),
+            'data' => [...$before, 'undo_of' => $this->undo->token($issue)],
+        ]);
     }
 
     public function storeColumn(ColumnRequest $request, Project $project): RedirectResponse

@@ -43,13 +43,13 @@ class BoardService
      * Move an issue to a column (status) and/or a place in it. $input: status?, position?, after?
      * Status changes are logged through IssueService::update; reordering alone isn't logged.
      */
-    public function move(Issue $issue, User $actor, array $input): Issue
+    public function move(Issue $issue, User $actor, array $input, string $action = 'updated'): Issue
     {
-        return DB::transaction(function () use ($issue, $actor, $input) {
+        return DB::transaction(function () use ($issue, $actor, $input, $action) {
             Project::whereKey($issue->project_id)->lockForUpdate()->first();
 
             if (isset($input['status'])) {
-                $issue = $this->issues->update($issue, $actor, ['status' => $input['status']]);
+                $issue = $this->issues->update($issue, $actor, ['status' => $input['status']], $action);
             }
             $issue->loadMissing(IssueService::DISPLAY);
 
