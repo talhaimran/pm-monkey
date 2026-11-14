@@ -1,0 +1,34 @@
+<!-- @dsCard group="Patterns" height=560 -->
+<div class="pm" style="padding:24px;background:var(--bg);min-height:100%">
+<div class="ipage">
+  <div class="ipage__main">
+    <div>
+      <div class="ipage__crumbs"><span>Web</span><span>›</span><span>PM-90 Webhooks</span><span>›</span><span>PM-142</span></div>
+      <h1 class="ipage__title">Retry failed webhook deliveries</h1>
+      <div style="display:flex;gap:8px"><span class="pill pill--cobalt">Story</span><span class="pill pill--slate">webhooks</span></div>
+    </div>
+    <section class="ipage__section"><h3>Description</h3><p style="margin:0;color:var(--text)">Retry failed deliveries three times with backoff before marking the endpoint as failing. Show the last error on the endpoint's settings page.</p></section>
+    <section class="ipage__section"><h3>Sub-tasks</h3><div style="display:grid;gap:6px">
+      <div class="icard icard--subtask icard--compact"><div class="icard__top"><span class="icard__type"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 10 5 5-5 5"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg></span><span class="icard__key">PM-143</span><span class="icard__title" style="font-weight:600">Backoff schedule</span></div></div>
+      <div class="icard icard--subtask icard--compact is-closed"><div class="icard__top"><span class="icard__type"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 10 5 5-5 5"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg></span><span class="icard__key">PM-147</span><span class="icard__title" style="font-weight:600">Store last error</span></div></div>
+    </div></section>
+    <section class="ipage__section"><h3>Activity</h3><ul class="act">
+      <li><span class="av av--sm av--cobalt" aria-hidden="true">SK</span><span><b>Sam</b> changed Estimate from 3h to 6h<small>2 hours ago</small></span></li>
+      <li><span class="av av--sm av--agent" aria-hidden="true">AI</span><span><b>Triage agent (AI)</b> set Priority to High<small>1 hour ago · approved by Talha</small></span></li>
+      <li><span class="av av--sm av--amber" aria-hidden="true">TI</span><span><b>Talha</b> commented: backoff should cap at 10 minutes.<small>20 min ago</small></span></li>
+    </ul></section>
+  </div>
+  <aside class="ipage__side">
+    <div style="display:flex;gap:8px"><button class="pill pill--progress" style="height:var(--control-h);padding:0 14px" aria-haspopup="menu"><i></i>In Progress</button><button class="btn btn--primary" style="margin-left:auto">Mark done</button></div>
+    <div class="ai-box"><b>Agents</b>No requests waiting. <a href="#" style="color:inherit;font-weight:700">Ask agent</a></div>
+    <dl class="flist">
+      <div><dt>Assignee</dt><dd><span class="av av--xs av--amber" aria-hidden="true">TI</span>Talha</dd></div>
+      <div><dt>Priority</dt><dd><span class="prio prio--high"><b></b><b></b><b></b></span>High</dd></div>
+      <div><dt>Estimate</dt><dd>6h</dd></div>
+      <div><dt>Sprint</dt><dd>Sprint 14</dd></div>
+      <div><dt>Due</dt><dd>12 Nov</dd></div>
+      <button class="flist__more">Show 6 more fields</button>
+    </dl>
+  </aside>
+</div>
+</div>

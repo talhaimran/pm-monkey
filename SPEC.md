@@ -1,3 +1,5 @@
+The MVP below is built. Further work follows `docs/specs/pmops-spec.md`.
+
 Build a lightweight, self-hosted, Jira-like project management tool in this directory. It must be fully usable by humans (web UI) AND by AI models (Claude, GPT, Qwen, local LLMs) through an MCP server and a documented REST API.
 
 ## Before writing code
