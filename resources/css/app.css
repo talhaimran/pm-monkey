@@ -8,9 +8,15 @@
     }
 
     /* Accessibility page: 2px primary ring with 2px offset on every focus stop. */
+    /* !important: @tailwindcss/forms hides the outline on focused fields. */
     :focus-visible {
-        outline: 2px solid var(--primary);
-        outline-offset: 2px;
+        outline: 2px solid var(--primary) !important;
+        outline-offset: 2px !important;
+    }
+
+    /* Design system icons: 1.8px stroke. */
+    .lucide {
+        stroke-width: 1.8;
     }
 }
 

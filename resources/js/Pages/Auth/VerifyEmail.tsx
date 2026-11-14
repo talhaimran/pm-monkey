@@ -40,7 +40,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
                         href={route('logout')}
                         method="post"
                         as="button"
-                        className="rounded-md text-sm text-muted underline hover:text-text focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                        className="rounded-md text-sm text-muted underline hover:text-text"
                     >
                         Log Out
                     </Link>

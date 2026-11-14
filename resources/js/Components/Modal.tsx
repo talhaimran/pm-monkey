@@ -1,71 +1,52 @@
-import {
-    Dialog,
-    DialogPanel,
-    Transition,
-    TransitionChild,
-} from '@headlessui/react';
+import { transition } from '@/motion';
+import { Dialog, DialogPanel } from '@headlessui/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { PropsWithChildren } from 'react';
 
+/**
+ * Design system dialog on Headless UI (focus trap, Esc, focus restore). Fades in and scales 96% → 100%;
+ * under 760px it is a sheet that rises from the bottom.
+ */
 export default function Modal({
     children,
     show = false,
     maxWidth = '2xl',
     closeable = true,
     onClose = () => {},
+    initialFocus,
 }: PropsWithChildren<{
     show: boolean;
     maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
     closeable?: boolean;
     onClose: CallableFunction;
+    initialFocus?: React.RefObject<HTMLElement | null>;
 }>) {
-    const close = () => {
-        if (closeable) {
-            onClose();
-        }
-    };
-
-    const maxWidthClass = {
-        sm: 'sm:max-w-sm',
-        md: 'sm:max-w-md',
-        lg: 'sm:max-w-lg',
-        xl: 'sm:max-w-xl',
-        '2xl': 'sm:max-w-2xl',
-    }[maxWidth];
+    const maxWidthClass = { sm: 'md:max-w-sm', md: 'md:max-w-md', lg: 'md:max-w-lg', xl: 'md:max-w-xl', '2xl': 'md:max-w-2xl' }[maxWidth];
+    const sheet = typeof window !== 'undefined' && window.matchMedia('(max-width: 759px)').matches;
+    const hidden = sheet ? { opacity: 0, y: 90 } : { opacity: 0, scale: 0.96 };
 
     return (
-        <Transition show={show} leave="duration-200">
-            <Dialog
-                as="div"
-                id="modal"
-                className="fixed inset-0 z-50 flex transform items-center overflow-y-auto px-4 py-6 transition-all sm:px-0"
-                onClose={close}
-            >
-                <TransitionChild
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                >
-                    <div className="absolute inset-0 bg-black/50" />
-                </TransitionChild>
-
-                <TransitionChild
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    enterTo="opacity-100 translate-y-0 sm:scale-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                    leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                >
+        <AnimatePresence>
+            {show && (
+                <Dialog static open onClose={() => closeable && onClose()} initialFocus={initialFocus} className="fixed inset-0 z-50 flex items-end overflow-y-auto md:items-center md:p-6">
+                    <motion.div
+                        aria-hidden="true"
+                        className="fixed inset-0 bg-ink/40"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1, transition: transition('dialogIn') }}
+                        exit={{ opacity: 0, transition: transition('dialogOut') }}
+                    />
                     <DialogPanel
-                        className={`mb-6 transform overflow-hidden rounded bg-card text-text shadow-2xl transition-all sm:mx-auto sm:w-full ${maxWidthClass}`}
+                        as={motion.div}
+                        initial={hidden}
+                        animate={{ opacity: 1, scale: 1, y: 0, transition: transition(sheet ? 'drawerIn' : 'dialogIn') }}
+                        exit={{ ...hidden, transition: transition(sheet ? 'drawerOut' : 'dialogOut') }}
+                        className={`relative w-full overflow-hidden rounded-t-sheet bg-card text-text shadow-pop md:mx-auto md:rounded-card ${maxWidthClass}`}
                     >
                         {children}
                     </DialogPanel>
-                </TransitionChild>
-            </Dialog>
-        </Transition>
+                </Dialog>
+            )}
+        </AnimatePresence>
     );
 }

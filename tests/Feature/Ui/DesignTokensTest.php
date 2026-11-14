@@ -50,3 +50,20 @@ it('keeps animation timings in motion.ts', function () {
         ->and(file_get_contents(resource_path('css/app.css')))->toContain('prefers-reduced-motion: reduce')
         ->and(file_get_contents(resource_path('js/app.tsx')))->toContain('reducedMotion="user"');
 });
+
+it('uses Lucide icons and token colours only', function () {
+    $svg = $raw = $unfocusable = [];
+    foreach (uiSources('/\.tsx$/') as $path => $source) {
+        if ($path !== 'Components/ApplicationLogo.tsx' && str_contains($source, '<svg')) {
+            $svg[] = $path;
+        }
+        if (preg_match('/(className|style|fill|stroke)=[^>\n]*#[0-9a-fA-F]{3,8}\b|\b(bg|text|border|ring)-(white|black|gray|indigo|red|green|blue|yellow)\b/', $source)) {
+            $raw[] = $path;
+        }
+        if (str_contains($source, 'outline-none')) {
+            $unfocusable[] = $path;
+        }
+    }
+
+    expect($svg)->toBe([])->and($raw)->toBe([])->and($unfocusable)->toBe([]);
+});

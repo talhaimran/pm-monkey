@@ -1,21 +1,20 @@
-const shapes: Record<string, { color: string; paths: string[] }> = {
-    highest: { color: '#E5493A', paths: ['M3 8l5-4 5 4', 'M3 12l5-4 5 4'] },
-    high: { color: '#E5493A', paths: ['M3 10l5-4 5 4'] },
-    medium: { color: '#E56910', paths: ['M3 6h10', 'M3 10h10'] },
-    low: { color: '#2684FF', paths: ['M3 6l5 4 5-4'] },
-    lowest: { color: '#2684FF', paths: ['M3 4l5 4 5-4', 'M3 8l5 4 5-4'] },
+import { ChevronDown, ChevronsDown, ChevronsUp, ChevronUp, Equal, LucideIcon } from 'lucide-react';
+
+// Distinct shapes per priority, so colour is never the only signal.
+const shapes: Record<string, { color: string; Icon: LucideIcon }> = {
+    highest: { color: 'text-t-bad', Icon: ChevronsUp },
+    high: { color: 'text-t-coral', Icon: ChevronUp },
+    medium: { color: 'text-t-amber', Icon: Equal },
+    low: { color: 'text-t-sky', Icon: ChevronDown },
+    lowest: { color: 'text-t-slate', Icon: ChevronsDown },
 };
 
-/** Jira-style priority glyph: red chevrons up, orange equals, blue chevrons down. */
 export default function PriorityIcon({ priority, className = '' }: { priority: string; className?: string }) {
-    const shape = shapes[priority] ?? shapes.medium;
+    const { color, Icon } = shapes[priority] ?? shapes.medium;
 
     return (
-        <svg viewBox="0 0 16 16" className={`h-4 w-4 shrink-0 ${className}`} role="img" aria-label={`Priority: ${priority}`}>
-            <title>{`Priority: ${priority}`}</title>
-            {shape.paths.map((d) => (
-                <path key={d} d={d} fill="none" stroke={shape.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            ))}
-        </svg>
+        <span role="img" aria-label={`Priority: ${priority}`} title={`Priority: ${priority}`} className={`inline-flex shrink-0 ${color} ${className}`}>
+            <Icon className="h-4 w-4" aria-hidden="true" />
+        </span>
     );
 }

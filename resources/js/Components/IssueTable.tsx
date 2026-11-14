@@ -89,7 +89,7 @@ export default function IssueTable({ issues, sort, onSort, statuses }: { issues:
                                 >
                                     {onSort && c.sort ? (
                                         <button
-                                            className={`-mx-1 rounded-[3px] px-1 hover:bg-card-2 hover:text-text ${active ? 'text-text' : ''}`}
+                                            className={`-mx-1 rounded-ctl px-1 hover:bg-card-2 hover:text-text ${active ? 'text-text' : ''}`}
                                             onClick={() => onSort(active && !desc ? `-${c.sort}` : c.sort!)}
                                         >
                                             {c.label} {active ? (desc ? '↓' : '↑') : ''}

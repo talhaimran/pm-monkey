@@ -1,3 +1,4 @@
+import { Ellipsis } from 'lucide-react';
 import Avatar from '@/Components/Avatar';
 import DangerButton from '@/Components/DangerButton';
 import Dropdown from '@/Components/Dropdown';
@@ -192,7 +193,7 @@ export default function Show({
                                     role="tab"
                                     aria-selected={tab === t}
                                     onClick={() => setTab(t)}
-                                    className={`h-7 rounded-[3px] px-2 font-medium ${tab === t ? 'bg-well text-primary' : 'bg-card-2 text-text hover:bg-well'}`}
+                                    className={`h-7 rounded-ctl px-2 font-medium ${tab === t ? 'bg-well text-primary' : 'bg-card-2 text-text hover:bg-well'}`}
                                 >
                                     {t === 'comments' ? 'Comments' : 'History'}
                                 </button>
@@ -247,18 +248,14 @@ export default function Show({
                             'status',
                             issue.status,
                             plain(options.columns),
-                            `rounded-[3px] border-0 py-1.5 ps-3 pe-8 text-sm font-semibold focus:ring-2 focus:ring-primary disabled:opacity-100 ${lozengeClass(issue.status, options.columns)}`,
+                            `rounded-ctl border-0 py-1.5 ps-3 pe-8 text-sm font-semibold disabled:opacity-100 ${lozengeClass(issue.status, options.columns)}`,
                         )}
                         {can.contribute && (
                             <div className="ms-auto">
                                 <Dropdown>
                                     <Dropdown.Trigger>
-                                        <button type="button" aria-label="More actions" className="flex h-8 w-8 items-center justify-center rounded-[3px] text-muted hover:bg-card-2">
-                                            <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true">
-                                                <circle cx="3" cy="8" r="1.5" fill="currentColor" />
-                                                <circle cx="8" cy="8" r="1.5" fill="currentColor" />
-                                                <circle cx="13" cy="8" r="1.5" fill="currentColor" />
-                                            </svg>
+                                        <button type="button" aria-label="More actions" className="flex h-8 w-8 items-center justify-center rounded-ctl text-muted hover:bg-card-2">
+                                            <Ellipsis className="h-4 w-4" aria-hidden="true" />
                                         </button>
                                     </Dropdown.Trigger>
                                     <Dropdown.Content>
@@ -313,7 +310,7 @@ export default function Show({
                                                 type="button"
                                                 disabled={!can.contribute}
                                                 onClick={() => save({ labels: on ? issue.labels.filter((n) => n !== l.name) : [...issue.labels, l.name] })}
-                                                className={`max-w-full truncate rounded-[3px] border px-1.5 text-xs ${on ? 'border-transparent bg-well text-text' : 'border-dashed border-line text-muted hover:text-text'}`}
+                                                className={`max-w-full truncate rounded-ctl border px-1.5 text-xs ${on ? 'border-transparent bg-well text-text' : 'border-dashed border-line text-muted hover:text-text'}`}
                                                 aria-pressed={on}
                                                 title={on ? `Remove ${l.name}` : `Add ${l.name}`}
                                             >
@@ -493,7 +490,7 @@ function ActivityList({ entries }: { entries: ActivityEntry[] }) {
                             <strong className="font-semibold text-text">{a.user?.name ?? 'Someone'}</strong> {a.action}{' '}
                             <span className="text-xs">{new Date(a.created_at).toLocaleString()}</span>
                             {a.via !== 'web' && (
-                                <span className="ms-2 inline-block rounded-[3px] tint-amber px-1 text-[11px] font-bold uppercase ">
+                                <span className="ms-2 inline-block rounded-ctl tint-amber px-1 text-[11px] font-bold uppercase ">
                                     via {a.via}
                                 </span>
                             )}

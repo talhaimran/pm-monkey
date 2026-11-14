@@ -86,7 +86,7 @@ export default function Index({
                                 aria-label="New API token"
                                 value={flashToken}
                                 onFocus={(e) => e.target.select()}
-                                className="flex-1 rounded-[3px] border-line-2 bg-bg font-mono text-sm text-text"
+                                className="flex-1 rounded-ctl border-line-2 bg-bg font-mono text-sm text-text"
                             />
                             <SecondaryButton onClick={copy}>{copied ? 'Copied' : 'Copy'}</SecondaryButton>
                         </div>
@@ -145,7 +145,7 @@ export default function Index({
                             <InputLabel htmlFor="token-expiry" value="Expires" />
                             <select
                                 id="token-expiry"
-                                className="mt-1 rounded-[3px] border-line-2 bg-bg text-sm text-text focus:border-primary focus:ring-1 focus:ring-primary"
+                                className="mt-1 rounded-ctl border-line-2 bg-bg text-sm text-text focus:border-primary focus:ring-1"
                                 value={form.data.expires_in_days}
                                 onChange={(e) => form.setData('expires_in_days', e.target.value)}
                             >

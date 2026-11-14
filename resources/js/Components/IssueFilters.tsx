@@ -1,3 +1,4 @@
+import { Search, UserRound } from 'lucide-react';
 import { selectClass } from '@/Components/IssueFormModal';
 import Avatar from '@/Components/Avatar';
 import TextInput from '@/Components/TextInput';
@@ -48,15 +49,12 @@ export default function IssueFilters({
     const active = Object.entries(filters).some(([k, v]) => k !== 'sort' && v);
     const toggle = (assignee: string) => onApply({ assignee: filters.assignee === assignee ? '' : assignee });
     const ring = (on: boolean) =>
-        `rounded-full ring-2 transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-primary ${on ? 'z-10 ring-primary' : 'ring-bg'}`;
+        `rounded-full ring-2 transition-transform hover:-translate-y-0.5 ${on ? 'z-10 ring-primary' : 'ring-bg'}`;
 
     return (
         <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-                <svg viewBox="0 0 16 16" className="pointer-events-none absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true">
-                    <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                    <path d="m10.5 10.5 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
+                <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true" />
                 <TextInput
                     type="search"
                     aria-label="Search this board"
@@ -88,10 +86,7 @@ export default function IssueFilters({
                     className={`${ring(filters.assignee === 'unassigned')} flex h-8 w-8 items-center justify-center bg-card-2 text-muted`}
                     onClick={() => toggle('unassigned')}
                 >
-                    <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true">
-                        <circle cx="8" cy="5.5" r="2.5" fill="currentColor" />
-                        <path d="M3 13.5a5 5 0 0 1 10 0z" fill="currentColor" />
-                    </svg>
+                    <UserRound className="h-4 w-4" aria-hidden="true" />
                 </button>
             </div>
             {select('type', 'Type', plain(types))}
@@ -106,7 +101,7 @@ export default function IssueFilters({
             {active && (
                 <button
                     type="button"
-                    className="h-8 rounded-[3px] px-2 text-sm font-medium text-muted hover:bg-card-2 hover:text-text"
+                    className="h-8 rounded-ctl px-2 text-sm font-medium text-muted hover:bg-card-2 hover:text-text"
                     onClick={() => {
                         setSearch('');
                         onClear();

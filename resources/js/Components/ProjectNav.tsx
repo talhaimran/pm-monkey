@@ -1,23 +1,16 @@
+import { Columns3, List, ListTodo, Settings } from 'lucide-react';
 import { Link } from '@inertiajs/react';
 import { ReactNode } from 'react';
 
-const icon = (d: string) => (
-    <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0" aria-hidden="true">
-        <path d={d} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
 const links = [
-    ['projects.backlog', 'Backlog', icon('M3 4h10M3 8h10M3 12h10')],
-    ['projects.show', 'Board', icon('M2.5 3h11v10h-11zM6.5 3v10M10 3v10')],
-    ['projects.issues.index', 'Issues', icon('M3 4h1M6 4h7M3 8h1M6 8h7M3 12h1M6 12h7')],
+    ['projects.backlog', 'Backlog', <ListTodo className="h-4 w-4 shrink-0" aria-hidden="true" />],
+    ['projects.show', 'Board', <Columns3 className="h-4 w-4 shrink-0" aria-hidden="true" />],
+    ['projects.issues.index', 'Issues', <List className="h-4 w-4 shrink-0" aria-hidden="true" />],
 ] as const;
 const settings = [
     'projects.settings',
     'Project settings',
-    icon(
-        'M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4',
-    ),
+    <Settings className="h-4 w-4 shrink-0" aria-hidden="true" />,
 ] as const;
 
 /** Square project avatar: the key's first letter on brand colour. */
@@ -44,7 +37,7 @@ export default function ProjectNav({ projectKey, name, compact = false }: { proj
                 className={
                     compact
                         ? `whitespace-nowrap border-b-2 px-2 py-2.5 text-sm font-medium ${current ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-text'}`
-                        : `relative flex h-9 items-center gap-3 rounded-[3px] px-3 text-sm font-medium ${
+                        : `relative flex h-9 items-center gap-3 rounded-ctl px-3 text-sm font-medium ${
                               current
                                   ? 'bg-well text-primary before:absolute before:inset-y-2 before:start-0 before:w-0.5 before:rounded before:bg-primary'
                                   : 'text-muted hover:bg-card-2 hover:text-text'

@@ -1,3 +1,4 @@
+import { ChevronRight, Ellipsis } from 'lucide-react';
 import Avatar from '@/Components/Avatar';
 import CompleteSprintModal from '@/Components/CompleteSprintModal';
 import Dropdown from '@/Components/Dropdown';
@@ -92,7 +93,7 @@ export default function Backlog({
             <div className="space-y-4 px-4 pb-10 sm:px-6">
                 <InputError message={errors.sprint ?? errors.after} />
                 {backlog.truncated && (
-                    <p className="rounded-[3px] tint-amber px-3 py-2 ">Showing the first 1000 issues.</p>
+                    <p className="rounded-ctl tint-amber px-3 py-2 ">Showing the first 1000 issues.</p>
                 )}
 
                 <DndContext sensors={sensors} collisionDetection={closestCorners} {...handlers}>
@@ -137,12 +138,8 @@ export default function Backlog({
                                     {can.contribute && (
                                         <Dropdown>
                                             <Dropdown.Trigger>
-                                                <button type="button" aria-label={`${sprint.name} actions`} className="flex h-8 w-8 items-center justify-center rounded-[3px] text-muted hover:bg-card-2">
-                                                    <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true">
-                                                        <circle cx="3" cy="8" r="1.5" fill="currentColor" />
-                                                        <circle cx="8" cy="8" r="1.5" fill="currentColor" />
-                                                        <circle cx="13" cy="8" r="1.5" fill="currentColor" />
-                                                    </svg>
+                                                <button type="button" aria-label={`${sprint.name} actions`} className="flex h-8 w-8 items-center justify-center rounded-ctl text-muted hover:bg-card-2">
+                                                    <Ellipsis className="h-4 w-4" aria-hidden="true" />
                                                 </button>
                                             </Dropdown.Trigger>
                                             <Dropdown.Content>
@@ -230,11 +227,9 @@ function Section({
                     type="button"
                     onClick={() => setOpen(!open)}
                     aria-expanded={open}
-                    className="flex min-w-0 items-center gap-1 rounded-[3px] px-1 py-1 hover:bg-card-2"
+                    className="flex min-w-0 items-center gap-1 rounded-ctl px-1 py-1 hover:bg-card-2"
                 >
-                    <svg viewBox="0 0 16 16" className={`h-4 w-4 shrink-0 text-muted transition-transform ${open ? 'rotate-90' : ''}`} aria-hidden="true">
-                        <path d="m6 4 4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <ChevronRight className={`h-4 w-4 shrink-0 text-muted transition-transform ${open ? 'rotate-90' : ''}`} aria-hidden="true" />
                     <h3 className="truncate font-semibold">{title}</h3>
                 </button>
                 <span className="flex flex-wrap gap-2 text-muted">{meta}</span>

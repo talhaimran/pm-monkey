@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react';
 import Avatar from '@/Components/Avatar';
 import CompleteSprintModal from '@/Components/CompleteSprintModal';
 import IssueFilters, { Filters } from '@/Components/IssueFilters';
@@ -113,7 +114,7 @@ export default function Board({
                 </div>
 
                 {board.truncated && (
-                    <p className="mb-3 rounded-[3px] tint-amber px-3 py-2 ">
+                    <p className="mb-3 rounded-ctl tint-amber px-3 py-2 ">
                         Showing the first 500 issues. Use filters to narrow the board.
                     </p>
                 )}
@@ -161,9 +162,7 @@ function Lane({ name, cards, done, draggable }: { name: string; cards: Card[]; d
                 <span className="truncate">{name}</span>
                 <span>{cards.length}</span>
                 {done && (
-                    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 text-t-good" aria-label="Done column">
-                        <path d="m3.5 8.5 3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <Check className="h-3.5 w-3.5 text-t-good" aria-label="Done column" />
                 )}
             </h3>
             <SortableContext items={cards.map((c) => c.key)} strategy={verticalListSortingStrategy}>
@@ -201,7 +200,7 @@ function CardView({ card, done = false, dragging = false }: { card: Card; done?:
             {card.labels.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
                     {card.labels.map((l) => (
-                        <span key={l} className="max-w-full truncate rounded-[3px] border border-line px-1 text-xs text-muted">
+                        <span key={l} className="max-w-full truncate rounded-ctl border border-line px-1 text-xs text-muted">
                             {l}
                         </span>
                     ))}

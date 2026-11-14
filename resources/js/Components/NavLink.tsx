@@ -7,7 +7,7 @@ export default function NavLink({ active = false, className = '', children, ...p
             {...props}
             aria-current={active ? 'page' : undefined}
             className={
-                'relative inline-flex h-8 items-center rounded-[3px] px-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ' +
+                'relative inline-flex h-8 items-center rounded-ctl px-2 text-sm font-medium ' +
                 (active
                     ? 'text-primary after:absolute after:inset-x-1 after:-bottom-3 after:h-0.5 after:bg-primary'
                     : 'text-muted hover:bg-card-2 hover:text-text') +

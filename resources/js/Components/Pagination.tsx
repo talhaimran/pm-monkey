@@ -9,11 +9,11 @@ export interface Paginated<T> {
 export default function Pagination({ page }: { page: Paginated<unknown> }) {
     const link = (href: string | null, label: string) =>
         href ? (
-            <Link href={href} preserveScroll className="flex h-8 items-center rounded-[3px] bg-card-2 px-3 font-medium hover:bg-well">
+            <Link href={href} preserveScroll className="flex h-8 items-center rounded-ctl border border-line-2 bg-card px-3 text-md text-text hover:bg-card-2">
                 {label}
             </Link>
         ) : (
-            <span className="flex h-8 items-center rounded-[3px] px-3 font-medium text-muted opacity-50">{label}</span>
+            <span className="flex h-8 items-center rounded-ctl px-3 text-md text-muted opacity-50">{label}</span>
         );
 
     return (
