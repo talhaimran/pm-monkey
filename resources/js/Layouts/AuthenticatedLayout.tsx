@@ -2,16 +2,15 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Avatar from '@/Components/Avatar';
 import { projectLinks } from '@/Components/ProjectNav';
 import ThemeToggle from '@/Components/ThemeToggle';
+import Toaster from '@/Components/Toaster';
 import { requestCreate } from '@/Components/useCreateShortcut';
 import { transition } from '@/motion';
+import { isTyping } from '@/undo';
 import { Dialog, DialogPanel } from '@headlessui/react';
 import { Link, router, usePage } from '@inertiajs/react';
 import { FolderKanban, KeyRound, LayoutDashboard, LogOut, LucideIcon, Menu, Plus, Search, UserRound, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { FormEvent, PropsWithChildren, ReactNode, useEffect, useState } from 'react';
-
-const isTyping = (el: EventTarget | null) =>
-    el instanceof HTMLElement && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName));
 
 // Sidebar rows (design system SidebarNav): 42px, icon + label; the current page gets the pill.
 const row = 'flex h-[42px] w-full items-center gap-3 rounded-ctl px-3 text-md transition-colors duration-instant';
@@ -202,6 +201,7 @@ export default function Authenticated({
                 {header && <header className="px-4 pb-2 pt-6 md:px-8">{header}</header>}
                 {children}
             </main>
+            <Toaster />
         </div>
     );
 }

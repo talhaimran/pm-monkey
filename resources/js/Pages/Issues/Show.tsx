@@ -45,7 +45,6 @@ export default function Show({
     const [editingDescription, setEditingDescription] = useState(false);
     const [description, setDescription] = useState(issue.description ?? '');
     const [addingSubtask, setAddingSubtask] = useState(false);
-    const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [tab, setTab] = useState<'comments' | 'history'>('comments');
     const comment = useForm({ body: '' });
 
@@ -262,7 +261,7 @@ export default function Show({
                                         <button
                                             type="button"
                                             className="block w-full border-l-2 border-transparent px-4 py-2 text-start text-t-bad hover:border-c-bad hover:bg-card-2"
-                                            onClick={() => setConfirmingDelete(true)}
+                                            onClick={() => router.delete(route('issues.destroy', issue.key), { data: { confirm: true } })}
                                         >
                                             Delete
                                         </button>
@@ -412,16 +411,6 @@ export default function Show({
                 <IssueFormModal show={addingSubtask} onClose={() => setAddingSubtask(false)} projectKey={issue.project} options={options} parent={issue.key} />
             )}
 
-            <Modal show={confirmingDelete} onClose={() => setConfirmingDelete(false)}>
-                <div className="p-6">
-                    <h2 className="text-xl font-semibold">Delete {issue.key}?</h2>
-                    <p className="mt-2 text-muted">This also deletes its sub-tasks, comments and history. It cannot be undone.</p>
-                    <div className="mt-6 flex justify-end gap-2">
-                        <SecondaryButton onClick={() => setConfirmingDelete(false)}>Cancel</SecondaryButton>
-                        <DangerButton onClick={() => router.delete(route('issues.destroy', issue.key), { data: { confirm: true } })}>Delete</DangerButton>
-                    </div>
-                </div>
-            </Modal>
         </AuthenticatedLayout>
     );
 }
