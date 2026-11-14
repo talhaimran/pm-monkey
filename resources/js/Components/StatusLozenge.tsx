@@ -1,25 +1,30 @@
 const styles = {
-    todo: 'bg-loz-todo text-loz-todo-ink',
-    progress: 'bg-loz-progress text-loz-progress-ink',
-    done: 'bg-loz-done text-loz-done-ink',
+    todo: ['tint-sky', 'bg-c-sky'],
+    progress: ['tint-amber', 'bg-c-amber'],
+    done: ['tint-good', 'bg-c-good'],
 };
 
-/** Lozenge colours for a status: first column (or unknown columns) gray, last green, others blue. */
-export function lozengeClass(status: string, columns?: string[]) {
+type Category = keyof typeof styles;
+
+/** Status category from the project's ordered columns: first (or unknown) = to do, last = done, between = in progress. Step 1 replaces this with real categories. */
+export function statusCategory(status: string, columns?: string[]): Category {
     const i = columns?.indexOf(status) ?? -1;
-    return styles[!columns || i <= 0 ? 'todo' : i === columns.length - 1 ? 'done' : 'progress'];
+    return !columns || i <= 0 ? 'todo' : i === columns.length - 1 ? 'done' : 'progress';
 }
 
-/**
- * Uppercase status pill. With the project's ordered `columns`: first = to do (gray), last = done (green),
- * anything between = in progress (blue). Without columns it stays gray.
- */
+/** Tint classes for a status, for chips that aren't a full pill. */
+export function lozengeClass(status: string, columns?: string[]) {
+    return styles[statusCategory(status, columns)][0];
+}
+
+/** Design system Pill: a dot plus the status's own name, coloured by its category. Colour is never the only signal. */
 export default function StatusLozenge({ status, columns, className = '' }: { status: string; columns?: string[]; className?: string }) {
+    const [tint, dot] = styles[statusCategory(status, columns)];
+
     return (
-        <span
-            className={`inline-block max-w-full truncate rounded-[3px] px-1 text-[11px] font-bold uppercase leading-4 ${lozengeClass(status, columns)} ${className}`}
-        >
-            {status}
+        <span className={`inline-flex h-pill-h max-w-full items-center gap-1.5 rounded-pill px-2.5 text-xs ${tint} ${className}`}>
+            <span aria-hidden="true" className={`h-1.5 w-1.5 shrink-0 rounded-pill ${dot}`} />
+            <span className="truncate">{status}</span>
         </span>
     );
 }

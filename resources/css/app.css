@@ -4,6 +4,40 @@
 
 @layer base {
     body {
-        @apply bg-surface text-sm text-ink antialiased;
+        @apply bg-bg font-sans text-body text-text antialiased;
+    }
+
+    /* Accessibility page: 2px primary ring with 2px offset on every focus stop. */
+    /* !important: @tailwindcss/forms hides the outline on focused fields. */
+    :focus-visible {
+        outline: 2px solid var(--primary) !important;
+        outline-offset: 2px !important;
+    }
+
+    /* Design system icons: 1.8px stroke. */
+    .lucide {
+        stroke-width: 1.8;
+    }
+}
+
+/* Theme toggle: the View Transitions cross-fade, timed by motion.ts (ThemeToggle sets --theme-duration). */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: var(--theme-duration, 0s);
+}
+
+/* The one reduced-motion switch, CSS side (motion.ts is the JS side): every duration is 0, content still appears. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after,
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation-duration: 0s !important;
+        animation-delay: 0s !important;
+        transition-duration: 0s !important;
+        transition-delay: 0s !important;
+        scroll-behavior: auto !important;
     }
 }

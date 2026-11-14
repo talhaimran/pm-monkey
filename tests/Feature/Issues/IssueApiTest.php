@@ -212,14 +212,15 @@ test('deleting an issue requires confirm true', function () {
     expect(Issue::count())->toBe(0);
 });
 
-test('deleting a parent deletes its sub-tasks; deleting an epic unlinks its issues', function () {
+test('deleting a parent deletes its sub-tasks; a deleted epic no longer shows on its issues', function () {
     $epic = makeIssue($this->project, $this->admin, ['type' => 'epic']);
     $story = makeIssue($this->project, $this->admin, ['type' => 'story', 'epic' => 'WEB-1']);
     makeIssue($this->project, $this->admin, ['parent' => 'WEB-2']);
     apiAs($this->admin);
 
     $this->deleteJson('/api/v1/issues/WEB-1', ['confirm' => true])->assertNoContent();
-    expect($story->fresh()->epic_id)->toBeNull();
+    // Soft delete keeps the link so a restore brings it back; the API just stops showing the epic.
+    $this->getJson('/api/v1/issues/WEB-2')->assertOk()->assertJsonPath('data.epic', null);
 
     $this->deleteJson('/api/v1/issues/WEB-2', ['confirm' => true])->assertNoContent();
     expect(Issue::count())->toBe(0);

@@ -13,6 +13,6 @@ class DestroyIssueRequest extends FormRequest
 
     public function messages(): array
     {
-        return ['confirm.accepted' => 'Deleting an issue also deletes its sub-tasks, comments and history. Resend with confirm: true to proceed.'];
+        return ['confirm.accepted' => 'Deleting an issue also deletes its sub-tasks and hides its comments and history. Resend with confirm: true to proceed.'];
     }
 }

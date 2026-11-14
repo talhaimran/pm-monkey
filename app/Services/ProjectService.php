@@ -46,8 +46,9 @@ class ProjectService
     {
         // Issues first: they restrict column deletes, so the project cascade can't remove them in any order.
         DB::transaction(function () use ($project) {
-            $project->issues()->whereNotNull('parent_id')->delete();
-            $project->issues()->delete();
+            // Deleting a project is permanent: its issues go for good, including soft-deleted ones.
+            $project->issues()->withTrashed()->whereNotNull('parent_id')->forceDelete();
+            $project->issues()->withTrashed()->forceDelete();
             $project->delete();
         });
     }

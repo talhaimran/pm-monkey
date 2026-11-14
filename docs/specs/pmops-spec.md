@@ -1,8 +1,8 @@
 # PmOps: product and build spec
 
-For Claude Code, working in the `talhaimran/pm-monkey` repo. Version 1.3, Nov 5, 2026. Author: Talha.
+For Claude Code, working in the `talhaimran/PM-Ops` repo. Version 1.3, Nov 5, 2026. Author: Talha.
 
-Changes in 1.3: a UI section (5.1) that makes the pm-monkey design system part of every step; a new UI foundation step (U) before step 0's screens; Linear/Selvar style replaces the Jira-style UI; full issue page plus a peek drawer; Undo, confirm and preview rules; soft delete for issues; agents are never assignees; status and issue type colours; Motion for animation; "Focus" grouping for My issues; empty states; board density and totals in the project's unit. Changes in 1.2: a workspace status library from step 1 (7.4); workflow data model (7.3); approval requests (A2); audit events listed per feature; Kanban handling of Won't do; @mention groups moved to step 5; detail restored from `design-decisions.md`. 1.1 added the Platform management contract.
+Changes in 1.3: a UI section (5.1) that makes the PmOps design system part of every step; a new UI foundation step (U) before step 0's screens; Linear/Selvar style replaces the Jira-style UI; full issue page plus a peek drawer; Undo, confirm and preview rules; soft delete for issues; agents are never assignees; status and issue type colours; Motion for animation; "Focus" grouping for My issues; empty states; board density and totals in the project's unit. Changes in 1.2: a workspace status library from step 1 (7.4); workflow data model (7.3); approval requests (A2); audit events listed per feature; Kanban handling of Won't do; @mention groups moved to step 5; detail restored from `design-decisions.md`. 1.1 added the Platform management contract.
 
 This one document replaces the four planning docs (`design-decisions.md`, `agents-spec.md`, `editions-and-cloud.md`, `build-spec-step-0.md`). "PmOps" is the working product name; the GitHub repo is renamed to `talhaimran/PM-Ops` and user-facing text (README, AGENTS.md, layouts, `APP_NAME`, the MCP server display name) says "PmOps"; internal identifiers keep their names (`pm_monkey` databases, the `pm` MCP handle, `PM_*` env vars, `pm.via`, `Pm*` classes).
 
@@ -170,7 +170,7 @@ In addition to `CLAUDE.md`:
 
 ### 5.1 UI and design system
 
-**Source of truth:** the **pm-monkey design system** (a Design System artifact in the user's claude.ai account; start with its `README.md`). It holds the tokens (colours in light and dark, type, spacing, radius, shadows), the components with their anatomy, states and keyboard behaviour, the motion page and the accessibility page. When this spec and the design system disagree, this spec wins; flag the difference so the design system gets fixed.
+**Source of truth:** the **PmOps design system** (a Design System artifact in the user's claude.ai account; start with its `README.md`). It holds the tokens (colours in light and dark, type, spacing, radius, shadows), the components with their anatomy, states and keyboard behaviour, the motion page and the accessibility page. When this spec and the design system disagree, this spec wins; flag the difference so the design system gets fixed.
 
 **Style:** calm, fast and keyboard-friendly, in the style of Linear and the Selvar demo. This replaces the current Jira-style UI. Selvar is a visual reference only: write all CSS and components from the design system, never copy Selvar's stylesheet or code.
 

@@ -5,6 +5,7 @@ import Pagination, { Paginated } from '@/Components/Pagination';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { ProjectHeader } from '@/Components/ProjectNav';
 import { useCreateShortcut } from '@/Components/useCreateShortcut';
+import IssueDrawer from '@/Components/IssueDrawer';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Issue, IssueOptions, Project } from '@/types';
 import { Head, router } from '@inertiajs/react';
@@ -46,18 +47,19 @@ export default function Issues({
         >
             <Head title={`${project.key} issues`} />
 
-            <div className="space-y-4 px-4 pb-10 sm:px-6">
+            <div className="space-y-4 px-4 pb-10 md:px-8">
                 <IssueFilters
                     filters={filters}
                     options={options}
                     onApply={apply}
                     onClear={() => router.get(route('projects.issues.index', project.key), filters.sort ? { sort: filters.sort } : {}, { replace: true })}
                 />
-                <IssueTable issues={issues.data} statuses={options.columns} sort={filters.sort} onSort={(sort) => apply({ sort })} />
+                <IssueTable peek issues={issues.data} statuses={options.columns} sort={filters.sort} onSort={(sort) => apply({ sort })} />
                 <Pagination page={issues} />
             </div>
 
             {can.contribute && <IssueFormModal show={creating} onClose={() => setCreating(false)} projectKey={project.key} options={options} />}
+            <IssueDrawer />
         </AuthenticatedLayout>
     );
 }

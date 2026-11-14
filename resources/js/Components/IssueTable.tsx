@@ -2,10 +2,12 @@ import Avatar from '@/Components/Avatar';
 import IssueTypeIcon from '@/Components/IssueTypeIcon';
 import PriorityIcon from '@/Components/PriorityIcon';
 import StatusLozenge from '@/Components/StatusLozenge';
+import { issueUrl, onPeekClick } from '@/issueUrl';
 import { Issue } from '@/types';
 import { Link } from '@inertiajs/react';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 
-type Column = { sort?: string; label: string; className?: string; cell: (i: Issue, statuses?: string[]) => React.ReactNode };
+type Column = { sort?: string; label: string; className?: string; cell: (i: Issue, statuses?: string[], peek?: boolean) => React.ReactNode };
 
 const columns: Column[] = [
     { sort: 'type', label: 'Type', className: 'w-12', cell: (i) => <IssueTypeIcon type={i.type} subtask={!!i.parent} /> },
@@ -14,7 +16,7 @@ const columns: Column[] = [
         label: 'Key',
         className: 'w-24 whitespace-nowrap',
         cell: (i) => (
-            <Link href={route('issues.show', i.key)} className="text-brand hover:underline">
+            <Link href={issueUrl(i.key)} className="text-primary hover:underline">
                 {i.key}
             </Link>
         ),
@@ -23,8 +25,9 @@ const columns: Column[] = [
         sort: 'title',
         label: 'Summary',
         className: 'min-w-48',
-        cell: (i) => (
-            <Link href={route('issues.show', i.key)} className="line-clamp-1 hover:text-brand hover:underline">
+        // The summary peeks where the page has a drawer; the key always goes to the full page.
+        cell: (i, _statuses, peek) => (
+            <Link href={issueUrl(i.key)} onClick={peek ? onPeekClick(i.key) : undefined} className="line-clamp-1 hover:text-primary hover:underline">
                 {i.title}
             </Link>
         ),
@@ -41,7 +44,7 @@ const columns: Column[] = [
                     <span className="truncate">{i.assignee.name}</span>
                 </span>
             ) : (
-                <span className="text-ink-subtle">Unassigned</span>
+                <span className="text-muted">Unassigned</span>
             ),
     },
     {
@@ -65,17 +68,31 @@ const columns: Column[] = [
 ];
 
 /**
- * Jira-style compact issue list with clickable sortable headers. `sort` is the current value ("-" prefix = descending).
+ * Compact issue list as a real table (th scope, aria-sort) with clickable sortable headers. `sort` is the current value ("-" prefix = descending).
  * Pass the project's `statuses` (column names) to colour status lozenges.
  * shortcut: cross-project search passes none, so its lozenges are gray; add a status category to IssueResource if that matters.
  */
-export default function IssueTable({ issues, sort, onSort, statuses }: { issues: Issue[]; sort?: string; onSort?: (sort: string) => void; statuses?: string[] }) {
+export default function IssueTable({
+    issues,
+    sort,
+    onSort,
+    statuses,
+    peek = false,
+    empty = 'No issues match these filters.',
+}: {
+    issues: Issue[];
+    sort?: string;
+    onSort?: (sort: string) => void;
+    statuses?: string[];
+    peek?: boolean;
+    empty?: string;
+}) {
     const current = sort ?? '-key';
 
     return (
-        <div className="overflow-x-auto border-t border-line">
+        <div className="overflow-x-auto rounded-card border border-line bg-card shadow-xs">
             <table className="min-w-full text-left">
-                <thead className="border-b-2 border-line bg-surface text-xs font-semibold text-ink-subtle">
+                <thead className="border-b border-line text-xs text-muted">
                     <tr>
                         {columns.map((c) => {
                             const active = current.replace('-', '') === c.sort;
@@ -84,15 +101,16 @@ export default function IssueTable({ issues, sort, onSort, statuses }: { issues:
                                 <th
                                     key={c.label}
                                     scope="col"
-                                    className={`px-2 py-2 font-semibold ${c.className ?? ''}`}
+                                    className={`px-3 py-2.5 ${c.className ?? ''}`}
                                     aria-sort={active ? (desc ? 'descending' : 'ascending') : 'none'}
                                 >
                                     {onSort && c.sort ? (
                                         <button
-                                            className={`-mx-1 rounded-[3px] px-1 hover:bg-neutral hover:text-ink ${active ? 'text-ink' : ''}`}
+                                            className={`-mx-1.5 inline-flex h-control-h-sm items-center gap-1 rounded-sm px-1.5 hover:bg-card-2 hover:text-text ${active ? 'text-text' : ''}`}
                                             onClick={() => onSort(active && !desc ? `-${c.sort}` : c.sort!)}
                                         >
-                                            {c.label} {active ? (desc ? '↓' : '↑') : ''}
+                                            {c.label}
+                                            {active && (desc ? <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" /> : <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />)}
                                         </button>
                                     ) : (
                                         c.label
@@ -105,16 +123,16 @@ export default function IssueTable({ issues, sort, onSort, statuses }: { issues:
                 <tbody className="divide-y divide-line">
                     {issues.length === 0 && (
                         <tr>
-                            <td colSpan={columns.length} className="px-3 py-10 text-center text-ink-subtle">
-                                No issues match.
+                            <td colSpan={columns.length} className="px-3 py-10 text-center text-muted">
+                                {empty}
                             </td>
                         </tr>
                     )}
                     {issues.map((i) => (
-                        <tr key={i.id} className="h-10 hover:bg-sunken">
+                        <tr key={i.id} className="h-11 hover:bg-card-2">
                             {columns.map((c) => (
-                                <td key={c.label} className={`px-2 py-1.5 ${c.className ?? ''}`}>
-                                    {c.cell(i, statuses)}
+                                <td key={c.label} className={`px-3 py-1.5 ${c.className ?? ''}`}>
+                                    {c.cell(i, statuses, peek)}
                                 </td>
                             ))}
                         </tr>

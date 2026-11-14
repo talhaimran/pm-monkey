@@ -84,6 +84,10 @@ The app is at <http://localhost:8000>, and the API docs are at <http://localhost
 
 Keyboard shortcuts: **c** creates an issue (board, backlog and list), **/** focuses search, **Esc** closes dialogs. The sun/moon button toggles light, dark and system themes.
 
+### Deleted issues
+
+Deleting an issue or comment (web, API or MCP) is a soft delete: it disappears everywhere but can be restored from the web app. `php artisan issues:purge` removes anything deleted more than 30 days ago; it is scheduled daily, so run the scheduler in production (`php artisan schedule:work`, or cron with `schedule:run`).
+
 ## Tests and lint
 
 ```bash

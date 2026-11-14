@@ -29,17 +29,25 @@ class CommentService
         return $comment->loadMissing('author');
     }
 
+    /** Soft delete: hidden everywhere, restorable until issues:purge removes it. */
     public function delete(Comment $comment): void
     {
         $comment->delete();
     }
 
-    /** Find a comment by id; comments in projects the user isn't in are reported as missing. */
-    public function resolve(User $user, int|string $id): Comment
+    public function restore(Comment $comment): Comment
     {
-        $comment = Comment::with(['issue.project', 'author'])->find($id);
+        $comment->restore();
 
-        if (! $comment || ! $user->accessibleProjects()->whereKey($comment->issue->project_id)->exists()) {
+        return $comment;
+    }
+
+    /** Find a comment by id; comments in projects the user isn't in are reported as missing. */
+    public function resolve(User $user, int|string $id, bool $deleted = false): Comment
+    {
+        $comment = Comment::with(['issue.project', 'author'])->when($deleted, fn ($q) => $q->onlyTrashed())->find($id);
+
+        if (! $comment?->issue || ! $user->accessibleProjects()->whereKey($comment->issue->project_id)->exists()) {
             throw ValidationException::withMessages([
                 'comment' => "Comment {$id} was not found. Get the issue to see its comment ids.",
             ])->status(404);

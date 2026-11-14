@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Web\Concerns\PresentsIssue;
 use App\Http\Requests\Lists\IssueListRequest;
 use App\Http\Resources\IssueResource;
 use App\Http\Resources\ProjectResource;
@@ -19,6 +20,8 @@ use Inertia\Response;
 
 class IssueListController extends Controller
 {
+    use PresentsIssue;
+
     public function __construct(private ProjectService $projects, private IssueService $issues, private DashboardService $dashboard) {}
 
     public function index(IssueListRequest $request, Project $project): Response
@@ -27,6 +30,7 @@ class IssueListController extends Controller
         $params = array_filter($request->validated());
 
         return Inertia::render('Projects/Issues', [
+            'peek' => $this->peek($request),
             'project' => (new ProjectResource($project))->resolve(),
             'issues' => IssueResource::collection($this->issues->list($request->user(), $project, $params))->response()->getData(true),
             'filters' => (object) $params,
@@ -51,6 +55,7 @@ class IssueListController extends Controller
         }
 
         return Inertia::render('Search', [
+            'peek' => $this->peek($request),
             'issues' => IssueResource::collection($this->issues->list($request->user(), null, $params))->response()->getData(true),
             'filters' => (object) $params,
         ]);

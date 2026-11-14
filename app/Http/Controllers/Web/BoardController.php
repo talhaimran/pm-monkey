@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Web\Concerns\PresentsIssue;
 use App\Http\Requests\Board\BoardFilterRequest;
 use App\Http\Requests\Board\ColumnRequest;
 use App\Http\Requests\Board\DeleteColumnRequest;
@@ -17,6 +18,7 @@ use App\Services\ColumnService;
 use App\Services\IssueService;
 use App\Services\ProjectService;
 use App\Services\SprintService;
+use App\Services\UndoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -24,12 +26,15 @@ use Inertia\Response;
 
 class BoardController extends Controller
 {
+    use PresentsIssue;
+
     public function __construct(
         private ProjectService $projects,
         private IssueService $issues,
         private BoardService $board,
         private ColumnService $columns,
         private SprintService $sprints,
+        private UndoService $undo,
     ) {}
 
     public function show(BoardFilterRequest $request, Project $project): Response
@@ -39,6 +44,7 @@ class BoardController extends Controller
         $sprint = $this->sprints->active($project);
 
         return Inertia::render('Projects/Board', [
+            'peek' => $this->peek($request),
             'project' => (new ProjectResource($project))->resolve(),
             'board' => (new BoardResource($this->board->board($project, $filters)))->resolve(),
             'active_sprint' => $sprint ? (new SprintResource($sprint))->resolve() : null,
@@ -52,9 +58,24 @@ class BoardController extends Controller
     {
         $issue = $this->issues->resolve($request->user(), $key);
         Gate::authorize('update', $issue);
-        $this->board->move($issue, $request->user(), $request->validated());
+        $undoOf = $request->validate(['undo_of' => ['nullable', 'integer']])['undo_of'] ?? null;
 
-        return back();
+        if ($undoOf) {
+            $this->undo->guard($issue, (int) $undoOf);
+            $this->board->move($issue, $request->user(), $request->validated(), 'undid');
+
+            return back();
+        }
+
+        $before = $this->undo->forMove($issue);
+        $issue = $this->board->move($issue, $request->user(), $request->validated());
+
+        return back()->with('undo', [
+            'message' => $before['status'] === $issue->column->name ? "{$issue->key} moved" : "{$issue->key} moved to {$issue->column->name}",
+            'method' => 'post',
+            'url' => route('issues.move', $issue->key),
+            'data' => [...$before, 'undo_of' => $this->undo->token($issue)],
+        ]);
     }
 
     public function storeColumn(ColumnRequest $request, Project $project): RedirectResponse

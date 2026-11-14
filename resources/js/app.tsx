@@ -1,7 +1,13 @@
+import '@fontsource/urbanist/400.css';
+import '@fontsource/urbanist/500.css';
+import '@fontsource/urbanist/600.css';
+import '@fontsource/urbanist/700.css';
+import '@fontsource/urbanist/800.css';
 import '../css/app.css';
 
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { MotionConfig } from 'motion/react';
 import { createRoot } from 'react-dom/client';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -16,9 +22,13 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
 
-        root.render(<App {...props} />);
+        root.render(
+            <MotionConfig reducedMotion="user">
+                <App {...props} />
+            </MotionConfig>,
+        );
     },
     progress: {
-        color: '#4B5563',
+        color: 'var(--primary)',
     },
 });

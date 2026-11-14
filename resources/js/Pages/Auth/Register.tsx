@@ -81,7 +81,7 @@ export default function Register() {
                 <div className="mt-4">
                     <InputLabel
                         htmlFor="password_confirmation"
-                        value="Confirm Password"
+                        value="Confirm password"
                     />
 
                     <TextInput
@@ -106,7 +106,7 @@ export default function Register() {
                 <div className="mt-4 flex items-center justify-end">
                     <Link
                         href={route('login')}
-                        className="rounded-md text-sm text-ink-subtle underline hover:text-ink focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
+                        className="rounded-ctl text-sm text-muted underline hover:text-text"
                     >
                         Already registered?
                     </Link>

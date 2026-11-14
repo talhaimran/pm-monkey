@@ -1,7 +1,9 @@
+import { Trash2 } from 'lucide-react';
 import DangerButton from '@/Components/DangerButton';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
-import Modal from '@/Components/Modal';
+import EmptyState from '@/Components/EmptyState';
+import WarningConfirm from '@/Components/WarningConfirm';
 import { selectClass } from '@/Components/IssueFormModal';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { ProjectHeader } from '@/Components/ProjectNav';
@@ -18,6 +20,7 @@ export default function Settings({
     roles,
     labels,
     columns,
+    deletedIssues,
     can,
 }: {
     project: Project;
@@ -25,6 +28,7 @@ export default function Settings({
     roles: ProjectRole[];
     labels: Label[];
     columns: { id: number; name: string; position: number; issue_count: number }[];
+    deletedIssues: { key: string; title: string; deleted_at: string; deleted_by: string | null }[];
     can: { manage: boolean; contribute: boolean };
 }) {
     const { errors: pageErrors } = usePage().props as { errors: Record<string, string> };
@@ -65,8 +69,8 @@ export default function Settings({
             preserveScroll: true,
         });
 
-    const card = 'rounded border border-line bg-surface p-4 sm:p-6 ';
-    const heading = 'text-base font-semibold text-ink ';
+    const card = 'rounded-card bg-card p-5 shadow sm:p-6 ';
+    const heading = 'text-lg text-text ';
 
     return (
         <AuthenticatedLayout
@@ -75,7 +79,7 @@ export default function Settings({
         >
             <Head title={`${project.key} settings`} />
 
-            <div className="max-w-4xl space-y-6 px-4 pb-10 sm:px-6">
+            <div className="max-w-4xl space-y-6 px-4 pb-10 md:px-8">
                 <section className={card}>
                     <h3 className={heading}>Details</h3>
                     <form onSubmit={saveDetails} className="mt-4 space-y-4">
@@ -116,8 +120,8 @@ export default function Settings({
                         {project.members?.map((m) => (
                             <li key={m.id} className="flex flex-wrap items-center gap-3 py-2 text-sm">
                                 <div className="min-w-0 flex-1">
-                                    <div className="text-ink">{m.name}</div>
-                                    <div className="truncate text-ink-subtle">{m.email}</div>
+                                    <div className="text-text">{m.name}</div>
+                                    <div className="truncate text-muted">{m.email}</div>
                                 </div>
                                 {can.manage ? (
                                     <>
@@ -138,7 +142,7 @@ export default function Settings({
                                         </SecondaryButton>
                                     </>
                                 ) : (
-                                    <span className="text-xs uppercase text-ink-subtle">{m.role}</span>
+                                    <span className="text-xs uppercase text-muted">{m.role}</span>
                                 )}
                             </li>
                         ))}
@@ -176,7 +180,7 @@ export default function Settings({
                                     >
                                         ↓
                                     </SecondaryButton>
-                                    <span className="text-ink-subtle">{c.issue_count} issues</span>
+                                    <span className="text-muted">{c.issue_count} issues</span>
                                     {c.issue_count > 0 && (
                                         <select
                                             aria-label={`Move ${c.name} issues to`}
@@ -234,9 +238,9 @@ export default function Settings({
                     <h3 className={heading}>Labels</h3>
                     <InputError className="mt-2" message={pageErrors.name} />
                     <ul className="mt-4 flex flex-wrap gap-2">
-                        {labels.length === 0 && <li className="text-sm text-ink-subtle">No labels yet.</li>}
+                        {labels.length === 0 && <li className="text-sm text-muted">No labels yet.</li>}
                         {labels.map((l) => (
-                            <li key={l.id} className="flex items-center gap-2 rounded-full border px-3 py-1 text-sm text-ink" style={{ borderColor: l.color }}>
+                            <li key={l.id} className="flex items-center gap-2 rounded-pill border px-3 py-1 text-sm text-text" style={{ borderColor: l.color }}>
                                 {can.contribute && (
                                     <input
                                         type="color"
@@ -253,7 +257,7 @@ export default function Settings({
                                 {can.contribute && (
                                     <button
                                         aria-label={`Delete label ${l.name}`}
-                                        className="text-ink-subtle hover:text-danger"
+                                        className="text-muted hover:text-t-bad"
                                         onClick={() => router.delete(route('projects.labels.destroy', [project.key, l.id]), { preserveScroll: true })}
                                     >
                                         ×
@@ -276,7 +280,7 @@ export default function Settings({
                             <input
                                 type="color"
                                 aria-label="New label color"
-                                className="h-10 w-10 cursor-pointer rounded border-line"
+                                className="h-10 w-10 cursor-pointer rounded-ctl border-line"
                                 value={newLabel.data.color}
                                 onChange={(e) => newLabel.setData('color', e.target.value)}
                             />
@@ -331,7 +335,7 @@ export default function Settings({
                         {invitations.length > 0 && (
                             <ul className="mt-4 divide-y divide-line text-sm">
                                 {invitations.map((inv) => (
-                                    <li key={inv.id} className="flex items-center justify-between gap-3 py-2 text-ink">
+                                    <li key={inv.id} className="flex items-center justify-between gap-3 py-2 text-text">
                                         <span>
                                             {inv.email} · {inv.role} · pending
                                         </span>
@@ -354,8 +358,36 @@ export default function Settings({
 
                 {can.manage && (
                     <section className={card}>
-                        <h3 className="text-base font-semibold text-danger">Delete project</h3>
-                        <p className="mt-1 text-sm text-ink-subtle">
+                        <h3 className={heading}>Deleted issues</h3>
+                        <p className="mt-1 text-sm text-muted">Deleted issues can be restored for 30 days, then they are removed for good.</p>
+                        {deletedIssues.length === 0 ? (
+                            <div className="mt-4">
+                                <EmptyState icon={Trash2} title="Nothing deleted in the last 30 days." />
+                            </div>
+                        ) : (
+                            <ul className="mt-3 divide-y divide-line">
+                                {deletedIssues.map((d) => (
+                                    <li key={d.key} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                                        <span className="text-2xs text-muted">{d.key}</span>
+                                        <span className="min-w-0 flex-1 truncate text-md text-text">{d.title}</span>
+                                        <span className="text-sm text-muted">
+                                            Deleted {new Date(d.deleted_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                                            {d.deleted_by && ` by ${d.deleted_by}`}
+                                        </span>
+                                        <SecondaryButton onClick={() => router.post(route('issues.restore', d.key), {}, { preserveScroll: true })}>
+                                            Restore <span className="sr-only">{d.key}</span>
+                                        </SecondaryButton>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </section>
+                )}
+
+                {can.manage && (
+                    <section className={card}>
+                        <h3 className="text-lg text-t-bad">Delete project</h3>
+                        <p className="mt-1 text-sm text-muted">
                             Permanently deletes {project.key} and all of its issues.
                         </p>
                         <DangerButton className="mt-4" onClick={() => setConfirmingDelete(true)}>
@@ -365,28 +397,14 @@ export default function Settings({
                 )}
             </div>
 
-            <Modal show={confirmingDelete} onClose={() => setConfirmingDelete(false)}>
-                <div className="p-6">
-                    <h2 className="text-xl font-semibold text-ink">
-                        Delete {project.key}?
-                    </h2>
-                    <p className="mt-1 text-sm text-ink-subtle">
-                        This cannot be undone.
-                    </p>
-                    <div className="mt-6 flex justify-end gap-3">
-                        <SecondaryButton onClick={() => setConfirmingDelete(false)}>Cancel</SecondaryButton>
-                        <DangerButton
-                            onClick={() =>
-                                router.delete(route('projects.destroy', project.key), {
-                                    data: { confirm: true },
-                                })
-                            }
-                        >
-                            Delete
-                        </DangerButton>
-                    </div>
-                </div>
-            </Modal>
+            <WarningConfirm
+                open={confirmingDelete}
+                title={`Delete ${project.key}?`}
+                warnings={[{ text: `${project.name} and all of its issues are deleted for good.`, reason: 'This cannot be undone, and deleted issues cannot be restored.' }]}
+                confirmLabel="Delete project"
+                onCancel={() => setConfirmingDelete(false)}
+                onConfirm={() => router.delete(route('projects.destroy', project.key), { data: { confirm: true } })}
+            />
         </AuthenticatedLayout>
     );
 }

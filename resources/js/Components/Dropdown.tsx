@@ -53,7 +53,7 @@ const Trigger = ({ children }: PropsWithChildren) => {
 const Content = ({
     align = 'right',
     width = '48',
-    contentClasses = 'py-1 bg-raised',
+    contentClasses = 'py-1 bg-card',
     children,
 }: PropsWithChildren<{
     align?: 'left' | 'right';
@@ -88,12 +88,12 @@ const Content = ({
                 leaveTo="opacity-0 scale-95"
             >
                 <div
-                    className={`absolute z-50 mt-1 rounded shadow-lg ${alignmentClasses} ${widthClasses}`}
+                    className={`absolute z-50 mt-1 rounded-ctl shadow-pop ${alignmentClasses} ${widthClasses}`}
                     onClick={() => setOpen(false)}
                 >
                     <div
                         className={
-                            `rounded border border-line ` +
+                            `overflow-hidden rounded-ctl border border-line ` +
                             contentClasses
                         }
                     >
@@ -114,7 +114,7 @@ const DropdownLink = ({
         <Link
             {...props}
             className={
-                'block w-full border-l-2 border-transparent px-4 py-2 text-start text-sm text-ink hover:border-brand hover:bg-sunken focus:border-brand focus:bg-sunken focus:outline-none ' +
+                'block w-full px-4 py-2 text-start text-md text-text hover:bg-card-2 focus-visible:bg-card-2 ' +
                 className
             }
         >

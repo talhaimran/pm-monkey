@@ -13,6 +13,7 @@ use App\Http\Resources\ProjectInvitationResource;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use App\Models\ProjectInvitation;
+use App\Services\IssueService;
 use App\Services\ProjectService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -56,6 +57,8 @@ class ProjectController extends Controller
             'roles' => ProjectRole::values(),
             'labels' => LabelResource::collection($project->labels()->get())->resolve(),
             'columns' => ColumnResource::collection($project->columns()->withCount('issues')->get())->resolve(),
+            // Admin-only (spec 5.1): restore from here until issues:purge removes them after 30 days.
+            'deletedIssues' => $canManage ? app(IssueService::class)->deleted($project) : [],
             'can' => ['manage' => $canManage, 'contribute' => $request->user()->can('contribute', $project)],
         ]);
     }

@@ -1,22 +1,23 @@
-import { ButtonHTMLAttributes } from 'react';
+import { ButtonHTMLAttributes, forwardRef } from 'react';
 
-export default function SecondaryButton({
+export default forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement>>(function SecondaryButton({
     type = 'button',
     className = '',
     disabled,
     children,
     ...props
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
+}, ref) {
     return (
         <button
             {...props}
+            ref={ref}
             type={type}
             className={
-                'inline-flex h-8 items-center justify-center gap-1 rounded-[3px] px-3 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 focus-visible:ring-offset-surface disabled:cursor-not-allowed disabled:opacity-50 bg-neutral text-ink hover:bg-neutral-hover ' + className
+                'inline-flex h-control-h items-center justify-center gap-1.5 rounded-ctl px-4 text-md transition-colors duration-instant disabled:cursor-not-allowed disabled:opacity-50 border border-line-2 bg-card text-text hover:bg-card-2 ' + className
             }
             disabled={disabled}
         >
             {children}
         </button>
     );
-}
+});

@@ -1,16 +1,16 @@
 import { InertiaLinkProps, Link } from '@inertiajs/react';
 
-/** Top bar link; the active one gets a brand underline like Jira's. */
+/** shortcut: unused since the sidebar shell (step U); kept because step U deletes no files. Remove with ResponsiveNavLink. */
 export default function NavLink({ active = false, className = '', children, ...props }: InertiaLinkProps & { active: boolean }) {
     return (
         <Link
             {...props}
             aria-current={active ? 'page' : undefined}
             className={
-                'relative inline-flex h-8 items-center rounded-[3px] px-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ' +
+                'relative inline-flex h-8 items-center rounded-ctl px-2 text-sm font-medium ' +
                 (active
-                    ? 'text-brand after:absolute after:inset-x-1 after:-bottom-3 after:h-0.5 after:bg-brand'
-                    : 'text-ink-subtle hover:bg-neutral hover:text-ink') +
+                    ? 'text-primary after:absolute after:inset-x-1 after:-bottom-3 after:h-0.5 after:bg-primary'
+                    : 'text-muted hover:bg-card-2 hover:text-text') +
                 ' ' +
                 className
             }

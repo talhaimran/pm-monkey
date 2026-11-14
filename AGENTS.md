@@ -46,11 +46,11 @@ Permissions: **Admins** manage settings, members, columns and the project itself
 | `create_issue` | Create an issue, sub-task (`parent`) or epic | project, title | description, type, priority, status, assignee, labels, story_points, due_date, epic, parent, sprint |
 | `get_issue` | Issue with sub-tasks, epic issues, comments | issue | |
 | `update_issue` | Change only the fields you send; `null` clears | issue | title, description, type, priority, status, assignee, labels, story_points, due_date, epic, parent, sprint |
-| `delete_issue` | Delete an issue and its sub-tasks | issue, confirm | |
+| `delete_issue` | Delete an issue and its sub-tasks. Soft: they disappear from every tool and response; a person can restore them in the web app for 30 days | issue, confirm | |
 | `get_issue_activity` | Change history, newest first | issue | page, per_page |
 | `add_comment` | Markdown comment | issue, body | |
 | `update_comment` | Edit your own comment | comment_id, body | |
-| `delete_comment` | Delete your comment (admins: any) | comment_id | |
+| `delete_comment` | Delete your comment (admins: any). Soft, like issues | comment_id | |
 | `list_labels` / `create_label` / `update_label` / `delete_label` | Manage labels (by name) | project (+ name or label) | color, name |
 | `get_board` | Columns with issue cards in rank order (epics hidden) | project | assignee, type, priority, label, q, sprint |
 | `move_issue` | Change status and/or position on the board | issue | status, position, after |
