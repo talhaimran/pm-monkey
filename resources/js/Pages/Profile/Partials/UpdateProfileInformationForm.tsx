@@ -32,7 +32,7 @@ export default function UpdateProfileInformation({
     return (
         <section className={className}>
             <header>
-                <h2 className="text-xl font-semibold text-text">
+                <h2 className="text-heading-2xl text-text">
                     Profile Information
                 </h2>
 
@@ -82,7 +82,7 @@ export default function UpdateProfileInformation({
                                 href={route('verification.send')}
                                 method="post"
                                 as="button"
-                                className="rounded-md text-sm text-muted underline hover:text-text"
+                                className="rounded-ctl text-sm text-muted underline hover:text-text"
                             >
                                 Click here to re-send the verification email.
                             </Link>

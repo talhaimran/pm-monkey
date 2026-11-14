@@ -5,6 +5,7 @@ import StatusLozenge from '@/Components/StatusLozenge';
 import { issueUrl, onPeekClick } from '@/issueUrl';
 import { Issue } from '@/types';
 import { Link } from '@inertiajs/react';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 
 type Column = { sort?: string; label: string; className?: string; cell: (i: Issue, statuses?: string[], peek?: boolean) => React.ReactNode };
 
@@ -67,7 +68,7 @@ const columns: Column[] = [
 ];
 
 /**
- * Jira-style compact issue list with clickable sortable headers. `sort` is the current value ("-" prefix = descending).
+ * Compact issue list as a real table (th scope, aria-sort) with clickable sortable headers. `sort` is the current value ("-" prefix = descending).
  * Pass the project's `statuses` (column names) to colour status lozenges.
  * shortcut: cross-project search passes none, so its lozenges are gray; add a status category to IssueResource if that matters.
  */
@@ -77,19 +78,21 @@ export default function IssueTable({
     onSort,
     statuses,
     peek = false,
+    empty = 'No issues match these filters.',
 }: {
     issues: Issue[];
     sort?: string;
     onSort?: (sort: string) => void;
     statuses?: string[];
     peek?: boolean;
+    empty?: string;
 }) {
     const current = sort ?? '-key';
 
     return (
-        <div className="overflow-x-auto border-t border-line">
+        <div className="overflow-x-auto rounded-card border border-line bg-card shadow-xs">
             <table className="min-w-full text-left">
-                <thead className="border-b-2 border-line bg-bg text-xs font-semibold text-muted">
+                <thead className="border-b border-line text-xs text-muted">
                     <tr>
                         {columns.map((c) => {
                             const active = current.replace('-', '') === c.sort;
@@ -98,15 +101,16 @@ export default function IssueTable({
                                 <th
                                     key={c.label}
                                     scope="col"
-                                    className={`px-2 py-2 font-semibold ${c.className ?? ''}`}
+                                    className={`px-3 py-2.5 ${c.className ?? ''}`}
                                     aria-sort={active ? (desc ? 'descending' : 'ascending') : 'none'}
                                 >
                                     {onSort && c.sort ? (
                                         <button
-                                            className={`-mx-1 rounded-ctl px-1 hover:bg-card-2 hover:text-text ${active ? 'text-text' : ''}`}
+                                            className={`-mx-1.5 inline-flex h-control-h-sm items-center gap-1 rounded-sm px-1.5 hover:bg-card-2 hover:text-text ${active ? 'text-text' : ''}`}
                                             onClick={() => onSort(active && !desc ? `-${c.sort}` : c.sort!)}
                                         >
-                                            {c.label} {active ? (desc ? '↓' : '↑') : ''}
+                                            {c.label}
+                                            {active && (desc ? <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" /> : <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />)}
                                         </button>
                                     ) : (
                                         c.label
@@ -120,14 +124,14 @@ export default function IssueTable({
                     {issues.length === 0 && (
                         <tr>
                             <td colSpan={columns.length} className="px-3 py-10 text-center text-muted">
-                                No issues match.
+                                {empty}
                             </td>
                         </tr>
                     )}
                     {issues.map((i) => (
-                        <tr key={i.id} className="h-10 hover:bg-card-2">
+                        <tr key={i.id} className="h-11 hover:bg-card-2">
                             {columns.map((c) => (
-                                <td key={c.label} className={`px-2 py-1.5 ${c.className ?? ''}`}>
+                                <td key={c.label} className={`px-3 py-1.5 ${c.className ?? ''}`}>
                                     {c.cell(i, statuses, peek)}
                                 </td>
                             ))}

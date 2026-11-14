@@ -47,7 +47,7 @@ export default function Issues({
         >
             <Head title={`${project.key} issues`} />
 
-            <div className="space-y-4 px-4 pb-10 sm:px-6">
+            <div className="space-y-4 px-4 pb-10 md:px-8">
                 <IssueFilters
                     filters={filters}
                     options={options}

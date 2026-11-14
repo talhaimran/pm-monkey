@@ -65,8 +65,8 @@ export default function Settings({
             preserveScroll: true,
         });
 
-    const card = 'rounded border border-line bg-bg p-4 sm:p-6 ';
-    const heading = 'text-base font-semibold text-text ';
+    const card = 'rounded-ctl border border-line bg-bg p-4 sm:p-6 ';
+    const heading = 'text-body font-semibold text-text ';
 
     return (
         <AuthenticatedLayout
@@ -75,7 +75,7 @@ export default function Settings({
         >
             <Head title={`${project.key} settings`} />
 
-            <div className="max-w-4xl space-y-6 px-4 pb-10 sm:px-6">
+            <div className="max-w-4xl space-y-6 px-4 pb-10 md:px-8">
                 <section className={card}>
                     <h3 className={heading}>Details</h3>
                     <form onSubmit={saveDetails} className="mt-4 space-y-4">
@@ -236,7 +236,7 @@ export default function Settings({
                     <ul className="mt-4 flex flex-wrap gap-2">
                         {labels.length === 0 && <li className="text-sm text-muted">No labels yet.</li>}
                         {labels.map((l) => (
-                            <li key={l.id} className="flex items-center gap-2 rounded-full border px-3 py-1 text-sm text-text" style={{ borderColor: l.color }}>
+                            <li key={l.id} className="flex items-center gap-2 rounded-pill border px-3 py-1 text-sm text-text" style={{ borderColor: l.color }}>
                                 {can.contribute && (
                                     <input
                                         type="color"
@@ -276,7 +276,7 @@ export default function Settings({
                             <input
                                 type="color"
                                 aria-label="New label color"
-                                className="h-10 w-10 cursor-pointer rounded border-line"
+                                className="h-10 w-10 cursor-pointer rounded-ctl border-line"
                                 value={newLabel.data.color}
                                 onChange={(e) => newLabel.setData('color', e.target.value)}
                             />
@@ -354,7 +354,7 @@ export default function Settings({
 
                 {can.manage && (
                     <section className={card}>
-                        <h3 className="text-base font-semibold text-t-bad">Delete project</h3>
+                        <h3 className="text-body font-semibold text-t-bad">Delete project</h3>
                         <p className="mt-1 text-sm text-muted">
                             Permanently deletes {project.key} and all of its issues.
                         </p>
@@ -367,7 +367,7 @@ export default function Settings({
 
             <Modal show={confirmingDelete} onClose={() => setConfirmingDelete(false)}>
                 <div className="p-6">
-                    <h2 className="text-xl font-semibold text-text">
+                    <h2 className="text-heading-2xl text-text">
                         Delete {project.key}?
                     </h2>
                     <p className="mt-1 text-sm text-muted">

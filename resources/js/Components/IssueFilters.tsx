@@ -33,7 +33,7 @@ export default function IssueFilters({
     const select = (name: keyof Filters, label: string, choices: { value: string; label: string }[]) => (
         <select
             aria-label={label}
-            className={`${selectClass} w-auto !border-transparent font-medium ${filters[name] ? '!bg-well !text-primary' : '!bg-card-2 hover:!bg-well'}`}
+            className={`${selectClass} !h-control-h w-auto ${filters[name] ? '!border-primary !text-primary' : ''}`}
             value={filters[name] ?? ''}
             onChange={(e) => onApply({ [name]: e.target.value })}
         >
@@ -49,7 +49,7 @@ export default function IssueFilters({
     const active = Object.entries(filters).some(([k, v]) => k !== 'sort' && v);
     const toggle = (assignee: string) => onApply({ assignee: filters.assignee === assignee ? '' : assignee });
     const ring = (on: boolean) =>
-        `rounded-full ring-2 transition-transform hover:-translate-y-0.5 ${on ? 'z-10 ring-primary' : 'ring-bg'}`;
+        `rounded-pill ring-2 ${on ? 'z-10 ring-primary' : 'ring-bg'}`;
 
     return (
         <div className="flex flex-wrap items-center gap-2">
@@ -59,7 +59,7 @@ export default function IssueFilters({
                     type="search"
                     aria-label="Search this board"
                     placeholder="Search"
-                    className="w-40 ps-8 sm:w-44"
+                    className="h-control-h w-40 ps-9 sm:w-48"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                 />
@@ -75,7 +75,7 @@ export default function IssueFilters({
                         className={ring(filters.assignee === m.email)}
                         onClick={() => toggle(m.email)}
                     >
-                        <Avatar name={m.name} email={m.email} size="md" />
+                        <Avatar name={m.name} email={m.email} size="sm" />
                     </button>
                 ))}
                 <button
@@ -83,7 +83,7 @@ export default function IssueFilters({
                     aria-pressed={filters.assignee === 'unassigned'}
                     aria-label="Unassigned"
                     title="Unassigned"
-                    className={`${ring(filters.assignee === 'unassigned')} flex h-8 w-8 items-center justify-center bg-card-2 text-muted`}
+                    className={`${ring(filters.assignee === 'unassigned')} flex h-8 w-8 items-center justify-center bg-card text-muted`}
                     onClick={() => toggle('unassigned')}
                 >
                     <UserRound className="h-4 w-4" aria-hidden="true" />
@@ -101,7 +101,7 @@ export default function IssueFilters({
             {active && (
                 <button
                     type="button"
-                    className="h-8 rounded-ctl px-2 text-sm font-medium text-muted hover:bg-card-2 hover:text-text"
+                    className="h-control-h rounded-ctl px-3 text-md text-muted hover:bg-card-2 hover:text-text"
                     onClick={() => {
                         setSearch('');
                         onClear();

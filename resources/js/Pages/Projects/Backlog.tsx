@@ -15,7 +15,9 @@ import StatusLozenge from '@/Components/StatusLozenge';
 import TextInput from '@/Components/TextInput';
 import { useCreateShortcut } from '@/Components/useCreateShortcut';
 import { placement, useLaneDroppable, useSortableLanes } from '@/Components/useSortableLanes';
+import EmptyState from '@/Components/EmptyState';
 import { issueUrl } from '@/issueUrl';
+import { transition } from '@/motion';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { IssueOptions, Project } from '@/types';
 import { closestCorners, DndContext, DragOverlay } from '@dnd-kit/core';
@@ -91,10 +93,10 @@ export default function Backlog({
         >
             <Head title={`${project.key} backlog`} />
 
-            <div className="space-y-4 px-4 pb-10 sm:px-6">
+            <div className="space-y-4 px-4 pb-10 md:px-8">
                 <InputError message={errors.sprint ?? errors.after} />
                 {backlog.truncated && (
-                    <p className="rounded-ctl tint-amber px-3 py-2 ">Showing the first 1000 issues.</p>
+                    <p className="rounded-ctl tint-warn px-3 py-2">Showing the first 1000 issues.</p>
                 )}
 
                 <DndContext sensors={sensors} collisionDetection={closestCorners} {...handlers}>
@@ -114,16 +116,13 @@ export default function Backlog({
                                         </span>
                                     )}
                                     <span>
-                                        ({sprint.issue_count} {sprint.issue_count === 1 ? 'issue' : 'issues'})
+                                        {sprint.issue_count} {sprint.issue_count === 1 ? 'issue' : 'issues'} · {sprint.points_total} pts
                                     </span>
                                 </>
                             }
                             actions={
                                 <>
-                                    <span className="hidden items-center gap-1 sm:flex" title="Story points: done / total">
-                                        <span className="rounded-full tint-good px-1.5 text-xs font-semibold ">{sprint.points_done}</span>
-                                        <span className="rounded-full bg-card-2 px-1.5 text-xs font-semibold">{sprint.points_total}</span>
-                                    </span>
+                                    <span className="hidden h-pill-h items-center rounded-pill tint-good px-2.5 text-xs sm:flex">{sprint.points_done} pts done</span>
                                     {can.contribute && sprint.state === 'planned' && (
                                         <SecondaryButton
                                             disabled={hasActive}
@@ -171,10 +170,10 @@ export default function Backlog({
                         columns={options.columns}
                         draggable={can.contribute}
                         title="Backlog"
-                        meta={<span>({(lanes[BACKLOG] ?? []).length} issues)</span>}
+                        meta={<span>{(lanes[BACKLOG] ?? []).length} issues</span>}
                         actions={can.contribute && <SecondaryButton onClick={() => setEditing('new')}>Create sprint</SecondaryButton>}
                     />
-                    <DragOverlay>{active ? <Row card={active} columns={options.columns} dragging /> : null}</DragOverlay>
+                    <DragOverlay dropAnimation={css('drop')}>{active ? <Row card={active} columns={options.columns} dragging /> : null}</DragOverlay>
                 </DndContext>
             </div>
 
@@ -193,7 +192,13 @@ export default function Backlog({
 }
 
 const shortDate = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
-const menuItem = 'block w-full border-l-2 border-transparent px-4 py-2 text-start hover:border-primary hover:bg-card-2';
+const menuItem = 'block w-full px-4 py-2 text-start text-md hover:bg-card-2';
+
+// Sortable timings come from motion.ts, so reduced motion turns them off with everything else.
+const css = (moment: 'lift' | 'drop') => {
+    const t = transition(moment);
+    return { duration: t.duration * 1000, easing: `cubic-bezier(${t.ease.join(',')})` };
+};
 
 function Section({
     lane,
@@ -221,7 +226,7 @@ function Section({
         <section
             ref={setNodeRef}
             aria-label={lane === BACKLOG ? 'Backlog' : `Sprint ${lane}`}
-            className={`rounded bg-card-2 p-2 ${isOver ? 'outline outline-2 outline-primary' : ''}`}
+            className={`rounded-card border p-3 shadow-xs transition-colors duration-instant ${isOver ? 'border-c-cobalt tint-cobalt' : 'border-transparent bg-card'}`}
         >
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 py-1">
                 <button
@@ -231,7 +236,7 @@ function Section({
                     className="flex min-w-0 items-center gap-1 rounded-ctl px-1 py-1 hover:bg-card-2"
                 >
                     <ChevronRight className={`h-4 w-4 shrink-0 text-muted transition-transform ${open ? 'rotate-90' : ''}`} aria-hidden="true" />
-                    <h3 className="truncate font-semibold">{title}</h3>
+                    <h3 className="truncate text-lg text-text">{title}</h3>
                 </button>
                 <span className="flex flex-wrap gap-2 text-muted">{meta}</span>
                 <span className="ms-auto flex items-center gap-2">{actions}</span>
@@ -239,10 +244,14 @@ function Section({
             </div>
             {open && (
                 <SortableContext items={cards.map((c) => c.key)} strategy={verticalListSortingStrategy}>
-                    <ul className="mt-1 flex min-h-10 flex-col gap-px">
+                    <ul className="mt-2 flex min-h-10 flex-col gap-1">
                         {cards.length === 0 && (
-                            <li className="rounded border-2 border-dashed border-line p-3 text-center text-muted">
-                                {lane === BACKLOG ? 'Your backlog is empty.' : 'Plan a sprint by dragging issues here.'}
+                            <li>
+                                <EmptyState
+                                    compact
+                                    title={lane === BACKLOG ? 'No issues in the backlog.' : 'Nothing planned.'}
+                                    hint={lane === BACKLOG ? 'Create your first issue · C' : 'Drag an issue here.'}
+                                />
                             </li>
                         )}
                         {cards.map((card) => (
@@ -256,13 +265,13 @@ function Section({
 }
 
 function SortableRow({ card, columns, disabled }: { card: Card; columns: string[]; disabled: boolean }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.key, disabled });
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.key, disabled, transition: css('drop') });
 
     return (
         <li
             ref={setNodeRef}
             style={{ transform: CSS.Transform.toString(transform), transition }}
-            className={isDragging ? 'opacity-40' : ''}
+            className={`rounded-ctl ${isDragging ? 'opacity-40' : ''}`}
             {...attributes}
             {...listeners}
         >
@@ -274,26 +283,24 @@ function SortableRow({ card, columns, disabled }: { card: Card; columns: string[
 function Row({ card, columns, dragging = false }: { card: Card; columns: string[]; dragging?: boolean }) {
     return (
         <div
-            className={`flex h-10 items-center gap-2 bg-card px-3 shadow-xs hover:bg-well dark:shadow-none ${
-                dragging ? 'rounded outline outline-2 outline-primary shadow-xl' : ''
-            }`}
+            className={`flex h-11 items-center gap-2.5 rounded-ctl border px-3 ${dragging ? 'border-line-2 bg-card shadow-lift' : 'border-transparent bg-card-2 hover:border-line-2'}`}
         >
             <IssueTypeIcon type={card.type} subtask={!!card.parent} />
-            <Link href={issueUrl(card.key)} className={`shrink-0 text-muted hover:underline ${card.status === columns.at(-1) ? 'line-through' : ''}`}>
+            <Link href={issueUrl(card.key)} className="shrink-0 text-2xs text-muted hover:underline">
                 {card.key}
             </Link>
-            <span className="min-w-0 flex-1 truncate">{card.title}</span>
+            <span className="min-w-0 flex-1 truncate text-md" title={card.title}>
+                {card.title}
+            </span>
             <span className="hidden max-w-32 sm:block">
                 <StatusLozenge status={card.status} columns={columns} />
             </span>
-            <span className="min-w-5 rounded-full bg-card-2 px-1.5 text-center text-xs font-semibold" title="Story points">
-                {card.story_points ?? '-'}
-            </span>
+            {card.story_points !== null && <span className="shrink-0 text-sm text-muted">{card.story_points} pts</span>}
             <PriorityIcon priority={card.priority} />
             {card.assignee ? (
                 <Avatar name={card.assignee.name} email={card.assignee.email} />
             ) : (
-                <span className="h-6 w-6 shrink-0 rounded-full border border-dashed border-line" title="Unassigned" />
+                <span className="h-6 w-6 shrink-0 rounded-pill border border-dashed border-line-2" title="Unassigned" />
             )}
         </div>
     );
@@ -327,7 +334,7 @@ function SprintFormModal({ project, sprint, onClose }: { project: Project; sprin
     return (
         <Modal show={sprint !== null} onClose={onClose}>
             <form onSubmit={submit} className="space-y-4 p-6">
-                <h2 className="text-xl font-semibold">{existing ? `Edit ${existing.name}` : 'New sprint'}</h2>
+                <h2 className="text-heading-2xl text-text">{existing ? `Edit ${existing.name}` : 'New sprint'}</h2>
                 <div>
                     <InputLabel htmlFor="sprint-name" value="Name" />
                     <TextInput

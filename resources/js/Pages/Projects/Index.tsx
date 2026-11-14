@@ -30,17 +30,17 @@ export default function Index({
     return (
         <AuthenticatedLayout
             header={
-                <h1 className="text-2xl font-semibold text-text">
+                <h1 className="text-display text-text">
                     Projects
                 </h1>
             }
         >
             <Head title="Projects" />
 
-            <div className="space-y-6 px-4 pb-10 sm:px-6">
+            <div className="space-y-6 px-4 pb-10 md:px-8">
                 {invitations.length > 0 && (
-                    <section className="rounded border border-line bg-well p-4">
-                        <h3 className="text-base font-semibold text-text">
+                    <section className="rounded-ctl border border-line bg-well p-4">
+                        <h3 className="text-body font-semibold text-text">
                             Pending invitations
                         </h3>
                         {!verified && (
@@ -87,8 +87,8 @@ export default function Index({
                     </section>
                 )}
 
-                <section className="rounded border border-line bg-bg p-4 sm:p-6">
-                    <h3 className="text-base font-semibold text-text">
+                <section className="rounded-ctl border border-line bg-bg p-4 sm:p-6">
+                    <h3 className="text-body font-semibold text-text">
                         New project
                     </h3>
                     <form
@@ -128,7 +128,7 @@ export default function Index({
                     </form>
                 </section>
 
-                <section className="overflow-hidden rounded border border-line bg-bg">
+                <section className="overflow-hidden rounded-ctl border border-line bg-bg">
                     {projects.length === 0 ? (
                         <p className="p-6 text-sm text-muted">
                             You're not in any projects yet. Create one above.
@@ -139,7 +139,7 @@ export default function Index({
                                 <li key={p.id}>
                                     <Link
                                         href={route('projects.show', p.key)}
-                                        className="flex items-center gap-4 px-4 py-3 hover:bg-card-2 sm:px-6"
+                                        className="flex items-center gap-4 px-4 py-3 hover:bg-card-2 md:px-8"
                                     >
                                         <ProjectAvatar projectKey={p.key} />
                                         <span className="min-w-0 flex-1 truncate font-medium text-primary">

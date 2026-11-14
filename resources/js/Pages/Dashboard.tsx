@@ -28,14 +28,14 @@ export default function Dashboard({
     projects: { key: string; name: string; my_role: ProjectRole; summary: Summary }[];
 }) {
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-semibold text-text">Your work</h1>}>
+        <AuthenticatedLayout header={<h1 className="text-display text-text">Your work</h1>}>
             <Head title="Dashboard" />
 
-            <div className="space-y-8 px-4 pb-10 sm:px-6">
+            <div className="space-y-8 px-4 pb-10 md:px-8">
                 <section>
-                    <h3 className="mb-3 text-base font-semibold text-text">My issues</h3>
+                    <h3 className="mb-3 text-body font-semibold text-text">My issues</h3>
                     {myIssues.length === 0 ? (
-                        <p className="rounded-lg bg-bg p-6 text-sm text-muted shadow-sm">
+                        <p className="rounded-card bg-bg p-6 text-sm text-muted shadow-xs">
                             Nothing open is assigned to you.
                         </p>
                     ) : (
@@ -44,7 +44,7 @@ export default function Dashboard({
                 </section>
 
                 <section>
-                    <h3 className="mb-3 text-base font-semibold text-text">Projects</h3>
+                    <h3 className="mb-3 text-body font-semibold text-text">Projects</h3>
                     {projects.length === 0 && (
                         <p className="text-sm text-muted">
                             No projects yet. <Link href={route('projects.index')} className="text-primary underline">Create one</Link>.
@@ -68,7 +68,7 @@ function ProjectCard({ project }: { project: { key: string; name: string; summar
     const pct = sprint && sprint.points_total > 0 ? Math.round((sprint.points_done / sprint.points_total) * 100) : 0;
 
     return (
-        <article className="rounded border border-line bg-bg p-4">
+        <article className="rounded-ctl border border-line bg-bg p-4">
             <header className="flex items-baseline justify-between gap-2">
                 <Link href={route('projects.show', project.key)} className="font-semibold text-text hover:underline">
                     <span className="font-mono text-primary">{project.key}</span> {project.name}
@@ -83,7 +83,7 @@ function ProjectCard({ project }: { project: { key: string; name: string; summar
                     <div key={s.name} className="flex items-center gap-2 text-xs">
                         <dt className="w-24 truncate text-muted">{s.name}</dt>
                         <dd className="flex flex-1 items-center gap-2">
-                            <span className="h-2 rounded bg-primary" style={{ width:`${(s.count / max) * 100}%`, minWidth: s.count ? '4px' : 0 }} />
+                            <span className="h-2 rounded-ctl bg-primary" style={{ width:`${(s.count / max) * 100}%`, minWidth: s.count ? '4px' : 0 }} />
                             <span className="text-text">{s.count}</span>
                         </dd>
                     </div>
@@ -100,7 +100,7 @@ function ProjectCard({ project }: { project: { key: string; name: string; summar
                             </span>
                         </div>
                         <div
-                            className="mt-1 h-2 overflow-hidden rounded bg-card-2"
+                            className="mt-1 h-2 overflow-hidden rounded-ctl bg-card-2"
                             role="progressbar"
                             aria-label={`${sprint.name} points done`}
                             aria-valuenow={pct}

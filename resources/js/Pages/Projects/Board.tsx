@@ -112,7 +112,7 @@ export default function Board({
         >
             <Head title={`${project.key} board`} />
 
-            <div className="px-4 pb-4 sm:px-6">
+            <div className="px-4 pb-4 md:px-8">
                 {sprintOnly && sprint?.goal && <p className="-mt-1 mb-3 text-muted">{sprint.goal}</p>}
                 <div className="mb-4">
                     <IssueFilters

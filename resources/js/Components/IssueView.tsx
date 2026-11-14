@@ -16,7 +16,7 @@ import { ElementType, ReactNode, useState } from 'react';
 
 // Minimal Markdown styling without @tailwindcss/typography.
 const proseClass =
-    'break-words text-text [&_a]:text-primary [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-line [&_blockquote]:pl-3 [&_code]:rounded [&_code]:bg-card-2 [&_code]:px-1 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-card-2 [&_pre]:p-2 [&_ul]:list-disc [&_ul]:pl-5';
+    'break-words text-text [&_a]:text-primary [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-line [&_blockquote]:pl-3 [&_code]:rounded-ctl [&_code]:bg-card-2 [&_code]:px-1 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-ctl [&_pre]:bg-card-2 [&_pre]:p-2 [&_ul]:list-disc [&_ul]:pl-5';
 
 // Jira-style inline field: looks like text until hovered or focused.
 const inlineField = `${selectClass} w-full !border-transparent !bg-transparent hover:!bg-card-2 focus:!border-primary focus:!bg-bg disabled:hover:!bg-transparent`;
@@ -59,7 +59,7 @@ export default function IssueView({
         items && items.length > 0 ? (
             <section>
                 <h2 className="mb-2 font-semibold">{heading}</h2>
-                <ul className="divide-y divide-line rounded border border-line">
+                <ul className="divide-y divide-line rounded-ctl border border-line">
                     {items.map((s) => (
                         <li key={s.key}>
                             <Link href={issueUrl(s.key)} className="flex items-center gap-2 px-3 py-2 hover:bg-card-2">
@@ -115,7 +115,7 @@ export default function IssueView({
                             >
                                 <TextInput
                                     aria-label="Summary"
-                                    className="flex-1 text-xl font-semibold"
+                                    className="flex-1 text-heading-2xl"
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Escape' && setEditingTitle(false)}
@@ -128,7 +128,7 @@ export default function IssueView({
                         ) : (
                             <Heading className="break-words text-heading-3xl text-text">
                                 {can.contribute ? (
-                                    <button type="button" className="-mx-1 w-full rounded px-1 text-start hover:bg-card-2" onClick={() => setEditingTitle(true)} title="Edit summary">
+                                    <button type="button" className="-mx-1 w-full rounded-ctl px-1 text-start hover:bg-card-2" onClick={() => setEditingTitle(true)} title="Edit summary">
                                         {issue.title}
                                     </button>
                                 ) : (
@@ -175,7 +175,7 @@ export default function IssueView({
                     </div>
                     <InputError message={errors.status} />
 
-                    <section className="rounded border border-line">
+                    <section className="rounded-ctl border border-line">
                         <h2 className="border-b border-line px-4 py-3 font-semibold">Details</h2>
                         <dl className="px-4 py-2">
                             {field(
@@ -216,7 +216,7 @@ export default function IssueView({
                                                 aria-pressed={on}
                                                 title={on ? `Remove ${l.name}` : `Add ${l.name}`}
                                             >
-                                                <span className="me-1 inline-block h-2 w-2 rounded-full" style={{ backgroundColor: l.color }} />
+                                                <span className="me-1 inline-block h-2 w-2 rounded-pill" style={{ backgroundColor: l.color }} />
                                                 {l.name}
                                             </button>
                                         );
@@ -328,7 +328,7 @@ export default function IssueView({
                             </div>
                         ) : (
                             <div
-                                className={`-mx-2 rounded px-2 py-1 ${can.contribute ? 'cursor-text hover:bg-card-2' : ''}`}
+                                className={`-mx-2 rounded-ctl px-2 py-1 ${can.contribute ? 'cursor-text hover:bg-card-2' : ''}`}
                                 onClick={() => can.contribute && setEditingDescription(true)}
                             >
                                 {/* description_html is rendered server-side with html_input=strip and no unsafe links. */}
@@ -419,7 +419,7 @@ function CommentItem({ comment, canDelete }: { comment: Comment; canDelete: bool
 
     return (
         <div className="flex gap-3">
-            {comment.author ? <Avatar name={comment.author.name} email={comment.author.email} size="md" /> : <span className="h-8 w-8 shrink-0 rounded-full bg-card-2" />}
+            {comment.author ? <Avatar name={comment.author.name} email={comment.author.email} size="md" /> : <span className="h-8 w-8 shrink-0 rounded-pill bg-card-2" />}
             <div className="min-w-0 flex-1">
                 <div className="text-muted">
                     <strong className="font-semibold text-text">{comment.author?.name ?? 'Deleted user'}</strong>{' '}
@@ -471,13 +471,13 @@ function ActivityList({ entries }: { entries: ActivityEntry[] }) {
         <ul className="space-y-4">
             {entries.map((a) => (
                 <li key={a.id} className="flex gap-3">
-                    {a.user ? <Avatar name={a.user.name} email={a.user.email} size="md" /> : <span className="h-8 w-8 shrink-0 rounded-full bg-card-2" />}
+                    {a.user ? <Avatar name={a.user.name} email={a.user.email} size="md" /> : <span className="h-8 w-8 shrink-0 rounded-pill bg-card-2" />}
                     <div className="min-w-0 flex-1">
                         <div className="text-muted">
                             <strong className="font-semibold text-text">{a.user?.name ?? 'Someone'}</strong> {a.action}{' '}
                             <span className="text-xs">{new Date(a.created_at).toLocaleString()}</span>
                             {a.via !== 'web' && (
-                                <span className="ms-2 inline-block rounded-ctl tint-amber px-1 text-[11px] font-bold uppercase ">
+                                <span className="ms-2 inline-block rounded-ctl tint-amber px-1 text-2xs font-bold uppercase ">
                                     via {a.via}
                                 </span>
                             )}

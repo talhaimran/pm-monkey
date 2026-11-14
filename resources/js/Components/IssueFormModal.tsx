@@ -73,7 +73,7 @@ export default function IssueFormModal({
     return (
         <Modal show={show} onClose={onClose} maxWidth="2xl">
             <form onSubmit={submit} className="space-y-4 p-6">
-                <h2 className="text-xl font-semibold text-text">
+                <h2 className="text-heading-2xl text-text">
                     {parent ?`New sub-task of ${parent}` :`New issue in ${projectKey}`}
                 </h2>
 
@@ -158,7 +158,7 @@ export default function IssueFormModal({
                         <div className="mt-1 flex flex-wrap gap-2">
                             {options.labels.map((l) => (
                                 <label key={l.id} className="flex items-center gap-1 text-sm text-text">
-                                    <input type="checkbox" className="rounded" checked={form.data.labels.includes(l.name)} onChange={() => toggleLabel(l.name)} />
+                                    <input type="checkbox" className="rounded-ctl" checked={form.data.labels.includes(l.name)} onChange={() => toggleLabel(l.name)} />
                                     {l.name}
                                 </label>
                             ))}

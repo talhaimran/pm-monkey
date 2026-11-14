@@ -18,7 +18,7 @@ interface Token {
     created_at: string;
 }
 
-const card = 'rounded border border-line bg-bg p-4 sm:p-6 ';
+const card = 'rounded-ctl border border-line bg-bg p-4 sm:p-6 ';
 
 export default function Index({
     tokens,
@@ -54,14 +54,14 @@ export default function Index({
     };
 
     return (
-        <AuthenticatedLayout header={<h1 className="text-2xl font-semibold text-text">API tokens</h1>}>
+        <AuthenticatedLayout header={<h1 className="text-display text-text">API tokens</h1>}>
             <Head title="API tokens" />
 
-            <div className="max-w-4xl space-y-6 px-4 pb-10 sm:px-6">
+            <div className="max-w-4xl space-y-6 px-4 pb-10 md:px-8">
                 <section className={card}>
                     <p className="text-sm text-muted">
                         Tokens let scripts and AI agents use PmOps as you, through the REST API or MCP. Send a token as{' '}
-                        <code className="rounded bg-card-2 px-1">Authorization: Bearer &lt;token&gt;</code>.
+                        <code className="rounded-ctl bg-card-2 px-1">Authorization: Bearer &lt;token&gt;</code>.
                     </p>
                     <dl className="mt-3 grid gap-1 text-sm sm:grid-cols-[8rem_1fr]">
                         <dt className="text-muted">REST API</dt>
@@ -78,7 +78,7 @@ export default function Index({
                 </section>
 
                 {flashToken && (
-                    <section className="rounded-lg border border-c-good tint-good p-4" role="status">
+                    <section className="rounded-card border border-c-good tint-good p-4" role="status">
                         <h3 className="font-medium text-t-good">Copy your new token now. It won't be shown again.</h3>
                         <div className="mt-2 flex gap-2">
                             <input
@@ -94,7 +94,7 @@ export default function Index({
                 )}
 
                 <section className={card}>
-                    <h3 className="text-base font-semibold text-text">Create a token</h3>
+                    <h3 className="text-body font-semibold text-text">Create a token</h3>
                     <form onSubmit={submit} className="mt-4 space-y-4">
                         <div>
                             <InputLabel htmlFor="token-name" value="Name" />
@@ -125,14 +125,14 @@ export default function Index({
                         <fieldset>
                             <legend className="text-sm font-medium text-text">Projects</legend>
                             <label className="mt-1 flex items-center gap-2 text-sm text-text">
-                                <input type="checkbox" className="rounded" checked={allProjects} onChange={(e) => setAllProjects(e.target.checked)} />
+                                <input type="checkbox" className="rounded-ctl" checked={allProjects} onChange={(e) => setAllProjects(e.target.checked)} />
                                 All my projects (including ones I join later)
                             </label>
                             {!allProjects && (
                                 <div className="mt-2 flex flex-wrap gap-3 text-sm text-text">
                                     {projects.map((p) => (
                                         <label key={p.key} className="flex items-center gap-2">
-                                            <input type="checkbox" className="rounded" checked={form.data.projects.includes(p.key)} onChange={() => toggleProject(p.key)} />
+                                            <input type="checkbox" className="rounded-ctl" checked={form.data.projects.includes(p.key)} onChange={() => toggleProject(p.key)} />
                                             <span className="font-mono">{p.key}</span> {p.name}
                                         </label>
                                     ))}
@@ -162,7 +162,7 @@ export default function Index({
                 </section>
 
                 <section className={card}>
-                    <h3 className="text-base font-semibold text-text">Your tokens</h3>
+                    <h3 className="text-body font-semibold text-text">Your tokens</h3>
                     {tokens.length === 0 ? (
                         <p className="mt-2 text-sm text-muted">No tokens yet.</p>
                     ) : (
