@@ -176,3 +176,6 @@ Plan: docs/superpowers/plans/2026-10-29-ui-jira-redesign.md. Per-step security r
 - Search and Your-work lozenges are gray (rows don't carry their project's column order).
 - Board shows all issues by default (unchanged behaviour); title is the sprint name only when filtered to the active sprint.
 - Welcome (guest `/`) page not restyled.
+
+## Post-MVP log (docs)
+- 2026-11-14, job 3 (docs): copied the PmOps spec v1.3 to docs/specs/pmops-spec.md (naming sentence updated to the real rename) and the design system to docs/design-system/ (48 files, unchanged); pointer lines added to SPEC.md and CLAUDE.md. Commit 184196f.
