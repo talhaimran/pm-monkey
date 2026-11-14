@@ -176,3 +176,6 @@ Plan: docs/superpowers/plans/2026-10-29-ui-jira-redesign.md. Per-step security r
 - Search and Your-work lozenges are gray (rows don't carry their project's column order).
 - Board shows all issues by default (unchanged behaviour); title is the sprint name only when filtered to the active sprint.
 - Welcome (guest `/`) page not restyled.
+
+## Post-MVP log (licence)
+- 2026-11-14, job 2 (licence): added LICENSE (AGPL-3.0-only, Copyright (C) 2026 ogmnt.io), README "License" section, CLAUDE.md licence rule, composer.json licence id. Dependency audit: nothing incompatible. CLA tooling is still open. Commit 859dafe.
