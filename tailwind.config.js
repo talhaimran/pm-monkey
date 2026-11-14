@@ -57,6 +57,8 @@ export default {
         plugin(({ addBase, addUtilities }) => {
             addBase({ ':root': { ...vars('light'), '--tint': '14%' }, '.dark': { ...vars('dark'), '--tint': '18%', colorScheme: 'dark' } });
             addUtilities(tints);
+            // Scrim behind dialogs, drawers and sheets (token colours are CSS variables, so /40 opacity classes don't exist).
+            addUtilities({ '.scrim': { backgroundColor: 'color-mix(in srgb, #000 45%, transparent)' } });
         }),
     ],
 };

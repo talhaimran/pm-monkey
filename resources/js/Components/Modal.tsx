@@ -31,7 +31,7 @@ export default function Modal({
                 <Dialog static open onClose={() => closeable && onClose()} initialFocus={initialFocus} className="fixed inset-0 z-50 flex items-end overflow-y-auto md:items-center md:p-6">
                     <motion.div
                         aria-hidden="true"
-                        className="fixed inset-0 bg-ink/40"
+                        className="fixed inset-0 scrim"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1, transition: transition('dialogIn') }}
                         exit={{ opacity: 0, transition: transition('dialogOut') }}

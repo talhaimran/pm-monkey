@@ -1,8 +1,11 @@
+import { prefersReducedMotion, transition } from '@/motion';
+import { Monitor, Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 
 type Theme = 'light' | 'dark' | 'system';
 const next: Record<Theme, Theme> = { light: 'dark', dark: 'system', system: 'light' };
-const icons: Record<Theme, string> = { light: '☀', dark: '☾', system: '◐' };
+const icons = { light: Sun, dark: Moon, system: Monitor };
 
 function read(): Theme {
     try {
@@ -19,7 +22,7 @@ function apply(theme: Theme) {
     document.documentElement.classList.toggle('dark', dark);
 }
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ className = '' }: { className?: string }) {
     const [theme, setTheme] = useState<Theme>(read);
 
     useEffect(() => {
@@ -37,15 +40,22 @@ export default function ThemeToggle() {
         return () => media.removeEventListener('change', follow);
     }, [theme]);
 
+    // The new theme cross-fades in through the View Transitions API (timed in app.css from --theme-duration).
+    // shortcut: a plain cross-fade, not the design system's circle reveal from the toggle.
+    const toggle = () => {
+        const change = () => setTheme(next[theme]);
+        const doc = document as Document & { startViewTransition?: (update: () => void) => unknown };
+        if (!doc.startViewTransition || prefersReducedMotion()) return change();
+        document.documentElement.style.setProperty('--theme-duration', `${transition('theme').duration}s`);
+        doc.startViewTransition(() => flushSync(change));
+    };
+
+    const Icon = icons[theme];
+
     return (
-        <button
-            type="button"
-            onClick={() => setTheme(next[theme])}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-base text-muted hover:bg-card-2 hover:text-text"
-            title={`Theme: ${theme} (click for ${next[theme]})`}
-            aria-label={`Theme: ${theme}. Switch to ${next[theme]}`}
-        >
-            <span aria-hidden="true">{icons[theme]}</span>
+        <button type="button" onClick={toggle} className={className} aria-label={`Theme: ${theme}. Switch to ${next[theme]}`}>
+            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">Theme: {theme}</span>
         </button>
     );
 }
