@@ -37,3 +37,16 @@ it('exposes every design system colour in light and dark', function () {
         expect($token['value'])->toHaveKeys(['light', 'dark'], "{$token['name']} needs light and dark values");
     }
 });
+
+it('keeps animation timings in motion.ts', function () {
+    $hits = [];
+    foreach (uiSources('/\.tsx$/') as $path => $source) {
+        if (preg_match('/\b(duration|delay|stiffness|damping)\s*:\s*[\d.]/', $source)) {
+            $hits[] = $path;
+        }
+    }
+
+    expect($hits)->toBe([])
+        ->and(file_get_contents(resource_path('css/app.css')))->toContain('prefers-reduced-motion: reduce')
+        ->and(file_get_contents(resource_path('js/app.tsx')))->toContain('reducedMotion="user"');
+});
