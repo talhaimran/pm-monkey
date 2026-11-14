@@ -227,3 +227,11 @@ Also not done:
 - The board and backlog load at most 500 and 1000 issues, with a notice when they're cut off.
 - There's no in-app list of keyboard shortcuts.
 - MCP tools don't take an idempotency key; use the REST API when you need replay safety.
+
+## License
+
+This project is licensed under the [GNU Affero General Public License v3.0 only](LICENSE) (`AGPL-3.0-only`). Copyright (C) 2026 ogmnt.io.
+
+- You can use, self-host and change it freely.
+- If you change the code and let other people use your version over a network, you must offer those users the source code of your version under the same licence.
+- Contributions need a signed Contributor License Agreement (CLA) before they can be merged. The process will be announced.

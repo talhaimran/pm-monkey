@@ -15,6 +15,7 @@ SPEC.md is the source of truth. PROGRESS.md logs slice progress and decisions ma
 - dedoc/scramble: OpenAPI at /docs/api and /docs/api.json
 - dnd-kit (drag and drop), Pest (tests)
 - No other heavy dependencies without asking the user
+- Core is AGPL-3.0; never add code or dependencies with incompatible licences; ask first.
 
 ## Architecture rules
 - Business logic only in `app/Services` / `app/Actions`. Inertia controllers, API controllers (`/api/v1`), and MCP tools are thin and call the same services. Never duplicate logic.
