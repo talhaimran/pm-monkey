@@ -177,5 +177,7 @@ Plan: docs/superpowers/plans/2026-10-29-ui-jira-redesign.md. Per-step security r
 - Board shows all issues by default (unchanged behaviour); title is the sprint name only when filtered to the active sprint.
 - Welcome (guest `/`) page not restyled.
 
-## Post-MVP log
+## Post-MVP log (licence)
+- 2026-11-14, job 2 (licence): added LICENSE (AGPL-3.0-only, Copyright (C) 2026 ogmnt.io), README "License" section, CLAUDE.md licence rule, composer.json licence id. Dependency audit: nothing incompatible. CLA tooling is still open. Commit 859dafe.
 - 2026-11-14, job 1 (rename): user-facing name is now PmOps (README, AGENTS.md, layouts, tokens page, APP_NAME in .env.example, MCP server display name and its two tests, README MCP client examples use pm-ops / PM_OPS_TOKEN). Internal identifiers unchanged (pm_monkey DBs, `pm` handle, PM_* env vars, pm.via). Commit 790be47.
+
