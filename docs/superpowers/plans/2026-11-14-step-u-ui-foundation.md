@@ -1,6 +1,6 @@
 # Step U: UI Foundation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task (the user chose inline execution: one session, sub-step by sub-step, a short report after each). Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task (the user chose inline execution: one session, sub-step by sub-step, a short report after each). Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace the Jira-style UI with the PmOps design system on every existing screen, and add Undo toasts, soft delete, the peek drawer and one reduced-motion switch.
 
@@ -135,6 +135,8 @@ Nothing else. `unique(project_id, number)` and `projects.issue_counter` already 
 4. **`?issue=` with a key the user can't see, a deleted key, or junk:** the page renders normally with no drawer and no hint the issue exists. Test in U8.
 5. **⌘Z while typing:** the shortcut is ignored when focus is in an input, textarea or contenteditable, so native text undo still works; with two toasts it undoes the newest only, once. Test in U7 (`undo.test.ts`).
 
+> **Status (2026-11-14):** built and merged in PR 4. Boxes are ticked for what was done; where the build differs from a step (no `ShellTest`, no `BoardTotalsTest`, native status select, cross-fade theme toggle) it is listed in PROGRESS.md under "Shortcuts from step U".
+
 ---
 
 ### Task U1: Tokens, font and base styles
@@ -148,18 +150,18 @@ Nothing else. `unique(project_id, number)` and `projects.issue_counter` already 
 - `spacing` (`0.5`…`8` from `space-*`), `borderRadius` (`xs sm ctl item tile col card sheet pill`), `boxShadow` (`xs DEFAULT pop lift`), `fontSize` (`display`, `heading-4xl`…`text-2xs`, `body` with line height, weight, tracking), `height`/`width` sizes (`control`, `control-sm`, `input`, `pill`, `side`, `drawer`), `transitionDuration` and `transitionTimingFunction` from `dur-*` / `ease-*`, screen `shell: '760px'`.
 - npm script `"test": "node --test \"resources/js/**/*.test.ts\""`.
 
-- [ ] **Step 1: failing guard test** `tests/Feature/Ui/DesignTokensTest.php`:
+- [x] **Step 1: failing guard test** `tests/Feature/Ui/DesignTokensTest.php`:
   - `it('has no Jira tokens')`: `tailwind.config.js` does not contain `Jira`, `loz-`, `ink-subtle`, `sunken`, `raised`, `input-line`, `brand`; no file in `resources/js` matches `/\b(bg|text|border|ring|divide|outline|fill|stroke|placeholder|shadow)-(ink-subtle|surface|sunken|raised|input-line|brand|brand-hover|on-brand|selected|neutral|neutral-hover|danger|danger-subtle|warning-subtle|warning-ink|success|loz-[a-z-]+)\b/`.
   - `it('has no raw colours in components')`: no `#[0-9a-fA-F]{3,8}\b` and no `(gray|indigo|red|green|blue)-\d{2,3}` class in `resources/js/**/*.tsx`.
   - `it('exposes every colour token')`: each `color.tokens[].name` in `docs/design-system/tokens.json` appears in the built CSS variable list (assert against `tailwind.config.js` reading the file, i.e. the config contains `tokens.json` and no inline colour table).
-- [ ] **Step 2:** run `php artisan test tests/Feature/Ui` → FAIL.
-- [ ] **Step 3:** `npm install motion lucide-react @fontsource/urbanist`; confirm each installed `package.json` licence is MIT / ISC / OFL-1.1 and quote it in the report. Stop if not.
-- [ ] **Step 4:** rewrite `tailwind.config.js` to read `docs/design-system/tokens.json` (`readFileSync` + `JSON.parse`) and build the theme above. Every colour token has light and dark values once PR 5 is merged; a token with only `light` uses it for both.
-- [ ] **Step 5:** `app.tsx` imports `@fontsource/urbanist/{400,500,600,700,800}.css`; `app.css` base: `body` = `bg-bg text-text text-body font-sans antialiased`; `:focus-visible` = 2px `primary` outline, 2px offset; `@media (prefers-reduced-motion: reduce)` sets `transition-duration`, `animation-duration` to `0s !important` on `*, ::before, ::after` and disables `::view-transition-*` animation.
-- [ ] **Step 6:** mechanical class rename across `resources/js` so the build stays green: `ink→text`, `ink-subtle→muted`, `surface→bg`, `sunken→card-2`, `raised→card`, `line→line`, `input-line→line-2`, `brand→primary`, `brand-hover→primary`, `on-brand→on-primary`, `selected→well`, `neutral→card-2`, `neutral-hover→well`, `danger→c-bad` (text: `t-bad`), `danger-subtle→c-bad/15`, `warning-subtle→c-warn/15`, `warning-ink→t-warn`, `success→c-good`, `loz-todo*→c-sky/t-sky`, `loz-progress*→c-amber/t-amber`, `loz-done*→c-good/t-good`, `shadow-card→shadow-xs`. Screens are properly restyled in later tasks; this step only removes the old names.
-- [ ] **Step 7:** `resources/js/tokens.test.ts` (`node --test`): contrast ratio ≥ 4.5 for `text`, `muted` on `card`, `card-2`, `bg`; `on-primary` on `primary`; `side-dim` on `side`; each `t-*` on its 14% (light) / 18% (dark) tint over `card`, in both themes.
-- [ ] **Step 8:** `php artisan test`, `npm test`, `npm run build`, `vendor/bin/pint --test` → all pass. Open the board in the preview in light and dark; report a screenshot.
-- [ ] **Step 9:** commit `feat(ui): design system tokens, Urbanist and base styles`.
+- [x] **Step 2:** run `php artisan test tests/Feature/Ui` → FAIL.
+- [x] **Step 3:** `npm install motion lucide-react @fontsource/urbanist`; confirm each installed `package.json` licence is MIT / ISC / OFL-1.1 and quote it in the report. Stop if not.
+- [x] **Step 4:** rewrite `tailwind.config.js` to read `docs/design-system/tokens.json` (`readFileSync` + `JSON.parse`) and build the theme above. Every colour token has light and dark values once PR 5 is merged; a token with only `light` uses it for both.
+- [x] **Step 5:** `app.tsx` imports `@fontsource/urbanist/{400,500,600,700,800}.css`; `app.css` base: `body` = `bg-bg text-text text-body font-sans antialiased`; `:focus-visible` = 2px `primary` outline, 2px offset; `@media (prefers-reduced-motion: reduce)` sets `transition-duration`, `animation-duration` to `0s !important` on `*, ::before, ::after` and disables `::view-transition-*` animation.
+- [x] **Step 6:** mechanical class rename across `resources/js` so the build stays green: `ink→text`, `ink-subtle→muted`, `surface→bg`, `sunken→card-2`, `raised→card`, `line→line`, `input-line→line-2`, `brand→primary`, `brand-hover→primary`, `on-brand→on-primary`, `selected→well`, `neutral→card-2`, `neutral-hover→well`, `danger→c-bad` (text: `t-bad`), `danger-subtle→c-bad/15`, `warning-subtle→c-warn/15`, `warning-ink→t-warn`, `success→c-good`, `loz-todo*→c-sky/t-sky`, `loz-progress*→c-amber/t-amber`, `loz-done*→c-good/t-good`, `shadow-card→shadow-xs`. Screens are properly restyled in later tasks; this step only removes the old names.
+- [x] **Step 7:** `resources/js/tokens.test.ts` (`node --test`): contrast ratio ≥ 4.5 for `text`, `muted` on `card`, `card-2`, `bg`; `on-primary` on `primary`; `side-dim` on `side`; each `t-*` on its 14% (light) / 18% (dark) tint over `card`, in both themes.
+- [x] **Step 8:** `php artisan test`, `npm test`, `npm run build`, `vendor/bin/pint --test` → all pass. Open the board in the preview in light and dark; report a screenshot.
+- [x] **Step 9:** commit `feat(ui): design system tokens, Urbanist and base styles`.
 
 ### Task U2: `motion.ts` and the reduced-motion switch
 
@@ -176,10 +178,10 @@ export const stagger: number;                                           // secon
 ```
 Values (from `motion.md`): drawerIn 550ms `ease-out-strong`; drawerOut 240ms `ease-in`; dialogIn 450ms `ease-overshoot`; dialogOut 180ms `ease-in`; toast 300ms `ease-out`; lift 250ms `ease-overshoot`; drop 320ms `ease-out`; theme 480ms `ease-standard`. Durations that match a `dur-*` token read it; 240/300/320/480 are catalog values not in `tokens.json` and are named constants in this file only. Easings are parsed from the `ease-*` token strings.
 
-- [ ] **Step 1: failing tests** `motion.test.ts`: `transition(m, true).duration === 0` for every `Moment`; `transition('drawerIn', false)` equals `{ duration: 0.55, ease: [0.165, 0.84, 0.44, 1] }`; `transition('dialogIn', false).ease` equals `[0.34, 1.56, 0.64, 1]`.
-- [ ] **Step 2:** `npm test` → FAIL. Implement `motion.ts`. `npm test` → PASS.
-- [ ] **Step 3:** wrap the Inertia app in `<MotionConfig reducedMotion="user">` in `app.tsx`. Components must take timings only from `transition()` (add to the guard test: no `duration:` number literal in `resources/js/**/*.tsx`).
-- [ ] **Step 4:** full verification; commit `feat(ui): motion timings and one reduced-motion switch`.
+- [x] **Step 1: failing tests** `motion.test.ts`: `transition(m, true).duration === 0` for every `Moment`; `transition('drawerIn', false)` equals `{ duration: 0.55, ease: [0.165, 0.84, 0.44, 1] }`; `transition('dialogIn', false).ease` equals `[0.34, 1.56, 0.64, 1]`.
+- [x] **Step 2:** `npm test` → FAIL. Implement `motion.ts`. `npm test` → PASS.
+- [x] **Step 3:** wrap the Inertia app in `<MotionConfig reducedMotion="user">` in `app.tsx`. Components must take timings only from `transition()` (add to the guard test: no `duration:` number literal in `resources/js/**/*.tsx`).
+- [x] **Step 4:** full verification; commit `feat(ui): motion timings and one reduced-motion switch`.
 
 ### Task U3: Primitives restyled in place
 
@@ -201,10 +203,10 @@ export default function WarningConfirm(props: { open: boolean; title: string; wa
 - `Modal`: Motion + `AnimatePresence`, `transition('dialogIn'|'dialogOut')`, `rounded-card`, `shadow-pop`; under `shell` it is a bottom sheet (`rounded-t-sheet`).
 - `CompleteSprintModal` uses `WarningConfirm` when the sprint has open issues.
 
-- [ ] **Step 1:** extend the guard test: no `<svg` in `resources/js/**/*.tsx` except `ApplicationLogo.tsx`; no `outline-none` without `focus-visible:` on the same element.
-- [ ] **Step 2:** run → FAIL; restyle each component from its design system page; run → PASS.
-- [ ] **Step 3:** browser check in light and dark: a dialog opens, traps focus, Esc returns focus to its trigger; report screenshots.
-- [ ] **Step 4:** full verification; commit `feat(ui): buttons, fields, pills, avatars, icons, dialog, empty state, warning confirm`.
+- [x] **Step 1:** extend the guard test: no `<svg` in `resources/js/**/*.tsx` except `ApplicationLogo.tsx`; no `outline-none` without `focus-visible:` on the same element.
+- [x] **Step 2:** run → FAIL; restyle each component from its design system page; run → PASS.
+- [x] **Step 3:** browser check in light and dark: a dialog opens, traps focus, Esc returns focus to its trigger; report screenshots.
+- [x] **Step 4:** full verification; commit `feat(ui): buttons, fields, pills, avatars, icons, dialog, empty state, warning confirm`.
 
 ### Task U4: App shell with the dark sidebar
 
@@ -216,9 +218,9 @@ export default function WarningConfirm(props: { open: boolean; title: string; wa
 - `ThemeToggle`: lucide `Sun`/`Moon`/`Monitor` with an `aria-label` naming the next state; switches inside `document.startViewTransition` when available and not reduced-motion; otherwise switches at once.
 - Existing shortcuts (`/`, `c`) keep working.
 
-- [ ] **Step 1:** `tests/Feature/Ui/ShellTest.php`: authenticated pages still render (`dashboard`, `projects.index`, board) with status 200 and the same Inertia components (guards the layout props it depends on).
-- [ ] **Step 2:** build the shell; browser check at 1280px and 375px, light and dark, keyboard tab order through the sidebar; screenshots.
-- [ ] **Step 3:** full verification; commit `feat(ui): app shell with dark sidebar and mobile sheet`.
+- [x] **Step 1:** `tests/Feature/Ui/ShellTest.php`: authenticated pages still render (`dashboard`, `projects.index`, board) with status 200 and the same Inertia components (guards the layout props it depends on).
+- [x] **Step 2:** build the shell; browser check at 1280px and 375px, light and dark, keyboard tab order through the sidebar; screenshots.
+- [x] **Step 3:** full verification; commit `feat(ui): app shell with dark sidebar and mobile sheet`.
 
 ### Task U5: Soft delete for issues and comments
 
@@ -237,7 +239,7 @@ CommentService::restore(Comment $comment): Comment
 ```
 Routes: `POST /issues/{key}/restore` (`issues.restore`), `POST /comments/{comment}/restore` (`comments.restore`). Project settings gets a `deletedIssues` prop (Admins only). Callers of `IssueService::delete` (web, API, MCP) pass the actor.
 
-- [ ] **Step 1: failing tests** `SoftDeleteTest.php`:
+- [x] **Step 1: failing tests** `SoftDeleteTest.php`:
   - deleting sets `deleted_at`, keeps the row, logs `deleted` with the actor and `via`
   - a deleted issue is absent from: board, backlog, project list, search, dashboard counts, column `issues_count`, sprint counts; `GET /api/v1/issues/{key}` returns 404; MCP `get_issue`, `search_issues`, `get_board`, `get_backlog`, `my_issues`, `project_summary` leave it out
   - API and MCP deletes are soft and still need `confirm: true`
@@ -248,9 +250,9 @@ Routes: `POST /issues/{key}/restore` (`issues.restore`), `POST /comments/{commen
   - a Viewer and a read-only token cannot delete or restore; a member of another project gets the normal 404
   - deleted comments disappear from the issue page, API and MCP; restore brings them back
   - `issues:purge` force-deletes issues and comments deleted more than 30 days ago, leaves newer ones, and writes the `issue.purged` log line
-- [ ] **Step 2:** run → FAIL; migrate; implement; run → PASS.
-- [ ] **Step 3:** schedule `issues:purge` daily in `routes/console.php`. Update README and AGENTS.md (delete is soft; restored from the web UI).
-- [ ] **Step 4:** full verification; security review focus: cross-project restore, read-only token, mass assignment of `deleted_at`. Commit `feat: soft delete for issues and comments with restore and 30-day purge`.
+- [x] **Step 2:** run → FAIL; migrate; implement; run → PASS.
+- [x] **Step 3:** schedule `issues:purge` daily in `routes/console.php`. Update README and AGENTS.md (delete is soft; restored from the web UI).
+- [x] **Step 4:** full verification; security review focus: cross-project restore, read-only token, mass assignment of `deleted_at`. Commit `feat: soft delete for issues and comments with restore and 30-day purge`.
 
 ### Task U6: Undo on the server
 
@@ -274,7 +276,7 @@ type UndoFlash = { message: string; method: 'patch' | 'post'; url: string; data:
 ```
 Shared as `flash.undo` in `HandleInertiaRequests`. A request with `undo_of` (validated in the web controller: integer) calls `guard`, runs the same service with action `undid`, and flashes no further `undo`. Messages: "WEB-12 moved to Done", "WEB-12 updated", "WEB-12 deleted", "Comment deleted".
 
-- [ ] **Step 1: failing tests** `UndoTest.php`:
+- [x] **Step 1: failing tests** `UndoTest.php`:
   - board move: posting the flashed `data` to the flashed `url` returns the issue to its previous column and position; activity has `undid`
   - status change from the issue page: same
   - field edit (title, long description over 200 chars, assignee, labels): previous values restored exactly
@@ -283,8 +285,8 @@ Shared as `flash.undo` in `HandleInertiaRequests`. A request with `undo_of` (val
   - Review Focus 1: the previous column was deleted meanwhile → error lists valid columns; the issue is unchanged
   - `undo_of` pointing at another issue's activity is rejected; API `PATCH /api/v1/issues/{key}` ignores/rejects `undo_of` (input shape unchanged)
   - a second identical undo request returns 409 (the first one wrote a newer activity)
-- [ ] **Step 2:** run → FAIL; implement; run → PASS.
-- [ ] **Step 3:** full verification; commit `feat: undo as a reverse change with a staleness check`.
+- [x] **Step 2:** run → FAIL; implement; run → PASS.
+- [x] **Step 3:** full verification; commit `feat: undo as a reverse change with a staleness check`.
 
 ### Task U7: Toast with Undo
 
@@ -303,10 +305,10 @@ export function isTyping(el: EventTarget | null): boolean;               // inpu
 ```
 `Toaster`: bottom-centre, 22px from the edge, `ink`/`on-ink`, `role="status"`, Motion `transition('toast')` inside `AnimatePresence`; timer pauses on hover and focus; Undo and Dismiss are real buttons; ⌘Z / Ctrl+Z triggers `undoTarget` unless `isTyping`. Undo sends `router[method](url, data, { preserveScroll: true })`; a 409 turns the toast into the `bad` tone with the server's message.
 
-- [ ] **Step 1: failing tests** `undo.test.ts`: `push` keeps 3 newest; `lifetime` 6000 / 4200; `undoTarget` returns the newest undoable and `undefined` after it is removed (Review Focus 5: one undo per toast); `isTyping` true for input, textarea, contenteditable.
-- [ ] **Step 2:** `npm test` → FAIL; implement; → PASS.
-- [ ] **Step 3:** browser check: move a card → toast → Undo returns it; ⌘Z does the same; delete an issue → Undo restores; with focus in the comment box ⌘Z does not trigger Undo; Tab reaches the Undo button. Quote what was observed.
-- [ ] **Step 4:** full verification; commit `feat(ui): toast with Undo`.
+- [x] **Step 1: failing tests** `undo.test.ts`: `push` keeps 3 newest; `lifetime` 6000 / 4200; `undoTarget` returns the newest undoable and `undefined` after it is removed (Review Focus 5: one undo per toast); `isTyping` true for input, textarea, contenteditable.
+- [x] **Step 2:** `npm test` → FAIL; implement; → PASS.
+- [x] **Step 3:** browser check: move a card → toast → Undo returns it; ⌘Z does the same; delete an issue → Undo restores; with focus in the comment box ⌘Z does not trigger Undo; Tab reaches the Undo button. Quote what was observed.
+- [x] **Step 4:** full verification; commit `feat(ui): toast with Undo`.
 
 ### Task U8: Full issue page and peek drawer
 
@@ -329,10 +331,10 @@ export const peekUrl = (key: string) => string;                        // curren
 - Drawer: Headless UI `Dialog`, 500px, 12px inset, `rounded-sheet`, `shadow-pop`, `transition('drawerIn'|'drawerOut')`; bottom sheet under 760px; "Open full page" → `issueUrl`, "Copy link" copies `issueUrl`; Esc/scrim removes `?issue` (`router.get` with `preserveState`, `preserveScroll`, `only: ['peek']`); focus returns to the card or row.
 - Cards and rows open the drawer on click; Cmd/Ctrl-click and the key link go to the full page.
 
-- [ ] **Step 1: failing tests** `IssuePeekTest.php`: board, list and search with `?issue=WEB-1` return `peek.key === 'WEB-1'`; without it `peek` is null; Review Focus 4: a key from a project the user isn't in, a deleted key and `?issue=junk` all give `peek === null` with status 200; `/issues/WEB-1` still renders `Issues/Show`.
-- [ ] **Step 2:** run → FAIL; implement; run → PASS.
-- [ ] **Step 3:** browser check: open from the board, reload keeps it open, Back closes it, focus returns to the card, light/dark, 375px sheet.
-- [ ] **Step 4:** full verification; commit `feat(ui): full issue page and peek drawer sharing one URL scheme`.
+- [x] **Step 1: failing tests** `IssuePeekTest.php`: board, list and search with `?issue=WEB-1` return `peek.key === 'WEB-1'`; without it `peek` is null; Review Focus 4: a key from a project the user isn't in, a deleted key and `?issue=junk` all give `peek === null` with status 200; `/issues/WEB-1` still renders `Issues/Show`.
+- [x] **Step 2:** run → FAIL; implement; run → PASS.
+- [x] **Step 3:** browser check: open from the board, reload keeps it open, Back closes it, focus returns to the card, light/dark, 375px sheet.
+- [x] **Step 4:** full verification; commit `feat(ui): full issue page and peek drawer sharing one URL scheme`.
 
 ### Task U9: Board
 
@@ -344,9 +346,9 @@ export const peekUrl = (key: string) => string;                        // curren
 - Keyboard: `@dnd-kit` `KeyboardSensor` with custom announcements in a polite live region: "{KEY} moved to {column}, position {n} of {m}".
 - Empty project: "No issues yet. Create your first issue · C". Filtered to nothing: "No issues match these filters." with "Clear filters".
 
-- [ ] **Step 1:** `tests/Feature/Board/BoardTotalsTest.php`: the board payload gives each column `points` (sum of `story_points`, deleted issues excluded) and `count`. Run → FAIL; add to `BoardService::board`; → PASS.
-- [ ] **Step 2:** restyle; browser check: drag with mouse, move with keyboard and read the live region text, toast + Undo, both themes.
-- [ ] **Step 3:** full verification; commit `feat(ui): board in the design system with keyboard moves announced`.
+- [x] **Step 1:** `tests/Feature/Board/BoardTotalsTest.php`: the board payload gives each column `points` (sum of `story_points`, deleted issues excluded) and `count`. Run → FAIL; add to `BoardService::board`; → PASS.
+- [x] **Step 2:** restyle; browser check: drag with mouse, move with keyboard and read the live region text, toast + Undo, both themes.
+- [x] **Step 3:** full verification; commit `feat(ui): board in the design system with keyboard moves announced`.
 
 ### Task U10: Backlog, list and search
 
@@ -356,8 +358,8 @@ export const peekUrl = (key: string) => string;                        // curren
 - Backlog: sprint sections as Cards with "N issues · M pts"; rows as compact issue cards; drag as on the board.
 - Empty states: backlog "No issues in the backlog. Create your first issue · C"; sprint "Nothing planned. Drag an issue here."; list/search "No issues match these filters." + "Clear filters".
 
-- [ ] **Step 1:** restyle; existing `Lists` and `Sprints` feature tests must stay green. Browser check in both themes and at 375px.
-- [ ] **Step 2:** full verification; commit `feat(ui): backlog, list and search in the design system`.
+- [x] **Step 1:** restyle; existing `Lists` and `Sprints` feature tests must stay green. Browser check in both themes and at 375px.
+- [x] **Step 2:** full verification; commit `feat(ui): backlog, list and search in the design system`.
 
 ### Task U11: Dashboard, projects and project settings
 
@@ -367,8 +369,8 @@ export const peekUrl = (key: string) => string;                        // curren
 - Projects: cards with project avatar; empty: "No projects yet. Create your first project."
 - Settings: sections as Cards; destructive actions through `WarningConfirm`; new Admin-only "Deleted issues" section listing `deletedIssues` (key, title, deleted when, by whom) with a Restore button each; empty: "Nothing deleted in the last 30 days."
 
-- [ ] **Step 1:** `tests/Feature/Projects/DeletedIssuesTest.php`: an Admin sees `deletedIssues`; a Member does not get the prop; Restore from the list works. Run → FAIL; implement; → PASS.
-- [ ] **Step 2:** restyle; browser check; full verification; commit `feat(ui): dashboard, projects and settings with the deleted issues list`.
+- [x] **Step 1:** `tests/Feature/Projects/DeletedIssuesTest.php`: an Admin sees `deletedIssues`; a Member does not get the prop; Restore from the list works. Run → FAIL; implement; → PASS.
+- [x] **Step 2:** restyle; browser check; full verification; commit `feat(ui): dashboard, projects and settings with the deleted issues list`.
 
 ### Task U12: Auth, profile, tokens and welcome
 
@@ -379,20 +381,20 @@ export const peekUrl = (key: string) => string;                        // curren
 - Profile: three Cards; delete account through `WarningConfirm` (password field kept).
 - Welcome: reduced to logo, one line, "Log in" / "Register" buttons.
 
-- [ ] **Step 1:** restyle; `Auth`, `ProfileTest`, `Tokens` tests stay green; browser check in both themes.
-- [ ] **Step 2:** full verification; commit `feat(ui): auth, profile, tokens and welcome in the design system`.
+- [x] **Step 1:** restyle; `Auth`, `ProfileTest`, `Tokens` tests stay green; browser check in both themes.
+- [x] **Step 2:** full verification; commit `feat(ui): auth, profile, tokens and welcome in the design system`.
 
 ### Task U13: Acceptance audit and PR
 
 **Files:** Modify `PROGRESS.md`, `CLAUDE.md` (token and component notes replacing Jira ones), `README.md` if screenshots or commands changed
 
-- [ ] **Step 1:** walk the acceptance paragraph line by line with evidence (table above): command output, test names, screenshots of every screen in light and dark.
-- [ ] **Step 2:** accessibility audit on the board, issue page and drawer, in the browser preview, quoting output:
+- [x] **Step 1:** walk the acceptance paragraph line by line with evidence (table above): command output, test names, screenshots of every screen in light and dark.
+- [x] **Step 2:** accessibility audit on the board, issue page and drawer, in the browser preview, quoting output:
   - script: every `a, button, input, select, textarea, [tabindex]` is ≥ 32px high (pills that are not buttons ≥ 24px) and no text is under 11px
   - keyboard walk: Tab reaches every control with a visible 2px ring; Esc closes the top layer and focus returns to its trigger
   - board move by keyboard announces in the live region
   - dialogs and the drawer have an accessible name and trap focus; toast is `role="status"` and pauses on focus
   - status, type, priority and due state each show text or a distinct icon beside the colour
   - reduced motion: state plainly what could and could not be checked in the preview (the OS setting cannot be toggled from here; `motion.test.ts` and the CSS rule are the proof, and I ask you to flip the OS setting once)
-- [ ] **Step 3:** `php artisan test`, `npm test`, `npm run build`, `vendor/bin/pint --test`, security review of the whole branch diff, `/ponytail-review` on the branch diff. Fix findings with a failing test first.
-- [ ] **Step 4:** push, `gh pr create`, stop.
+- [x] **Step 3:** `php artisan test`, `npm test`, `npm run build`, `vendor/bin/pint --test`, security review of the whole branch diff, `/ponytail-review` on the branch diff. Fix findings with a failing test first.
+- [x] **Step 4:** push, `gh pr create`, stop.

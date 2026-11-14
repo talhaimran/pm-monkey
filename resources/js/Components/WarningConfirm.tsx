@@ -1,6 +1,6 @@
 import { DialogTitle } from '@headlessui/react';
 import { TriangleAlert } from 'lucide-react';
-import { PropsWithChildren, useRef } from 'react';
+import { PropsWithChildren, ReactNode, useRef, useState } from 'react';
 import Modal from './Modal';
 import PrimaryButton from './PrimaryButton';
 import SecondaryButton from './SecondaryButton';
@@ -62,4 +62,35 @@ export default function WarningConfirm({
             </form>
         </Modal>
     );
+}
+
+export type Confirmation = { title: string; warnings: { text: string; reason?: string }[]; confirmLabel: string; run: () => void };
+
+/**
+ * One warning confirm for a page with several destructive actions: `ask({...})` opens it, `dialog` goes in the page.
+ * The last question stays rendered while the dialog animates out.
+ */
+export function useWarningConfirm(): [(confirmation: Confirmation) => void, ReactNode] {
+    const [pending, setPending] = useState<Confirmation | null>(null);
+    const [open, setOpen] = useState(false);
+
+    const ask = (confirmation: Confirmation) => {
+        setPending(confirmation);
+        setOpen(true);
+    };
+    const dialog = (
+        <WarningConfirm
+            open={open}
+            title={pending?.title ?? ''}
+            warnings={pending?.warnings ?? []}
+            confirmLabel={pending?.confirmLabel ?? ''}
+            onCancel={() => setOpen(false)}
+            onConfirm={() => {
+                pending?.run();
+                setOpen(false);
+            }}
+        />
+    );
+
+    return [ask, dialog];
 }
