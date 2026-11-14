@@ -48,13 +48,13 @@ These are my defaults where the spec is silent or marked (leaning). Reply with c
 
 Spec wins in each case; listed so you can fix the design system.
 
-1. **Status wording** (known): "In review" / "In progress" in `README.md` voice, `accessibility.md`, `Toast`, `IssueDrawer` and `BoardColumn` previews and READMEs; tokens and spec use category names ("In Progress").
-2. **Agent label:** `IssuePage`, `ApprovalCard`, `AuditLogTable`, `AgentRunPanel`, `Card`, `NotificationInbox` say "Triage agent (AI)"; spec and `Avatar` README say "{Owner}'s agent" or its name.
+1. **Status wording** — decided 2026-11-14: keep the sentence-case "In progress" wording of the previews. The spec and `tokens.json` usage notes still say "In Progress" and should be changed to match. Step U shows each project's own column names, so no code depends on this yet.
+2. **Agent label** — decided 2026-11-14: "{Owner}'s agent" (or its name) stands; these pages still need fixing: `IssuePage`, `ApprovalCard`, `AuditLogTable`, `AgentRunPanel`, `Card`, `NotificationInbox` say "Triage agent (AI)"; spec and `Avatar` README say "{Owner}'s agent" or its name.
 3. **Empty-state copy:** `EmptyState` says "Create one, or import from Jira or CSV." (import is step 5); spec says "No issues yet. Create your first issue · C".
-4. **Avatar tokens have no dark values:** the 14 `av-*` tokens define `light` only; spec asks for light and dark everywhere. The plan uses the light pair in both themes.
+4. **Avatar tokens had no dark values** — fixed in PR 5 (`docs/design-system-pmops`): dark pairs added, contrast 5.5–6.1. U1 needs that PR merged into this branch first.
 5. **`side-faint` fails AA** (4.4 / 3.9) but is assigned to sidebar group labels; spec asks for WCAG 2.2 AA. The plan uses `side-dim` for those labels.
 6. **`faint` fails AA in light** (3.5–3.9); the plan uses it only for placeholders and decorative text.
-7. **Old name:** the design system is titled "pm-monkey" (README, `motion.md`, `tokens.json` `name`, `bundle.css`) and uses `PM-142` example keys.
+7. **Old name** — fixed in PR 5: the design system is now titled PmOps. Example keys (`PM-142`) are unchanged.
 8. **Workspace URL and switcher:** both documents show `/{workspace}/issues/{KEY}` and a workspace switcher; neither exists before step 0 (see D8, D11).
 9. **Issue page extras:** Watch, Move, Clone, Linked issues, Attachments, Reporter, "Show 6 more fields" belong to later steps; step U shows only what exists.
 10. **Motion catalog vs "nothing plays on its own":** the app-load cascade (700ms on every load) sits uneasily with spec 5.1; not built (D13).
@@ -154,7 +154,7 @@ Nothing else. `unique(project_id, number)` and `projects.issue_counter` already 
   - `it('exposes every colour token')`: each `color.tokens[].name` in `docs/design-system/tokens.json` appears in the built CSS variable list (assert against `tailwind.config.js` reading the file, i.e. the config contains `tokens.json` and no inline colour table).
 - [ ] **Step 2:** run `php artisan test tests/Feature/Ui` → FAIL.
 - [ ] **Step 3:** `npm install motion lucide-react @fontsource/urbanist`; confirm each installed `package.json` licence is MIT / ISC / OFL-1.1 and quote it in the report. Stop if not.
-- [ ] **Step 4:** rewrite `tailwind.config.js` to read `docs/design-system/tokens.json` (`readFileSync` + `JSON.parse`) and build the theme above. Tokens with only a `light` value use it for both themes.
+- [ ] **Step 4:** rewrite `tailwind.config.js` to read `docs/design-system/tokens.json` (`readFileSync` + `JSON.parse`) and build the theme above. Every colour token has light and dark values once PR 5 is merged; a token with only `light` uses it for both.
 - [ ] **Step 5:** `app.tsx` imports `@fontsource/urbanist/{400,500,600,700,800}.css`; `app.css` base: `body` = `bg-bg text-text text-body font-sans antialiased`; `:focus-visible` = 2px `primary` outline, 2px offset; `@media (prefers-reduced-motion: reduce)` sets `transition-duration`, `animation-duration` to `0s !important` on `*, ::before, ::after` and disables `::view-transition-*` animation.
 - [ ] **Step 6:** mechanical class rename across `resources/js` so the build stays green: `ink→text`, `ink-subtle→muted`, `surface→bg`, `sunken→card-2`, `raised→card`, `line→line`, `input-line→line-2`, `brand→primary`, `brand-hover→primary`, `on-brand→on-primary`, `selected→well`, `neutral→card-2`, `neutral-hover→well`, `danger→c-bad` (text: `t-bad`), `danger-subtle→c-bad/15`, `warning-subtle→c-warn/15`, `warning-ink→t-warn`, `success→c-good`, `loz-todo*→c-sky/t-sky`, `loz-progress*→c-amber/t-amber`, `loz-done*→c-good/t-good`, `shadow-card→shadow-xs`. Screens are properly restyled in later tasks; this step only removes the old names.
 - [ ] **Step 7:** `resources/js/tokens.test.ts` (`node --test`): contrast ratio ≥ 4.5 for `text`, `muted` on `card`, `card-2`, `bg`; `on-primary` on `primary`; `side-dim` on `side`; each `t-*` on its 14% (light) / 18% (dark) tint over `card`, in both themes.
