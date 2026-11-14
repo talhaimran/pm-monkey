@@ -47,10 +47,10 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Version;
 use Laravel\Mcp\Server\ServerContext;
 
-#[Name('PM Monkey')]
+#[Name('PmOps')]
 #[Version('1.0.0')]
 #[Instructions(<<<'MD'
-    PM Monkey is a Jira-like project tracker. Projects are addressed by their short KEY (e.g. WEB); issues by KEY-NUMBER (e.g. WEB-12).
+    PmOps is a Jira-like project tracker. Projects are addressed by their short KEY (e.g. WEB); issues by KEY-NUMBER (e.g. WEB-12).
     Start with list_projects to see what you can access. Issue fields take names, not ids: status is a column name,
     assignee a member email, labels label names, epic/parent issue keys. Errors list the valid options. Results are a short summary followed by JSON; lists are paginated (pass page=N).
     Destructive tools (delete_*) require confirm: true. Read-only tokens and Viewers cannot write.

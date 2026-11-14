@@ -8,7 +8,7 @@ export default function Guest({ children }: PropsWithChildren) {
             <div>
                 <Link href="/" className="flex items-center gap-3">
                     <ApplicationLogo className="h-10 w-10 fill-current text-brand" />
-                    <span className="text-2xl font-semibold text-ink">PM Monkey</span>
+                    <span className="text-2xl font-semibold text-ink">PmOps</span>
                 </Link>
             </div>
 
