@@ -33,7 +33,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
             <form onSubmit={submit}>
                 <div className="mt-4 flex items-center justify-between">
                     <PrimaryButton disabled={processing}>
-                        Resend Verification Email
+                        Resend verification email
                     </PrimaryButton>
 
                     <Link
@@ -42,7 +42,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
                         as="button"
                         className="rounded-ctl text-sm text-muted underline hover:text-text"
                     >
-                        Log Out
+                        Log out
                     </Link>
                 </div>
             </form>

@@ -33,7 +33,7 @@ export default function UpdateProfileInformation({
         <section className={className}>
             <header>
                 <h2 className="text-heading-2xl text-text">
-                    Profile Information
+                    Profile information
                 </h2>
 
                 <p className="mt-1 text-sm text-muted">

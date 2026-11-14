@@ -1,3 +1,6 @@
+import EmptyState from '@/Components/EmptyState';
+import WarningConfirm from '@/Components/WarningConfirm';
+import { KeyRound } from 'lucide-react';
 import DangerButton from '@/Components/DangerButton';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -31,6 +34,7 @@ export default function Index({
 }) {
     const flashToken = (usePage().props as { flash?: { token?: string | null } }).flash?.token;
     const [copied, setCopied] = useState(false);
+    const [revoking, setRevoking] = useState<Token | null>(null);
     const [allProjects, setAllProjects] = useState(true);
     const form = useForm({ name: '', access: 'read' as 'read' | 'write', projects: [] as string[], expires_in_days: '90' });
 
@@ -164,7 +168,9 @@ export default function Index({
                 <section className={card}>
                     <h3 className="text-lg text-text">Your tokens</h3>
                     {tokens.length === 0 ? (
-                        <p className="mt-2 text-sm text-muted">No tokens yet.</p>
+                        <div className="mt-4">
+                            <EmptyState icon={KeyRound} title="No tokens yet." hint="Create a token to use the API or MCP." />
+                        </div>
                     ) : (
                         <ul className="mt-3 divide-y divide-line">
                             {tokens.map((t) => (
@@ -185,13 +191,8 @@ export default function Index({
                                             )}
                                         </div>
                                     </div>
-                                    <DangerButton
-                                        onClick={() =>
-                                            confirm(`Revoke"${t.name}"? Anything using it stops working immediately.`) &&
-                                            router.delete(route('tokens.destroy', t.id), { preserveScroll: true })
-                                        }
-                                    >
-                                        Revoke
+                                    <DangerButton onClick={() => setRevoking(t)}>
+                                        Revoke <span className="sr-only">{t.name}</span>
                                     </DangerButton>
                                 </li>
                             ))}
@@ -199,6 +200,14 @@ export default function Index({
                     )}
                 </section>
             </div>
+            <WarningConfirm
+                open={revoking !== null}
+                title={`Revoke "${revoking?.name ?? ''}"?`}
+                warnings={[{ text: 'Anything using this token stops working at once.', reason: "A revoked token can't be brought back; create a new one instead." }]}
+                confirmLabel="Revoke token"
+                onCancel={() => setRevoking(null)}
+                onConfirm={() => revoking && router.delete(route('tokens.destroy', revoking.id), { preserveScroll: true, onFinish: () => setRevoking(null) })}
+            />
         </AuthenticatedLayout>
     );
 }

@@ -52,7 +52,7 @@ export default function UpdatePasswordForm({
         <section className={className}>
             <header>
                 <h2 className="text-heading-2xl text-text">
-                    Update Password
+                    Update password
                 </h2>
 
                 <p className="mt-1 text-sm text-muted">
@@ -65,7 +65,7 @@ export default function UpdatePasswordForm({
                 <div>
                     <InputLabel
                         htmlFor="current_password"
-                        value="Current Password"
+                        value="Current password"
                     />
 
                     <TextInput
@@ -87,7 +87,7 @@ export default function UpdatePasswordForm({
                 </div>
 
                 <div>
-                    <InputLabel htmlFor="password" value="New Password" />
+                    <InputLabel htmlFor="password" value="New password" />
 
                     <TextInput
                         id="password"
@@ -105,7 +105,7 @@ export default function UpdatePasswordForm({
                 <div>
                     <InputLabel
                         htmlFor="password_confirmation"
-                        value="Confirm Password"
+                        value="Confirm password"
                     />
 
                     <TextInput
