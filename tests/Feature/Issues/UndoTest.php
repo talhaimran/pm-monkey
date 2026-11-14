@@ -9,6 +9,7 @@ use App\Services\ColumnService;
 use App\Services\CommentService;
 use App\Services\IssueService;
 use App\Services\LabelService;
+use App\Services\SprintService;
 
 beforeEach(function () {
     $this->admin = User::factory()->create(['name' => 'Ada Admin', 'email' => 'admin@example.com']);
@@ -185,4 +186,36 @@ test('a viewer cannot use an undo payload', function () {
 
     $this->actingAs($viewer)->patch($undo['url'], $undo['data'])->assertForbidden();
     expect(Issue::sole()->title)->toBe('Renamed');
+});
+
+test('undo of a backlog reorder and of a move into a sprint', function () {
+    $sprints = app(SprintService::class);
+    $sprints->create($this->project, ['name' => 'S1']);
+    foreach (range(1, 3) as $i) {
+        makeIssue($this->project, $this->admin);
+    }
+    $backlog = fn () => Issue::whereNull('sprint_id')->orderBy('rank')->pluck('number')->all();
+
+    $this->post('/issues/WEB-1/rank', ['after' => 'WEB-3'])->assertRedirect();
+    expect($backlog())->toBe([2, 3, 1])->and(session('undo.message'))->toBe('WEB-1 moved');
+    sendUndo($this)->assertSessionHasNoErrors();
+    expect($backlog())->toBe([1, 2, 3]);
+
+    $this->post('/issues/WEB-2/rank', ['sprint' => 'S1', 'position' => 0])->assertRedirect();
+    expect($backlog())->toBe([1, 3])->and(session('undo.message'))->toBe('WEB-2 moved to S1');
+    sendUndo($this)->assertSessionHasNoErrors();
+    expect($backlog())->toBe([1, 2, 3])
+        ->and(Activity::latest('id')->first())->action->toBe('undid')->changes->toEqual(['sprint' => ['from' => 'S1', 'to' => null]]);
+});
+
+test('undo of a backlog move stops when the issue changed meanwhile', function () {
+    app(SprintService::class)->create($this->project, ['name' => 'S1']);
+    $issue = makeIssue($this->project, $this->admin);
+    $this->post('/issues/WEB-1/rank', ['sprint' => 'S1'])->assertRedirect();
+    $undo = session('undo');
+
+    app(IssueService::class)->update($issue->fresh(), $this->sam, ['title' => 'Edited by Sam']);
+
+    $this->post($undo['url'], $undo['data'])->assertSessionHasErrors(['undo' => "Can't undo: Sam Member changed title on WEB-1."]);
+    expect(Issue::sole()->sprint_id)->not->toBeNull();
 });
