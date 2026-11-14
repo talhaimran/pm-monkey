@@ -1,6 +1,6 @@
 # Motion
 
-pm-monkey moves things to explain change: where a card went, where a panel came from, what just happened. Timings were first measured from the Selvar demo and are pm-monkey's own now. The app animates with **Motion** (`motion/react`) for anything that moves through space and plain CSS for the small stuff; easings are given as CSS `cubic-bezier` values, which Motion takes as arrays (`[0.165, 0.84, 0.44, 1]`).
+PmOps moves things to explain change: where a card went, where a panel came from, what just happened. Timings were first measured from the Selvar demo and are PmOps' own now. The app animates with **Motion** (`motion/react`) for anything that moves through space and plain CSS for the small stuff; easings are given as CSS `cubic-bezier` values, which Motion takes as arrays (`[0.165, 0.84, 0.44, 1]`).
 
 ## Rules
 
@@ -44,7 +44,7 @@ pm-monkey moves things to explain change: where a card went, where a panel came 
 
 ## Skip from Selvar
 
-Selvar also has an always-rotating AI orb, letter-by-letter headline reveals and a ~1.5s overview intro. They suit a demo, not a screen opened many times a day; pm-monkey does not use them. AI and agent text never types out letter by letter.
+Selvar also has an always-rotating AI orb, letter-by-letter headline reveals and a ~1.5s overview intro. They suit a demo, not a screen opened many times a day; PmOps does not use them. AI and agent text never types out letter by letter.
 
 ## In React
 

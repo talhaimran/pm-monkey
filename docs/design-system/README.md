@@ -1,8 +1,8 @@
-# pm-monkey
+# PmOps design system
 
 A calm, fast, keyboard-friendly issue tracker for small teams, where people and AI agents work the same board.
 
-This design system is the source of truth for PmOps' UI (spec `pmops-spec.md`, section 5.1). The Selvar demo (a sales-pipeline template) and Linear are visual references only: the tokens started from values observed in Selvar and were remapped for issue tracking, and every stylesheet and component here is written for pm-monkey. Never copy Selvar's CSS or code. The app is **React 18 + TypeScript on Laravel (Inertia), styled with Tailwind 3**; components here are framework-free HTML + CSS classes (`components/bundle.css`) with guidelines for building them as React components.
+This design system is the source of truth for PmOps' UI (spec `pmops-spec.md`, section 5.1). The Selvar demo (a sales-pipeline template) and Linear are visual references only: the tokens started from values observed in Selvar and were remapped for issue tracking, and every stylesheet and component here is written for PmOps. Never copy Selvar's CSS or code. The app is **React 18 + TypeScript on Laravel (Inertia), styled with Tailwind 3**; components here are framework-free HTML + CSS classes (`components/bundle.css`) with guidelines for building them as React components.
 
 ## Principles
 
@@ -28,7 +28,7 @@ Short, plain, specific. Sentence case everywhere ("Move to In review", not "Move
 - **Signals:** `good`, `warn`, `bad`, `info` for outcomes and alerts (success, due soon, overdue, destructive, notices). How Blocked and At risk show on cards is decided later; until then use the existing card flags.
 - **Issue type (card icon chip):** Task `slate` · Story `cobalt` · Bug `coral` · Epic `amber` · Sub-task `sky` · Initiative `sand` · Spike `teal` · Incident `bad`. Admins can change a type's colour; the icon always comes with it.
 - **Pills and chips** tint their strong colour into `card` (14% light, 18% dark) and set text in the matching `t-*` token, which passes 5:1+ in both themes. Never put `c-*` text on a tint.
-- **Avatars** get one of seven pastel pairs (`av-*` + `av-*-t`) by hashing the person's id.
+- **Avatars** get one of seven pairs (`av-*` + `av-*-t`; pastel in light, a deep tint with light initials in dark) by hashing the person's id.
 
 ## Type
 
@@ -52,7 +52,7 @@ Column totals show the sum of estimates in the project's unit (points or hours) 
 
 Line icons at 1.8px stroke, round caps and joins, 16px in controls (17px in buttons, 20px in the palette input), drawn in `currentColor`. The app uses **lucide-react**; previews here use inline Lucide-style paths. Icons always sit beside a text label or carry an `aria-label`.
 
-## Using it in React (the pm-monkey repo)
+## Using it in React (the PM-Ops repo)
 
 - **Tokens:** move them into `tailwind.config.js`, keeping the repo's pattern: each colour becomes a CSS variable, switched by the `.dark` class (this page's `data-theme="dark"`), and exposed as a Tailwind colour. Spacing, radius, shadow, type, duration and easing tokens go in the same config.
 - **Components:** build each one as a React + TypeScript component that renders the documented markup, states and keyboard behaviour, styled with Tailwind classes that read the tokens (or the classes in `components/bundle.css`).
