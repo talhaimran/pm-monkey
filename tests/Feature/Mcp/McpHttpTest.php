@@ -28,7 +28,7 @@ test('initialize and tools/list describe the server and every tool in one page',
 
     rpc($token, 'initialize', ['protocolVersion' => '2025-06-18', 'capabilities' => (object) [], 'clientInfo' => ['name' => 'test', 'version' => '1']])
         ->assertOk()
-        ->assertJsonPath('result.serverInfo.name', 'PM Monkey')
+        ->assertJsonPath('result.serverInfo.name', 'PmOps')
         ->assertJsonPath('result.instructions', fn ($i) => str_contains($i, 'list_projects'));
 
     $tools = rpc($token, 'tools/list')->assertOk()->json('result.tools');
