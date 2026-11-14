@@ -45,7 +45,7 @@ test('stdio server answers real JSON-RPC calls as the token user', function () {
     ], ['PM_MCP_TOKEN' => $token]);
 
     expect($result->successful())->toBeTrue($result->errorOutput())
-        ->and($responses[1]['result']['serverInfo']['name'])->toBe('PM Monkey')
+        ->and($responses[1]['result']['serverInfo']['name'])->toBe('PmOps')
         ->and(collect($responses[2]['result']['tools'])->pluck('name'))->toContain('create_issue', 'complete_sprint')
         ->and($responses[3]['result']['content'][0]['text'])->toStartWith('Created WEB-1: Over stdio')
         ->and($responses[4]['result']['content'][0]['text'])->toContain('"title":"Over stdio"');

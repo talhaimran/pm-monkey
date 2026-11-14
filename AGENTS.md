@@ -1,6 +1,6 @@
-# AGENTS.md: using PM Monkey as an AI agent
+# AGENTS.md: using PmOps as an AI agent
 
-This guide is for AI agents (Claude, GPT, Qwen, local models) that **use** PM Monkey through MCP or the REST API. To **change PM Monkey's code**, read [CLAUDE.md](CLAUDE.md) and [SPEC.md](SPEC.md) instead.
+This guide is for AI agents (Claude, GPT, Qwen, local models) that **use** PmOps through MCP or the REST API. To **change PmOps's code**, read [CLAUDE.md](CLAUDE.md) and [SPEC.md](SPEC.md) instead.
 
 Connection setup (tokens, Claude Code, Claude Desktop) is in the [README](README.md#mcp-server).
 
