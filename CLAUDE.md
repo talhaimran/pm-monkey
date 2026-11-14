@@ -2,6 +2,8 @@
 
 SPEC.md is the source of truth. PROGRESS.md logs slice progress and decisions made on ambiguous points. README.md covers setup and connecting MCP clients; AGENTS.md is the guide for agents using the app. Update AGENTS.md's tool table when tools change.
 
+UI follows docs/design-system (start with README.md); spec 5.1 wins on conflicts.
+
 ## Working style (always on in this project)
 - **superpowers**: check for a matching skill before acting. Use `superpowers:writing-plans` before each slice, `superpowers:test-driven-development` while building, `superpowers:systematic-debugging` on failures, and `superpowers:verification-before-completion` before every commit.
 - **ponytail** (full): make the smallest complete change and add no unrequested abstractions or deps. Mark known limits as `shortcut: <limit>, <when to upgrade>`. Never cut validation, security, data-loss handling, or anything in SPEC.md.

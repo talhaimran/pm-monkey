@@ -1,0 +1,12 @@
+<!-- @dsCard group="Overlays" height=380 -->
+<div class="pm" style="padding:20px;background:var(--bg);min-height:100%;display:grid;place-items:center">
+<div class="dialog dialog--wide" role="dialog" aria-modal="true" aria-labelledby="cd-t" style="--c:var(--c-cobalt);--t:var(--t-cobalt)">
+  <span class="dialog__icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></span>
+  <h2 class="dialog__title" id="cd-t">PM-142 changed while you were editing</h2>
+  <div class="compare">
+    <section class="compare__side"><h4>Your version</h4><p>Retry failed webhook deliveries <del class="chg-del">three</del> <ins class="chg-add">five</ins> times before marking the endpoint as failing.</p></section>
+    <section class="compare__side is-theirs"><h4>Their version · Sam, 2 min ago</h4><p>Retry failed webhook deliveries three times <ins class="chg-add">with backoff</ins> before marking the endpoint as failing.</p></section>
+  </div>
+  <div class="dialog__foot"><button class="btn btn--ghost">Keep theirs</button><button class="btn btn--ghost">Copy mine</button><button class="btn btn--primary">Save mine over theirs</button></div>
+</div>
+</div>
