@@ -1,6 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap");
 
-/* pm-monkey component styles. Every value reads a token from tokens.css.
+/* PmOps component styles. Every value reads a token from tokens.css.
    Framework-free: the app rebuilds these as React components styled with Tailwind classes that read the same tokens. */
 
 .pm, .pm * { box-sizing: border-box; }
