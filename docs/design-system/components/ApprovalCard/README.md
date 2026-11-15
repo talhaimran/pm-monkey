@@ -10,4 +10,4 @@ An agent's request to make a change that needs a person's yes. Lives in the issu
 
 **Rules:** the approver needs permission to make the change themselves. Approving runs it through the same services as a person's change, then shows the usual toast with Undo.
 
-**A11y:** the agent is named in words ("Triage agent (AI)"), not only by avatar. Buttons say what they do: "Approve move to Done".
+**A11y:** the agent is named in words ("Talha's agent", or the agent's own name), not only by avatar. Buttons say what they do: "Approve move to Done".

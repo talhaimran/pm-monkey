@@ -5,7 +5,7 @@ What a page, list, or column shows when there's nothing in it yet, or nothing ma
 **Anatomy:** `.empty` (dashed border) with an icon tile, one line saying what's empty, one line on what to do, and at most one button. Board columns use the smaller `.col__empty` instead.
 
 **Kinds and copy:**
-- First use: "No issues yet." / "Create one, or import from Jira or CSV." / Create issue
+- First use: "No issues yet." / "Create your first issue · C" / Create issue
 - No results: "No issues match these filters." / "Try removing a filter." / Clear filters
 - Done: "You're all caught up." (no button)
 - No access: "You don't have access to this project." / "Ask a project admin to add you."
