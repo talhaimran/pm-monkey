@@ -238,4 +238,4 @@ This project is licensed under the [GNU Affero General Public License v3.0 only]
 
 - You can use, self-host and change it freely.
 - If you change the code and let other people use your version over a network, you must offer those users the source code of your version under the same licence.
-- Contributions need a signed Contributor License Agreement (CLA) before they can be merged. The process will be announced.
+- Contributions need a signed [Contributor License Agreement](CLA.md) before they can be merged. A bot asks for it on your first pull request; see [CONTRIBUTING.md](CONTRIBUTING.md).
