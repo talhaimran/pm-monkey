@@ -85,6 +85,29 @@ class UndoService
         return ['status' => $issue->column->name] + ($previous ? ['after' => "{$issue->project->key}-{$previous->number}"] : ['position' => 0]);
     }
 
+    /**
+     * Request data for the rank endpoint that returns the issue to its sprint (or the backlog) and place. Call it before the move.
+     *
+     * @return array<string, mixed>
+     */
+    public function forRank(Issue $issue): array
+    {
+        $issue->loadMissing(IssueService::DISPLAY);
+        // The same neighbours BacklogService::rank places against: the sprint's issues, or the open backlog.
+        $previous = Issue::where('project_id', $issue->project_id)
+            ->where('type', '!=', 'epic')
+            ->when(
+                $issue->sprint_id,
+                fn ($q, $id) => $q->where('sprint_id', $id),
+                fn ($q) => $q->whereNull('sprint_id')->where('column_id', '!=', $issue->project->doneColumnId()),
+            )
+            ->where('rank', '<', $issue->rank)
+            ->orderByDesc('rank')
+            ->first();
+
+        return ['sprint' => $issue->sprint?->name ?? 'backlog'] + ($previous ? ['after' => "{$issue->project->key}-{$previous->number}"] : ['position' => 0]);
+    }
+
     private function describe(Activity $activity, Issue $issue): string
     {
         $who = $activity->user?->name ?? 'Someone';

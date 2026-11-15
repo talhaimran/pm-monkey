@@ -1,5 +1,6 @@
 import Avatar from '@/Components/Avatar';
 import Dropdown from '@/Components/Dropdown';
+import EmptyState from '@/Components/EmptyState';
 import InputError from '@/Components/InputError';
 import IssueFormModal, { selectClass } from '@/Components/IssueFormModal';
 import IssueTypeIcon from '@/Components/IssueTypeIcon';
@@ -396,7 +397,7 @@ export default function IssueView({
                                         </div>
                                     </form>
                                 )}
-                                {issue.comments?.length === 0 && !can.contribute && <p className="text-muted">No comments yet.</p>}
+                                {issue.comments?.length === 0 && <EmptyState compact title="No comments yet." hint={can.contribute ? 'Write the first one above.' : undefined} />}
                                 {issue.comments?.map((c) => <CommentItem key={c.id} comment={c} canDelete={!!c.can_edit || can.manage} />)}
                             </div>
                         ) : (
@@ -465,7 +466,7 @@ function CommentItem({ comment, canDelete }: { comment: Comment; canDelete: bool
 function ActivityList({ entries }: { entries: ActivityEntry[] }) {
     const show = (v: unknown) => (v === null || v === undefined || v === '' ? 'None' : String(v));
 
-    if (entries.length === 0) return <p className="text-muted">No history yet.</p>;
+    if (entries.length === 0) return <EmptyState compact title="No history yet." hint="Changes to this issue show up here." />;
 
     return (
         <ul className="space-y-4">

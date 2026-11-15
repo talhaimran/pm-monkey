@@ -55,14 +55,14 @@ class BacklogService
      * Rank an issue in the backlog or a sprint. $input: sprint? (name, or "backlog"), position?, after?
      * Moving between sections is logged through IssueService::update; reordering alone isn't.
      */
-    public function rank(Issue $issue, User $actor, array $input): Issue
+    public function rank(Issue $issue, User $actor, array $input, string $action = 'updated'): Issue
     {
-        return DB::transaction(function () use ($issue, $actor, $input) {
+        return DB::transaction(function () use ($issue, $actor, $input, $action) {
             Project::whereKey($issue->project_id)->lockForUpdate()->first();
 
             if (array_key_exists('sprint', $input)) {
                 $target = $input['sprint'] === null || strcasecmp($input['sprint'], 'backlog') === 0 ? null : $input['sprint'];
-                $issue = $this->issues->update($issue, $actor, ['sprint' => $target]);
+                $issue = $this->issues->update($issue, $actor, ['sprint' => $target], $action);
             }
             $issue->loadMissing(IssueService::DISPLAY);
 

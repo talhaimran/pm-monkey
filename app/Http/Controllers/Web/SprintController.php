@@ -15,6 +15,7 @@ use App\Services\BacklogService;
 use App\Services\IssueService;
 use App\Services\ProjectService;
 use App\Services\SprintService;
+use App\Services\UndoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -28,6 +29,7 @@ class SprintController extends Controller
         private IssueService $issues,
         private SprintService $sprints,
         private BacklogService $backlog,
+        private UndoService $undo,
     ) {}
 
     public function backlog(Request $request, Project $project): Response
@@ -86,8 +88,24 @@ class SprintController extends Controller
     {
         $issue = $this->issues->resolve($request->user(), $key);
         Gate::authorize('update', $issue);
-        $this->backlog->rank($issue, $request->user(), $request->validated());
+        $undoOf = $request->validate(['undo_of' => ['nullable', 'integer']])['undo_of'] ?? null;
 
-        return back();
+        if ($undoOf) {
+            $this->undo->guard($issue, (int) $undoOf);
+            $this->backlog->rank($issue, $request->user(), $request->validated(), 'undid');
+
+            return back();
+        }
+
+        $before = $this->undo->forRank($issue);
+        $issue = $this->backlog->rank($issue, $request->user(), $request->validated());
+        $now = $issue->sprint?->name ?? 'backlog';
+
+        return back()->with('undo', [
+            'message' => $before['sprint'] === $now ? "{$issue->key} moved" : "{$issue->key} moved to ".($issue->sprint?->name ?? 'the backlog'),
+            'method' => 'post',
+            'url' => route('issues.rank', $issue->key),
+            'data' => [...$before, 'undo_of' => $this->undo->token($issue)],
+        ]);
     }
 }

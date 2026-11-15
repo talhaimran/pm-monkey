@@ -1,9 +1,9 @@
-import { Trash2 } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 import DangerButton from '@/Components/DangerButton';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import EmptyState from '@/Components/EmptyState';
-import WarningConfirm from '@/Components/WarningConfirm';
+import WarningConfirm, { useWarningConfirm } from '@/Components/WarningConfirm';
 import { selectClass } from '@/Components/IssueFormModal';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { ProjectHeader } from '@/Components/ProjectNav';
@@ -33,6 +33,7 @@ export default function Settings({
 }) {
     const { errors: pageErrors } = usePage().props as { errors: Record<string, string> };
     const [confirmingDelete, setConfirmingDelete] = useState(false);
+    const [ask, confirmDialog] = useWarningConfirm();
 
     const details = useForm({
         name: project.name,
@@ -197,9 +198,20 @@ export default function Settings({
                                     <DangerButton
                                         disabled={columns.length === 1 || (c.issue_count > 0 && !moveTargets[c.id])}
                                         onClick={() =>
-                                            router.delete(columnRoute('projects.columns.destroy', c.id), {
-                                                data: { move_issues_to: moveTargets[c.id] || null },
-                                                preserveScroll: true,
+                                            ask({
+                                                title: `Delete the "${c.name}" column?`,
+                                                warnings: [
+                                                    c.issue_count > 0
+                                                        ? { text: `Its ${c.issue_count} ${c.issue_count === 1 ? 'issue moves' : 'issues move'} to ${moveTargets[c.id]}.` }
+                                                        : { text: 'The column is empty.' },
+                                                    { text: "A deleted column can't be brought back." },
+                                                ],
+                                                confirmLabel: 'Delete column',
+                                                run: () =>
+                                                    router.delete(columnRoute('projects.columns.destroy', c.id), {
+                                                        data: { move_issues_to: moveTargets[c.id] || null },
+                                                        preserveScroll: true,
+                                                    }),
                                             })
                                         }
                                     >
@@ -238,7 +250,11 @@ export default function Settings({
                     <h3 className={heading}>Labels</h3>
                     <InputError className="mt-2" message={pageErrors.name} />
                     <ul className="mt-4 flex flex-wrap gap-2">
-                        {labels.length === 0 && <li className="text-sm text-muted">No labels yet.</li>}
+                        {labels.length === 0 && (
+                            <li className="w-full">
+                                <EmptyState compact title="No labels yet." hint={can.contribute ? 'Add one below.' : undefined} />
+                            </li>
+                        )}
                         {labels.map((l) => (
                             <li key={l.id} className="flex items-center gap-2 rounded-pill border px-3 py-1 text-sm text-text" style={{ borderColor: l.color }}>
                                 {can.contribute && (
@@ -257,10 +273,17 @@ export default function Settings({
                                 {can.contribute && (
                                     <button
                                         aria-label={`Delete label ${l.name}`}
-                                        className="text-muted hover:text-t-bad"
-                                        onClick={() => router.delete(route('projects.labels.destroy', [project.key, l.id]), { preserveScroll: true })}
+                                        className="flex h-6 w-6 items-center justify-center rounded-pill text-muted hover:bg-card-2 hover:text-t-bad"
+                                        onClick={() =>
+                                            ask({
+                                                title: `Delete the "${l.name}" label?`,
+                                                warnings: [{ text: 'It is removed from every issue that has it.', reason: "A deleted label can't be brought back." }],
+                                                confirmLabel: 'Delete label',
+                                                run: () => router.delete(route('projects.labels.destroy', [project.key, l.id]), { preserveScroll: true }),
+                                            })
+                                        }
                                     >
-                                        ×
+                                        <X className="h-3.5 w-3.5" aria-hidden="true" />
                                     </button>
                                 )}
                             </li>
@@ -332,6 +355,11 @@ export default function Settings({
                             <PrimaryButton disabled={invite.processing}>Invite</PrimaryButton>
                         </form>
 
+                        {invitations.length === 0 && (
+                            <div className="mt-4">
+                                <EmptyState compact title="No pending invitations." hint="Invite a teammate by email above." />
+                            </div>
+                        )}
                         {invitations.length > 0 && (
                             <ul className="mt-4 divide-y divide-line text-sm">
                                 {invitations.map((inv) => (
@@ -405,6 +433,7 @@ export default function Settings({
                 onCancel={() => setConfirmingDelete(false)}
                 onConfirm={() => router.delete(route('projects.destroy', project.key), { data: { confirm: true } })}
             />
+            {confirmDialog}
         </AuthenticatedLayout>
     );
 }

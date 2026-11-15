@@ -16,6 +16,7 @@ import TextInput from '@/Components/TextInput';
 import { useCreateShortcut } from '@/Components/useCreateShortcut';
 import { placement, useLaneDroppable, useSortableLanes } from '@/Components/useSortableLanes';
 import EmptyState from '@/Components/EmptyState';
+import { useWarningConfirm } from '@/Components/WarningConfirm';
 import { issueUrl } from '@/issueUrl';
 import { transition } from '@/motion';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -79,6 +80,7 @@ export default function Backlog({
         ),
     );
 
+    const [ask, confirmDialog] = useWarningConfirm();
     const hasActive = backlog.sprints.some((s) => s.state === 'active');
     const sprintRoute = (name: string, sprint: SprintSection) => route(name, [project.key, sprint.id]);
 
@@ -150,7 +152,17 @@ export default function Backlog({
                                                     <button
                                                         type="button"
                                                         className={`${menuItem} text-t-bad`}
-                                                        onClick={() => router.delete(sprintRoute('projects.sprints.destroy', sprint), { preserveScroll: true })}
+                                                        onClick={() =>
+                                                            ask({
+                                                                title: `Delete ${sprint.name}?`,
+                                                                warnings: [
+                                                                    { text: `Its ${sprint.issue_count} ${sprint.issue_count === 1 ? 'issue goes' : 'issues go'} back to the backlog.` },
+                                                                    { text: "A deleted sprint can't be brought back." },
+                                                                ],
+                                                                confirmLabel: 'Delete sprint',
+                                                                run: () => router.delete(sprintRoute('projects.sprints.destroy', sprint), { preserveScroll: true }),
+                                                            })
+                                                        }
                                                     >
                                                         Delete sprint
                                                     </button>
@@ -187,6 +199,7 @@ export default function Backlog({
                 planned={backlog.sprints.filter((s) => s.state === 'planned').map((s) => s.name)}
                 onClose={() => setCompleting(null)}
             />
+            {confirmDialog}
         </AuthenticatedLayout>
     );
 }

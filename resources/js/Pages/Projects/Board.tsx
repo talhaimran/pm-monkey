@@ -193,6 +193,8 @@ const categoryDot = { todo: 'bg-c-sky', progress: 'bg-c-amber', done: 'bg-c-good
 /** Design system BoardColumn: status square, name, count; the points total; the cards; a dashed target when empty. */
 function Lane({ name, columns, cards, draggable }: { name: string; columns: string[]; cards: Card[]; draggable: boolean }) {
     const { setNodeRef, isOver } = useLaneDroppable(name);
+    // shortcut: totals cover the cards on screen, so a board cut off at 500 issues (the notice above says so) or a filtered
+    // board shows partial sums; move the sum to BoardService when estimates get a unit (step 10).
     const points = cards.reduce((sum, c) => sum + (c.story_points ?? 0), 0);
 
     return (

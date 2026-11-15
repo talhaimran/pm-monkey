@@ -169,13 +169,23 @@ Plan: docs/superpowers/plans/2026-10-29-ui-jira-redesign.md. Per-step security r
 - Findings: none new. Still open from the earlier review (informational): unauthenticated requests aren't rate-limited.
 
 ### Shortcuts from the redesign
-- Issue opens as a page, not a modal over the board (`?selectedIssue=`).
-- Sidebar isn't collapsible.
+Updated after step U (2026-11-14); struck lines no longer apply.
+- ~~Issue opens as a page, not a modal over the board.~~ Step U: peek drawer at `?issue={KEY}`, full page at `/issues/{KEY}`.
+- Sidebar isn't collapsible (no 92px rail).
 - No inline "+ Create issue" in board columns (IssueFormModal has no preset status).
 - Assignee avatar toggles list every member (add "+N" overflow past ~10).
-- Search and Your-work lozenges are gray (rows don't carry their project's column order).
+- Search and Your-work status pills use the To Do colour (rows don't carry their project's column order).
 - Board shows all issues by default (unchanged behaviour); title is the sprint name only when filtered to the active sprint.
-- Welcome (guest `/`) page not restyled.
+- ~~Welcome (guest `/`) page not restyled.~~ Step U: reduced to logo, one line and two buttons.
+
+### Shortcuts from step U
+- Status control is a native select styled as a pill, not a menu.
+- Board and backlog reordering uses dnd-kit's transitions timed from `motion.ts`, not Motion's `layout`.
+- Theme toggle is a View Transitions cross-fade, not the circle reveal.
+- Undo detects "changed meanwhile" by a newer activity row; a rank-only reorder by someone else isn't detected (edit-conflict versions arrive in step 1).
+- Column totals are summed from the cards on screen.
+- Activity actions are `deleted` / `restored` / `undid` (unprefixed, like the existing ones); purges go to the application log as `issue.purged` until the audit log exists.
+- No workspace switcher, AI box, compact card density or "Show N more" yet (steps 0, A and 10).
 
 ## Post-MVP log (docs)
 - 2026-11-14, job 3 (docs): copied the PmOps spec v1.3 to docs/specs/pmops-spec.md (naming sentence updated to the real rename) and the design system to docs/design-system/ (48 files, unchanged); pointer lines added to SPEC.md and CLAUDE.md. Commit 184196f.
@@ -197,3 +207,4 @@ Plan: docs/superpowers/plans/2026-10-29-ui-jira-redesign.md. Per-step security r
 - 2026-11-14, step U: U12 auth, profile, tokens: guest pages as a card, profile and token pages as cards, token revoke and account deletion through WarningConfirm (native confirm() removed), tokens empty state, sentence-case labels. Welcome was already reduced in U3. Commit 2ab68b0.
 - 2026-11-14, step U: U13 audit fixes: issue view controls (title, status, label toggles, tabs, comment actions) raised to 32px after the scripted target-size audit; CLAUDE.md gains the step U UI rules. Commit 39ec290.
 - 2026-11-14, step U: U13 review fixes (from /ponytail-review): issues:purge used each() while deleting, which skips rows past the first 1000 (now eachById); the Undo toast reappeared with a stale Undo after browser Back (the flashed undo is now removed from the history entry once shown; checked in the browser). Commit a2762e0.
+- 2026-11-14, step U: follow-up: LICENSE is the plain AGPL text (a316ab0), Undo for backlog moves (a316ab0), WarningConfirm for column, label and sprint deletes via useWarningConfirm, empty states for labels, invitations, comments and history, board totals limit marked, PROGRESS.md shortcut lists refreshed, plan boxes ticked, unused NavLink and ResponsiveNavLink removed. Commit ef63f47.
