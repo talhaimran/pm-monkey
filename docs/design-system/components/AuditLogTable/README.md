@@ -2,7 +2,7 @@
 
 The workspace's record of who changed what: people, agents, API tokens, and the system. Settings → Audit log; Owners and Admins only.
 
-**Anatomy:** `.table` with columns When, Actor (avatar and name; agents labelled "(AI)", tokens show the token name), Action (plain sentence: "Moved PM-142 to Done"), Target, and Source (Web, API, Agent, Import, Undo). A filter bar sits above it (actor, action, date range). Rows open a detail drawer with the before and after values.
+**Anatomy:** `.table` with columns When, Actor (avatar and name; agents shown as "{Owner}'s agent" or the agent's name, tokens show the token name), Action (plain sentence: "Moved PM-142 to Done"), Target, and Source (Web, API, Agent, Import, Undo). A filter bar sits above it (actor, action, date range). Rows open a detail drawer with the before and after values.
 
 **Rules:** read-only; rows can't be edited or deleted. Undos and restores appear as their own rows with Source "Undo" or "Restore". Overridden rule warnings are listed on the row ("overrode: blocked").
 

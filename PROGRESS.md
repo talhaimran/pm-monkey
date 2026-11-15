@@ -179,7 +179,7 @@ Updated after step U (2026-11-14); struck lines no longer apply.
 - ~~Welcome (guest `/`) page not restyled.~~ Step U: reduced to logo, one line and two buttons.
 
 ### Shortcuts from step U
-- Status control is a native select styled as a pill, not a menu.
+- Status control is a native select styled as a pill, not a menu. Decided 2026-11-15: build the menu in step 1, when statuses replace columns and this control is rewritten anyway.
 - Board and backlog reordering uses dnd-kit's transitions timed from `motion.ts`, not Motion's `layout`.
 - Theme toggle is a View Transitions cross-fade, not the circle reveal.
 - Undo detects "changed meanwhile" by a newer activity row; a rank-only reorder by someone else isn't detected (edit-conflict versions arrive in step 1).
@@ -209,3 +209,4 @@ Updated after step U (2026-11-14); struck lines no longer apply.
 - 2026-11-14, step U: U13 review fixes (from /ponytail-review): issues:purge used each() while deleting, which skips rows past the first 1000 (now eachById); the Undo toast reappeared with a stale Undo after browser Back (the flashed undo is now removed from the history entry once shown; checked in the browser). Commit a2762e0.
 - 2026-11-14, step U: follow-up: LICENSE is the plain AGPL text (a316ab0), Undo for backlog moves (a316ab0), WarningConfirm for column, label and sprint deletes via useWarningConfirm, empty states for labels, invitations, comments and history, board totals limit marked, PROGRESS.md shortcut lists refreshed, plan boxes ticked, unused NavLink and ResponsiveNavLink removed. Commit ef63f47.
 - 2026-11-15, step U: security review: the claude-security plugin scan could not run (its Workflow tool is not available in this session), so the diff c7d05e3..5e33a1b was reviewed by hand against the CLAUDE.md list. Nine probe tests added in tests/Feature/Security/StepUTest.php (Markdown in peek, cross-project ?issue=, undo payload replay by viewer and outsider, undo URL fixed to own routes, comment restore rights, comments and writes on deleted issues, token project scope, admin-only deleted list). All pass; no high or critical finding. Low, left as is: issues:purge writes the issue title to the application log. Commit 8ac9042.
+- 2026-11-15, design system wording: agents shown as "{Owner}'s agent" (previews use "Talha's agent", "Sam's agent") instead of "(AI)"; first-use empty state reads "No issues yet." / "Create your first issue · C" (import line removed). Repo copy only; the claude.ai artifact and ~/Documents/PmOps still have the old text.
