@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: pm_monkey_test
+          MYSQL_USER: pm_monkey
+          MYSQL_PASSWORD: pm_monkey
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      # v7.0.1 (MIT)
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      # 2.40.0 (MIT). 8.4: composer.json allows ^8.3, but the locked Symfony 8 and Pest 5 packages need 8.4.
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql
+          coverage: none
+
+      # v7.1.0 (MIT). No engines field in package.json, so the current LTS.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '26'
+          cache: npm
+
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: npm ci
+      - run: cp .env.example .env && php artisan key:generate
+
+      # Build first: feature tests render Inertia pages, which need the Vite manifest.
+      - run: npm run build
+      - run: php artisan test
+      - run: npm test
+      - run: vendor/bin/pint --test
