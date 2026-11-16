@@ -3,6 +3,7 @@ import Avatar from '@/Components/Avatar';
 import { projectLinks } from '@/Components/ProjectNav';
 import ThemeToggle from '@/Components/ThemeToggle';
 import Toaster from '@/Components/Toaster';
+import WorkspaceSwitcher from '@/Components/WorkspaceSwitcher';
 import { requestCreate } from '@/Components/useCreateShortcut';
 import { transition } from '@/motion';
 import { isTyping } from '@/undo';
@@ -55,41 +56,43 @@ function GlobalSearch({ id }: { id: string }) {
 
 /** The dark sidebar's content, shared by the fixed desktop sidebar and the sheet under 760px. */
 function Sidebar({ project, searchId, create }: { project?: { key: string; name: string }; searchId: string; create: () => void }) {
-    const user = usePage().props.auth.user;
+    const { auth, workspace } = usePage().props;
+    const user = auth.user;
 
     return (
         <div className="flex h-full flex-col gap-1 overflow-y-auto bg-side p-3 text-on-side">
-            {/* shortcut: logo and product name fill the workspace switcher's slot, the switcher arrives with workspaces in step 0 */}
-            <Link href="/" className="mb-2 flex items-center gap-2.5 rounded-ctl px-2 py-2">
-                <ApplicationLogo className="h-7 w-auto fill-current text-side-accent" />
-                <span className="text-lg text-on-side">PmOps</span>
-            </Link>
+            <WorkspaceSwitcher />
 
-            <button type="button" onClick={create} className={`${row} mb-2 justify-center bg-primary text-on-primary`}>
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                Create issue
-                <kbd className="rounded-xs border border-current px-1.5 text-2xs">C</kbd>
-            </button>
-            <GlobalSearch id={searchId} />
+            {/* With no workspace (D11) only the account section can link anywhere. */}
+            {workspace && (
+                <>
+                    <button type="button" onClick={create} className={`${row} mb-2 justify-center bg-primary text-on-primary`}>
+                        <Plus className="h-4 w-4" aria-hidden="true" />
+                        Create issue
+                        <kbd className="rounded-xs border border-current px-1.5 text-2xs">C</kbd>
+                    </button>
+                    <GlobalSearch id={searchId} />
 
-            <nav aria-label="Main" className="mt-2 flex flex-col gap-0.5">
-                <NavItem href={route('dashboard')} icon={LayoutDashboard} current={route().current('dashboard')}>
-                    Your work
-                </NavItem>
-                <NavItem href={route('projects.index')} icon={FolderKanban} current={route().current('projects.index')}>
-                    Projects
-                </NavItem>
-            </nav>
-
-            {project && (
-                <nav aria-label="Project" className="flex flex-col gap-0.5">
-                    <div className={`${groupLabel} truncate`}>{project.name}</div>
-                    {projectLinks.map(([routeName, label, icon]) => (
-                        <NavItem key={routeName} href={route(routeName, project.key)} icon={icon} current={route().current(routeName)}>
-                            {label}
+                    <nav aria-label="Main" className="mt-2 flex flex-col gap-0.5">
+                        <NavItem href={route('dashboard')} icon={LayoutDashboard} current={route().current('dashboard')}>
+                            Your work
                         </NavItem>
-                    ))}
-                </nav>
+                        <NavItem href={route('projects.index')} icon={FolderKanban} current={route().current('projects.index')}>
+                            Projects
+                        </NavItem>
+                    </nav>
+
+                    {project && (
+                        <nav aria-label="Project" className="flex flex-col gap-0.5">
+                            <div className={`${groupLabel} truncate`}>{project.name}</div>
+                            {projectLinks.map(([routeName, label, icon]) => (
+                                <NavItem key={routeName} href={route(routeName, project.key)} icon={icon} current={route().current(routeName)}>
+                                    {label}
+                                </NavItem>
+                            ))}
+                        </nav>
+                    )}
+                </>
             )}
 
             <nav aria-label="Account" className="mt-auto flex flex-col gap-0.5">
@@ -97,9 +100,11 @@ function Sidebar({ project, searchId, create }: { project?: { key: string; name:
                 <NavItem href={route('profile.edit')} icon={UserRound} current={route().current('profile.edit')}>
                     Profile
                 </NavItem>
-                <NavItem href={route('tokens.index')} icon={KeyRound} current={route().current('tokens.index')}>
-                    API tokens
-                </NavItem>
+                {workspace && (
+                    <NavItem href={route('tokens.index')} icon={KeyRound} current={route().current('tokens.index')}>
+                        API tokens
+                    </NavItem>
+                )}
                 <ThemeToggle className={`${row} ${rest}`} />
                 <NavItem href={route('logout')} icon={LogOut} method="post" as="button">
                     Log out
@@ -122,6 +127,7 @@ export default function Authenticated({
     children,
 }: PropsWithChildren<{ header?: ReactNode; project?: { key: string; name: string } }>) {
     const [sheet, setSheet] = useState(false);
+    const { workspace } = usePage().props;
 
     const create = () => {
         setSheet(false);
@@ -166,7 +172,7 @@ export default function Authenticated({
                     <ApplicationLogo className="h-6 w-auto fill-current text-side-accent" />
                     <span className="text-lg">PmOps</span>
                 </Link>
-                <button type="button" onClick={create} aria-label="Create issue" className="ms-auto flex h-control-h w-control-h items-center justify-center rounded-ctl bg-primary text-on-primary">
+                <button type="button" onClick={create} disabled={!workspace} aria-label="Create issue" className="ms-auto flex h-control-h w-control-h items-center justify-center rounded-ctl bg-primary text-on-primary">
                     <Plus className="h-5 w-5" aria-hidden="true" />
                 </button>
             </div>

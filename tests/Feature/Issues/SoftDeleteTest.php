@@ -32,7 +32,7 @@ beforeEach(function () {
 test('deleting keeps the row, logs it and hides the issue', function () {
     $issue = makeIssue($this->project, $this->admin, ['title' => 'Gone soon']);
 
-    $this->actingAs($this->admin)->delete('/issues/WEB-1', ['confirm' => true])->assertRedirect('/projects/WEB');
+    $this->actingAs($this->admin)->delete(w('/issues/WEB-1'), ['confirm' => true])->assertRedirect(w('/projects/WEB'));
 
     expect(Issue::count())->toBe(0)
         ->and(Issue::withTrashed()->sole()->deleted_at)->not->toBeNull()
@@ -46,12 +46,12 @@ test('a deleted issue is absent from every web screen', function () {
     $this->issues->delete($gone, $this->admin);
     $this->actingAs($this->admin);
 
-    foreach (['/projects/WEB', '/projects/WEB/backlog', '/projects/WEB/issues', '/search?q=Vanish', '/dashboard', '/projects'] as $url) {
+    foreach ([w('/projects/WEB'), w('/projects/WEB/backlog'), w('/projects/WEB/issues'), w('/search?q=Vanish'), w('/dashboard'), w('/projects')] as $url) {
         $this->get($url)->assertOk()->assertDontSee('Vanishes');
     }
-    $this->get('/issues/WEB-2')->assertSessionHasErrors('issue');
+    $this->get(w('/issues/WEB-2'))->assertSessionHasErrors('issue');
     // Project settings lists it only under the Admin's "Deleted issues" (see DeletedIssuesTest); counts leave it out.
-    $this->get('/projects/WEB/settings')->assertInertia(fn (Assert $page) => $page->where('columns.0.issue_count', 1));
+    $this->get(w('/projects/WEB/settings'))->assertInertia(fn (Assert $page) => $page->where('columns.0.issue_count', 1));
 });
 
 test('a deleted issue is absent from the API and MCP', function () {
@@ -99,7 +99,7 @@ test('restore brings back the issue and its sub-tasks', function () {
     $this->issues->delete($parent, $this->admin);
     expect(Issue::count())->toBe(0);
 
-    $this->actingAs($this->admin)->post('/issues/WEB-1/restore')->assertRedirect();
+    $this->actingAs($this->admin)->post(w('/issues/WEB-1/restore'))->assertRedirect();
 
     expect(Issue::count())->toBe(2)
         ->and(Activity::where('issue_id', $parent->id)->latest('id')->first()->action)->toBe('restored');
@@ -122,7 +122,7 @@ test('a sub-task cannot be restored while its parent is deleted', function () {
     makeIssue($this->project, $this->admin, ['parent' => 'WEB-1']);
     $this->issues->delete($parent, $this->admin);
 
-    $this->actingAs($this->admin)->post('/issues/WEB-2/restore')->assertSessionHasErrors('issue');
+    $this->actingAs($this->admin)->post(w('/issues/WEB-2/restore'))->assertSessionHasErrors('issue');
     expect(session('errors')->first('issue'))->toContain('WEB-1');
     expect(Issue::count())->toBe(0);
 });
@@ -154,12 +154,13 @@ test('viewers, read-only tokens and outsiders cannot delete or restore', functio
     $issue = makeIssue($this->project, $this->admin);
     $viewer = addMember($this->project, User::factory()->create(), ProjectRole::Viewer);
     $outsider = User::factory()->create();
+    joinWorkspace($outsider); // in the workspace, not in the project
 
-    $this->actingAs($viewer)->delete('/issues/WEB-1', ['confirm' => true])->assertForbidden();
+    $this->actingAs($viewer)->delete(w('/issues/WEB-1'), ['confirm' => true])->assertForbidden();
     $this->issues->delete($issue, $this->admin);
-    $this->actingAs($viewer)->post('/issues/WEB-1/restore')->assertForbidden();
+    $this->actingAs($viewer)->post(w('/issues/WEB-1/restore'))->assertForbidden();
     // Web forms report a 404 lookup as a validation error on redirect.
-    $this->actingAs($outsider)->post('/issues/WEB-1/restore')->assertSessionHasErrors('project');
+    $this->actingAs($outsider)->post(w('/issues/WEB-1/restore'))->assertSessionHasErrors('project');
     expect(Issue::count())->toBe(0);
 
     $this->issues->restore($issue, $this->admin);
@@ -180,12 +181,13 @@ test('comments are soft deleted and can be restored', function () {
     expect(Comment::count())->toBe(0)->and(Comment::withTrashed()->count())->toBe(1);
     $this->getJson('/api/v1/issues/WEB-1')->assertOk()->assertDontSee('Secret note');
     PmServer::tool(GetIssue::class, ['issue' => 'WEB-1'])->assertOk()->assertDontSee('Secret note');
-    $this->actingAs($this->admin)->get('/issues/WEB-1')->assertOk()->assertDontSee('Secret note');
+    $this->actingAs($this->admin)->get(w('/issues/WEB-1'))->assertOk()->assertDontSee('Secret note');
 
     $outsider = User::factory()->create();
-    $this->actingAs($outsider)->post("/comments/{$comment->id}/restore")->assertSessionHasErrors('comment');
+    joinWorkspace($outsider); // in the workspace, not in the project
+    $this->actingAs($outsider)->post(w("/comments/{$comment->id}/restore"))->assertSessionHasErrors('comment');
     expect(Comment::count())->toBe(0);
-    $this->actingAs($this->admin)->post("/comments/{$comment->id}/restore")->assertRedirect();
+    $this->actingAs($this->admin)->post(w("/comments/{$comment->id}/restore"))->assertRedirect();
     expect(Comment::count())->toBe(1);
 });
 

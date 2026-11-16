@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ResolveTokenWorkspace;
+use App\Http\Middleware\ResolveWorkspace;
 use App\Http\Middleware\UseCurrentWorkspace;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -24,8 +25,11 @@ return Application::configure(basePath: dirname(__DIR__))
             UseCurrentWorkspace::class,
         ]);
 
+        $middleware->alias(['workspace' => ResolveWorkspace::class]);
+
         // The workspace must be known before {project:key} is bound, and after auth.
         $middleware->prependToPriorityList(before: SubstituteBindings::class, prepend: UseCurrentWorkspace::class);
+        $middleware->prependToPriorityList(before: SubstituteBindings::class, prepend: ResolveWorkspace::class);
         $middleware->prependToPriorityList(before: SubstituteBindings::class, prepend: ResolveTokenWorkspace::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

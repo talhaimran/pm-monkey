@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\ProjectRole;
+use App\Enums\WorkspaceRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Projects\InviteMemberRequest;
 use App\Http\Requests\Projects\UpdateMemberRoleRequest;
 use App\Http\Resources\MemberResource;
 use App\Http\Resources\ProjectInvitationResource;
+use App\Services\InvitationService;
 use App\Services\MembershipService;
 use App\Services\ProjectService;
 use Illuminate\Http\JsonResponse;
@@ -17,7 +19,7 @@ use Illuminate\Support\Facades\Gate;
 
 class ProjectMemberController extends Controller
 {
-    public function __construct(private ProjectService $projects, private MembershipService $memberships) {}
+    public function __construct(private ProjectService $projects, private MembershipService $memberships, private InvitationService $invitations) {}
 
     /** List members and pending invitations. */
     public function index(Request $request, string $key): JsonResponse
@@ -36,8 +38,8 @@ class ProjectMemberController extends Controller
         $project = $this->projects->resolve($request->user(), $key);
         Gate::authorize('manage', $project);
 
-        return new ProjectInvitationResource($this->memberships->invite(
-            $project, $request->user(), $request->validated('email'), ProjectRole::from($request->validated('role')),
+        return new ProjectInvitationResource($this->invitations->invite(
+            $project->workspace, $request->user(), $request->validated('email'), WorkspaceRole::Member, $project, ProjectRole::from($request->validated('role')),
         ));
     }
 

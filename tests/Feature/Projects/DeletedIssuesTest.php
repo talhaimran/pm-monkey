@@ -14,7 +14,7 @@ beforeEach(function () {
 });
 
 test('a project admin sees deleted issues in project settings, newest first, with who deleted them', function () {
-    $this->actingAs($this->admin)->get('/projects/WEB/settings')->assertOk()->assertInertia(fn (Assert $page) => $page
+    $this->actingAs($this->admin)->get(w('/projects/WEB/settings'))->assertOk()->assertInertia(fn (Assert $page) => $page
         ->has('deletedIssues', 1)
         ->where('deletedIssues.0.key', 'WEB-2')
         ->where('deletedIssues.0.title', 'Thrown away')
@@ -25,14 +25,14 @@ test('a project admin sees deleted issues in project settings, newest first, wit
 test('members do not get the deleted issues list', function () {
     $member = addMember($this->project, User::factory()->create(), ProjectRole::Member);
 
-    $this->actingAs($member)->get('/projects/WEB/settings')->assertOk()
+    $this->actingAs($member)->get(w('/projects/WEB/settings'))->assertOk()
         ->assertDontSee('Thrown away')
         ->assertInertia(fn (Assert $page) => $page->where('deletedIssues', []));
 });
 
 test('an admin restores an issue from the list', function () {
-    $this->actingAs($this->admin)->post('/issues/WEB-2/restore')->assertRedirect();
+    $this->actingAs($this->admin)->post(w('/issues/WEB-2/restore'))->assertRedirect();
 
     expect(Issue::count())->toBe(2);
-    $this->get('/projects/WEB/settings')->assertInertia(fn (Assert $page) => $page->where('deletedIssues', []));
+    $this->get(w('/projects/WEB/settings'))->assertInertia(fn (Assert $page) => $page->where('deletedIssues', []));
 });

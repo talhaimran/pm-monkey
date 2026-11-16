@@ -11,7 +11,7 @@ beforeEach(function () {
     $this->actingAs($this->admin);
 });
 
-dataset('screens', ['/projects/WEB', '/projects/WEB/issues', '/search?q=Peek']);
+dataset('screens', [fn () => w('/projects/WEB'), fn () => w('/projects/WEB/issues'), fn () => w('/search?q=Peek')]);
 
 test('?issue= opens the same issue the full page shows', function (string $url) {
     $this->get($url.(str_contains($url, '?') ? '&' : '?').'issue=WEB-1')->assertOk()->assertInertia(fn (Assert $page) => $page
@@ -42,5 +42,5 @@ test('a key the user cannot see, a deleted key or junk never opens a drawer or l
 })->with('screens');
 
 test('the full page keeps its URL', function () {
-    $this->get('/issues/WEB-1')->assertOk()->assertInertia(fn (Assert $page) => $page->component('Issues/Show')->where('issue.key', 'WEB-1'));
+    $this->get(w('/issues/WEB-1'))->assertOk()->assertInertia(fn (Assert $page) => $page->component('Issues/Show')->where('issue.key', 'WEB-1'));
 });

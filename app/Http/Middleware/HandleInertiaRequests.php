@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\CurrentWorkspace;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -34,6 +35,18 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            // Spec 7.0a: the workspace the page acts in and the switcher's list.
+            'workspace' => function () use ($request) {
+                $workspace = app(CurrentWorkspace::class)->id() ? app(CurrentWorkspace::class)->get() : null;
+
+                return $workspace && $request->user() ? [
+                    'id' => $workspace->id, 'name' => $workspace->name, 'slug' => $workspace->slug,
+                    'role' => $request->user()->workspaceRole($workspace)?->value,
+                ] : null;
+            },
+            'workspaces' => fn () => $request->user()?->workspaces()->orderBy('name')->get(['name', 'slug'])
+                ->map(fn ($w) => ['name' => $w->name, 'slug' => $w->slug])->all() ?? [],
+            'edition' => config('pm.edition'),
             'flash' => [
                 'token' => fn () => $request->session()->get('token'),
                 // {message, method, url, data}: what the toast sends back when the person picks Undo (UndoService).

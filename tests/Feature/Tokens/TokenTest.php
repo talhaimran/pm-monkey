@@ -16,14 +16,14 @@ beforeEach(function () {
 
 test('creating a read-only token flashes the plain token once', function () {
     $this->actingAs($this->me)
-        ->post('/settings/tokens', ['name' => 'claude', 'access' => 'read'])
+        ->post(w('/settings/tokens'), ['name' => 'claude', 'access' => 'read'])
         ->assertRedirect()
         ->assertSessionHas('token');
 
     $token = PersonalAccessToken::sole();
     expect($token->name)->toBe('claude')->and($token->abilities)->toBe(['read']);
 
-    $this->actingAs($this->me)->get('/settings/tokens')
+    $this->actingAs($this->me)->get(w('/settings/tokens'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('Tokens/Index')
             ->where('tokens.0.name', 'claude')
@@ -33,7 +33,7 @@ test('creating a read-only token flashes the plain token once', function () {
 });
 
 test('read-write tokens can be scoped to projects', function () {
-    $this->actingAs($this->me)->post('/settings/tokens', ['name' => 'ci', 'access' => 'write', 'projects' => ['WEB']]);
+    $this->actingAs($this->me)->post(w('/settings/tokens'), ['name' => 'ci', 'access' => 'write', 'projects' => ['WEB']]);
 
     expect(PersonalAccessToken::sole()->abilities)->toBe(['read', 'write', "project:{$this->web->id}"]);
 });
@@ -41,7 +41,7 @@ test('read-write tokens can be scoped to projects', function () {
 test('tokens cannot be scoped to projects you are not in', function () {
     makeProject(User::factory()->create(), 'SECRET');
 
-    $this->actingAs($this->me)->post('/settings/tokens', ['name' => 'x', 'access' => 'read', 'projects' => ['SECRET']])
+    $this->actingAs($this->me)->post(w('/settings/tokens'), ['name' => 'x', 'access' => 'read', 'projects' => ['SECRET']])
         ->assertSessionHasErrors('projects');
 });
 
@@ -49,8 +49,8 @@ test('tokens are revocable by their owner only', function () {
     $mine = $this->me->createToken('mine', ['read'])->accessToken;
     $theirs = User::factory()->create()->createToken('theirs', ['read'])->accessToken;
 
-    $this->actingAs($this->me)->delete("/settings/tokens/{$theirs->id}")->assertNotFound();
-    $this->actingAs($this->me)->delete("/settings/tokens/{$mine->id}")->assertRedirect();
+    $this->actingAs($this->me)->delete(w("/settings/tokens/{$theirs->id}"))->assertNotFound();
+    $this->actingAs($this->me)->delete(w("/settings/tokens/{$mine->id}"))->assertRedirect();
 
     expect(PersonalAccessToken::pluck('name')->all())->toBe(['theirs']);
 });
