@@ -14,6 +14,10 @@ class WorkspaceInvitationPolicy
             return Response::deny('This invitation was sent to a different email address.');
         }
 
+        if ($invitation->expires_at?->isPast()) {
+            return Response::deny('This invitation has expired. Ask an admin to invite you again.');
+        }
+
         // Without this, anyone could register with an invited address and take the role.
         return $user->hasVerifiedEmail()
             ? Response::allow()

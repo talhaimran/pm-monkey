@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -23,6 +24,14 @@ class MembershipService
         if ($project->members()->where('email', $email)->exists()) {
             throw ValidationException::withMessages([
                 'email' => "{$email} is already a member of {$project->key}. Change their role instead.",
+            ]);
+        }
+
+        // A pending invitation belongs to its project's admins; don't let another project's admin retarget it.
+        $pending = WorkspaceInvitation::with('project')->where(['workspace_id' => $project->workspace_id, 'email' => $email])->first();
+        if ($pending?->project && $pending->project_id !== $project->id && Gate::forUser($inviter)->denies('manage', $pending->project)) {
+            throw ValidationException::withMessages([
+                'email' => "{$email} already has a pending invitation to another project. Ask that project's admin to revoke it first.",
             ]);
         }
 
