@@ -1,15 +1,15 @@
 <?php
 
 use App\Enums\ProjectRole;
-use App\Models\ProjectInvitation;
 use App\Models\User;
+use App\Models\WorkspaceInvitation;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('projects index shows my projects and my pending invitations', function () {
     $me = User::factory()->create(['email' => 'me@example.com']);
     makeProject($me, 'MINE');
     $other = makeProject($owner = User::factory()->create(), 'THEIRS');
-    ProjectInvitation::create(['project_id' => $other->id, 'email' => 'me@example.com', 'role' => 'member', 'invited_by' => $owner->id]);
+    makeInvitation($other, $owner, 'me@example.com', 'member');
 
     $this->actingAs($me)->get('/projects')
         ->assertOk()
@@ -22,6 +22,7 @@ test('projects index shows my projects and my pending invitations', function () 
 
 test('creating a project from the web redirects to its settings', function () {
     $me = User::factory()->create();
+    joinWorkspace($me);
 
     $this->actingAs($me)->post('/projects', ['key' => 'web', 'name' => 'Website'])
         ->assertRedirect('/projects/WEB/settings');
@@ -31,18 +32,18 @@ test('invited user accepts and joins with the invited role', function () {
     $owner = User::factory()->create();
     $project = makeProject($owner);
     $me = User::factory()->create(['email' => 'me@example.com']);
-    $invitation = ProjectInvitation::create(['project_id' => $project->id, 'email' => 'me@example.com', 'role' => 'viewer', 'invited_by' => $owner->id]);
+    $invitation = makeInvitation($project, $owner, 'me@example.com', 'viewer');
 
     $this->actingAs($me)->post("/invitations/{$invitation->id}/accept")->assertRedirect();
 
     expect($project->roleFor($me))->toBe(ProjectRole::Viewer)
-        ->and(ProjectInvitation::count())->toBe(0);
+        ->and(WorkspaceInvitation::count())->toBe(0);
 });
 
 test('a different user cannot accept someone else\'s invitation', function () {
     $owner = User::factory()->create();
     $project = makeProject($owner);
-    $invitation = ProjectInvitation::create(['project_id' => $project->id, 'email' => 'me@example.com', 'role' => 'admin', 'invited_by' => $owner->id]);
+    $invitation = makeInvitation($project, $owner, 'me@example.com', 'admin');
 
     $this->actingAs(User::factory()->create())->post("/invitations/{$invitation->id}/accept")->assertForbidden();
 });
@@ -64,7 +65,10 @@ test('viewers can open settings but not update', function () {
 test('non-members cannot open settings', function () {
     makeProject(User::factory()->create());
 
-    $this->actingAs(User::factory()->create())->get('/projects/WEB/settings')->assertForbidden();
+    $outsider = User::factory()->create();
+    joinWorkspace($outsider); // in the workspace, not in the project
+
+    $this->actingAs($outsider)->get('/projects/WEB/settings')->assertForbidden();
 });
 
 test('admins can delete from the web with confirmation', function () {

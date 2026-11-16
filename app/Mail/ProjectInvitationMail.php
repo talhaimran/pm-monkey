@@ -2,14 +2,14 @@
 
 namespace App\Mail;
 
-use App\Models\ProjectInvitation;
+use App\Models\WorkspaceInvitation;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
 class ProjectInvitationMail extends Mailable
 {
-    public function __construct(public ProjectInvitation $invitation) {}
+    public function __construct(public WorkspaceInvitation $invitation) {}
 
     public function envelope(): Envelope
     {

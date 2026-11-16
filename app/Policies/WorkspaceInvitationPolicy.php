@@ -2,13 +2,13 @@
 
 namespace App\Policies;
 
-use App\Models\ProjectInvitation;
 use App\Models\User;
+use App\Models\WorkspaceInvitation;
 use Illuminate\Auth\Access\Response;
 
-class ProjectInvitationPolicy
+class WorkspaceInvitationPolicy
 {
-    public function accept(User $user, ProjectInvitation $invitation): Response
+    public function accept(User $user, WorkspaceInvitation $invitation): Response
     {
         if (strtolower($user->email) !== $invitation->email) {
             return Response::deny('This invitation was sent to a different email address.');

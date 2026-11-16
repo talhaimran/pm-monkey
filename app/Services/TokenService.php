@@ -3,49 +3,61 @@
 namespace App\Services;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\NewAccessToken;
 use Laravel\Sanctum\PersonalAccessToken;
 
-/** API tokens are Sanctum tokens whose abilities encode access (read/write) and project scope (project:{id}). */
+/**
+ * API tokens are Sanctum tokens whose abilities encode access (read/write) and project scope (project:{id}).
+ * Each token belongs to the workspace it was made in; listing and revoking only see that workspace's tokens.
+ */
 class TokenService
 {
+    public function __construct(private CurrentWorkspace $current) {}
+
     /**
      * @param  list<string>|null  $projectKeys  null or empty = all of the user's projects
      * @param  int|null  $expiresInDays  null = never expires
      */
     public function create(User $user, string $name, bool $write, ?array $projectKeys, ?int $expiresInDays = null): NewAccessToken
     {
+        $workspaceId = $this->current->id() ?? throw ValidationException::withMessages([
+            'name' => 'You are not a member of any workspace yet, so there is nothing a token could reach.',
+        ]);
         $abilities = $write ? ['read', 'write'] : ['read'];
 
         if ($projectKeys) {
             $keys = collect($projectKeys)->map(fn ($k) => strtoupper(trim($k)))->unique();
-            $projects = $user->projects()->whereIn('key', $keys)->pluck('projects.id', 'key');
+            $projects = $user->accessibleProjects()->whereIn('key', $keys)->pluck('projects.id', 'key');
             $unknown = $keys->diff($projects->keys());
 
             if ($unknown->isNotEmpty()) {
                 throw ValidationException::withMessages([
-                    'projects' => 'You are not a member of: '.$unknown->implode(', ').'. Your projects: '.$user->projects()->orderBy('key')->pluck('key')->implode(', ').'.',
+                    'projects' => 'You are not a member of: '.$unknown->implode(', ').'. Your projects: '.$user->accessibleProjects()->orderBy('key')->pluck('key')->implode(', ').'.',
                 ]);
             }
 
             $abilities = [...$abilities, ...$projects->values()->map(fn ($id) => "project:{$id}")];
         }
 
-        return $user->createToken(trim($name), $abilities, $expiresInDays ? now()->addDays($expiresInDays) : null);
+        $token = $user->createToken(trim($name), $abilities, $expiresInDays ? now()->addDays($expiresInDays) : null);
+        $token->accessToken->forceFill(['workspace_id' => $workspaceId])->save();
+
+        return $token;
     }
 
     public function revoke(User $user, int $id): void
     {
-        $user->tokens()->whereKey($id)->firstOrFail()->delete();
+        $this->tokensHere($user)->whereKey($id)->firstOrFail()->delete();
     }
 
     /** Tokens for display: access level, project keys (null = all), last use. */
     public function list(User $user): array
     {
-        $keys = $user->projects()->pluck('key', 'projects.id');
+        $keys = $user->accessibleProjects()->pluck('key', 'projects.id');
 
-        return $user->tokens()->latest()->get()->map(function (PersonalAccessToken $token) use ($keys) {
+        return $this->tokensHere($user)->latest()->get()->map(function (PersonalAccessToken $token) use ($keys) {
             $projectIds = collect($token->abilities)->filter(fn ($a) => str_starts_with($a, 'project:'))->map(fn ($a) => (int) substr($a, 8));
 
             return [
@@ -59,5 +71,10 @@ class TokenService
                 'created_at' => $token->created_at,
             ];
         })->all();
+    }
+
+    private function tokensHere(User $user): MorphMany
+    {
+        return $user->tokens()->where('workspace_id', $this->current->id() ?? 0);
     }
 }

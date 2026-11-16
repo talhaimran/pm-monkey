@@ -1,11 +1,17 @@
 <?php
 
 use App\Enums\ProjectRole;
+use App\Enums\WorkspaceRole;
 use App\Models\Issue;
 use App\Models\Project;
 use App\Models\User;
+use App\Models\Workspace;
+use App\Models\WorkspaceInvitation;
+use App\Services\CurrentWorkspace;
 use App\Services\IssueService;
+use App\Services\MembershipService;
 use App\Services\ProjectService;
+use App\Services\WorkspaceService;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -57,16 +63,67 @@ expect()->extend('toBeOne', function () {
 |
 */
 
+/** A workspace owned by $owner, made current for service calls and for the owner's web requests. */
+function makeWorkspace(User $owner, string $slug): Workspace
+{
+    return useWorkspace(app(WorkspaceService::class)->create($owner, ucfirst($slug), $slug), $owner);
+}
+
+function useWorkspace(Workspace $workspace, ?User $user = null): Workspace
+{
+    app(CurrentWorkspace::class)->set($workspace);
+    $user?->forceFill(['current_workspace_id' => $workspace->id])->save();
+
+    return $workspace;
+}
+
+/**
+ * Puts $user in the test's workspace, like a migrated install where everyone shares one: the current workspace
+ * if one is set ($user joins as Member), else a new one $user owns.
+ */
+function joinWorkspace(User $user): Workspace
+{
+    $current = app(CurrentWorkspace::class);
+    if (! $current->id()) {
+        return makeWorkspace($user, 'ws-'.$user->id);
+    }
+
+    $workspace = $current->get();
+    if (! $user->workspaceRole($workspace)) {
+        $workspace->addMember($user, WorkspaceRole::Member);
+    }
+    if (! $user->current_workspace_id) {
+        $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    }
+
+    return $workspace;
+}
+
+/** Creates the project in the current workspace (making one on first use), with $admin as its Admin. */
 function makeProject(User $admin, string $key = 'WEB', string $name = 'Website'): Project
 {
+    joinWorkspace($admin);
+
     return app(ProjectService::class)->create($admin, ['key' => $key, 'name' => $name]);
 }
 
 function addMember(Project $project, User $user, ProjectRole $role): User
 {
+    if (! $user->workspaceRole($project->workspace)) {
+        $project->workspace->addMember($user, WorkspaceRole::Member);
+    }
+    if (! $user->current_workspace_id) {
+        $user->forceFill(['current_workspace_id' => $project->workspace_id])->save();
+    }
     $project->members()->attach($user, ['role' => $role->value]);
 
     return $user;
+}
+
+/** A pending invitation to $project, as a project admin sends it. */
+function makeInvitation(Project $project, User $inviter, string $email, string $role): WorkspaceInvitation
+{
+    return app(MembershipService::class)->invite($project, $inviter, $email, ProjectRole::from($role));
 }
 
 function makeIssue(Project $project, User $reporter, array $data = []): Issue
@@ -77,6 +134,9 @@ function makeIssue(Project $project, User $reporter, array $data = []): Issue
 /** Authenticate as an API token holder with the given abilities. */
 function apiAs(User $user, array $abilities = ['read', 'write']): User
 {
+    if (! $user->workspaces()->exists()) {
+        joinWorkspace($user);
+    }
     Sanctum::actingAs($user, $abilities);
 
     return $user;

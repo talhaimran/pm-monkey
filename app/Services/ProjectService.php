@@ -15,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 class ProjectService
 {
+    public function __construct(private CurrentWorkspace $current) {}
+
     public function listFor(User $user, int $perPage = 25, ?int $page = null): LengthAwarePaginator
     {
         return $user->accessibleProjects()->orderBy('key')->paginate(max(1, min($perPage, 100)), page: $page);
@@ -24,7 +26,9 @@ class ProjectService
     public function create(User $creator, array $data): Project
     {
         return DB::transaction(function () use ($creator, $data) {
-            $project = Project::create([...$data, 'key' => strtoupper($data['key'])]);
+            $project = new Project([...$data, 'key' => strtoupper($data['key'])]);
+            $project->workspace_id = $this->current->get()->id;
+            $project->save();
             $project->members()->attach($creator, ['role' => ProjectRole::Admin->value]);
             $project->columns()->createMany(
                 collect(Column::DEFAULTS)->map(fn ($name, $i) => ['name' => $name, 'position' => $i])->all()

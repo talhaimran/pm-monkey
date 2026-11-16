@@ -3,13 +3,16 @@
 namespace Database\Seeders;
 
 use App\Enums\ProjectRole;
+use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Services\CommentService;
+use App\Services\CurrentWorkspace;
 use App\Services\IssueService;
 use App\Services\LabelService;
 use App\Services\ProjectService;
 use App\Services\SprintService;
 use App\Services\TokenService;
+use App\Services\WorkspaceService;
 use Illuminate\Database\Seeder;
 
 /**
@@ -25,6 +28,8 @@ class DemoSeeder extends Seeder
         SprintService $sprints,
         CommentService $comments,
         TokenService $tokens,
+        WorkspaceService $workspaces,
+        CurrentWorkspace $current,
     ): void {
         if (User::where('email', 'demo@example.com')->exists()) {
             $this->command?->warn('Demo data already seeded; run `php artisan migrate:fresh --seed` to start over.');
@@ -35,6 +40,13 @@ class DemoSeeder extends Seeder
         $demo = User::factory()->create(['name' => 'Demo User', 'email' => 'demo@example.com']);
         $alex = User::factory()->create(['name' => 'Alex Rivera', 'email' => 'alex@example.com']);
         $sam = User::factory()->create(['name' => 'Sam Chen', 'email' => 'sam@example.com']);
+
+        // shortcut: workspace named after the app with every demo user in it; step 0 PR 8 makes it "Demo" / demo with alex as Admin.
+        $workspace = $workspaces->create($demo, config('app.name'));
+        $workspace->addMember($alex, WorkspaceRole::Member);
+        $workspace->addMember($sam, WorkspaceRole::Member);
+        User::whereKey([$alex->id, $sam->id])->update(['current_workspace_id' => $workspace->id]);
+        $current->set($workspace);
 
         $project = $projects->create($demo, [
             'key' => 'WEB',

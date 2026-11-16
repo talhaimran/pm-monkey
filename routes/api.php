@@ -11,9 +11,10 @@ use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\ProjectMemberController;
 use App\Http\Controllers\Api\V1\SprintController;
 use App\Http\Middleware\Idempotent;
+use App\Http\Middleware\ResolveTokenWorkspace;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:api', Idempotent::class])->group(function () {
+Route::prefix('v1')->middleware(['auth:sanctum', ResolveTokenWorkspace::class, 'throttle:api', Idempotent::class])->group(function () {
     Route::get('projects', [ProjectController::class, 'index']);
     Route::post('projects', [ProjectController::class, 'store']);
     Route::get('projects/{key}', [ProjectController::class, 'show']);

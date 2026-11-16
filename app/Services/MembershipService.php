@@ -3,17 +3,20 @@
 namespace App\Services;
 
 use App\Enums\ProjectRole;
+use App\Enums\WorkspaceRole;
 use App\Mail\ProjectInvitationMail;
 use App\Models\Project;
-use App\Models\ProjectInvitation;
 use App\Models\User;
+use App\Models\WorkspaceInvitation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class MembershipService
 {
-    public function invite(Project $project, User $inviter, string $email, ProjectRole $role): ProjectInvitation
+    /** A project invitation is a Member invitation to the project's workspace (spec 7.0a). */
+    public function invite(Project $project, User $inviter, string $email, ProjectRole $role): WorkspaceInvitation
     {
         $email = strtolower(trim($email));
 
@@ -23,9 +26,13 @@ class MembershipService
             ]);
         }
 
-        $invitation = ProjectInvitation::updateOrCreate(
-            ['project_id' => $project->id, 'email' => $email],
-            ['role' => $role, 'invited_by' => $inviter->id],
+        // shortcut: one invitation per workspace and email, so re-inviting to another project replaces it; PR 2 adds InvitationService.
+        $invitation = WorkspaceInvitation::updateOrCreate(
+            ['workspace_id' => $project->workspace_id, 'email' => $email],
+            [
+                'role' => WorkspaceRole::Member, 'project_id' => $project->id, 'project_role' => $role, 'invited_by' => $inviter->id,
+                'token' => hash('sha256', Str::random(40)), 'expires_at' => now()->addDays(14),
+            ],
         );
 
         Mail::to($email)->send(new ProjectInvitationMail($invitation->setRelation('project', $project)->setRelation('inviter', $inviter)));
@@ -33,15 +40,21 @@ class MembershipService
         return $invitation;
     }
 
-    public function accept(ProjectInvitation $invitation, User $user): void
+    /** Joins the workspace (keeping any role already held there) and the project, and switches to that workspace. */
+    public function accept(WorkspaceInvitation $invitation, User $user): void
     {
         DB::transaction(function () use ($invitation, $user) {
-            $invitation->loadMissing('project')->project->members()->syncWithoutDetaching([$user->id => ['role' => $invitation->role->value]]);
+            $invitation->loadMissing('workspace', 'project');
+            if (! $user->workspaceRole($invitation->workspace)) {
+                $invitation->workspace->addMember($user, $invitation->role);
+            }
+            $invitation->project?->members()->syncWithoutDetaching([$user->id => ['role' => $invitation->project_role->value]]);
+            $user->forceFill(['current_workspace_id' => $invitation->workspace_id])->save();
             $invitation->delete();
         });
     }
 
-    public function revoke(ProjectInvitation $invitation): void
+    public function revoke(WorkspaceInvitation $invitation): void
     {
         $invitation->delete();
     }

@@ -4,7 +4,6 @@ use App\Enums\ProjectRole;
 use App\Mail\ProjectInvitationMail;
 use App\Mcp\Servers\LocalPmServer;
 use App\Models\Project;
-use App\Models\ProjectInvitation;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -12,7 +11,7 @@ use Laravel\Sanctum\PersonalAccessToken;
 test('unverified accounts cannot accept invitations, verified ones can', function () {
     $owner = User::factory()->create();
     $project = makeProject($owner);
-    $invitation = ProjectInvitation::create(['project_id' => $project->id, 'email' => 'cfo@victim.test', 'role' => 'admin', 'invited_by' => $owner->id]);
+    $invitation = makeInvitation($project, $owner, 'cfo@victim.test', 'admin');
 
     $this->post('/register', ['name' => 'Attacker', 'email' => 'cfo@victim.test', 'password' => 'password123', 'password_confirmation' => 'password123']);
     $user = User::where('email', 'cfo@victim.test')->sole();
