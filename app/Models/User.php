@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\WorkspaceRole;
+use App\Services\CurrentWorkspace;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -38,13 +40,28 @@ class User extends Authenticatable
         return $this->belongsToMany(Project::class)->withPivot('role')->withTimestamps();
     }
 
+    public function workspaces(): BelongsToMany
+    {
+        return $this->belongsToMany(Workspace::class, 'workspace_user')->withPivot('role', 'last_active_at')->withTimestamps();
+    }
+
+    public function workspaceRole(Workspace $workspace): ?WorkspaceRole
+    {
+        $role = $this->workspaces()->whereKey($workspace->id)->value('workspace_user.role');
+
+        return $role ? WorkspaceRole::from($role) : null;
+    }
+
     /**
-     * Projects this request may touch: the user's projects, narrowed to the token's "project:{id}"
-     * abilities when the token has any. Use this, not projects(), for every lookup.
+     * Projects this request may touch: the user's projects in the current workspace, narrowed to the token's
+     * "project:{id}" abilities when the token has any. No current workspace, no projects.
+     * Use this, not projects(), for every lookup.
      */
     public function accessibleProjects(): BelongsToMany
     {
-        return $this->projects()->when($this->tokenProjectIds(), fn ($q, $ids) => $q->whereIn('projects.id', $ids));
+        return $this->projects()
+            ->where('projects.workspace_id', app(CurrentWorkspace::class)->id() ?? 0)
+            ->when($this->tokenProjectIds(), fn ($q, $ids) => $q->whereIn('projects.id', $ids));
     }
 
     /** @return list<int>|null project ids the current token is limited to; null when unrestricted */

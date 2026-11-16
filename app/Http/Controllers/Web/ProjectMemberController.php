@@ -7,8 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Projects\InviteMemberRequest;
 use App\Http\Requests\Projects\UpdateMemberRoleRequest;
 use App\Models\Project;
-use App\Models\ProjectInvitation;
 use App\Models\User;
+use App\Models\WorkspaceInvitation;
 use App\Services\MembershipService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,7 +26,7 @@ class ProjectMemberController extends Controller
         return back();
     }
 
-    public function revoke(Project $project, ProjectInvitation $invitation): RedirectResponse
+    public function revoke(Project $project, WorkspaceInvitation $invitation): RedirectResponse
     {
         Gate::authorize('manage', $project);
         $this->memberships->revoke($invitation);

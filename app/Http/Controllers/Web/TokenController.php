@@ -18,7 +18,7 @@ class TokenController extends Controller
     {
         return Inertia::render('Tokens/Index', [
             'tokens' => $this->tokens->list($request->user()),
-            'projects' => $request->user()->projects()->orderBy('key')->get(['projects.id', 'key', 'name'])
+            'projects' => $request->user()->accessibleProjects()->orderBy('key')->get(['projects.id', 'key', 'name'])
                 ->map(fn ($p) => ['key' => $p->key, 'name' => $p->name])->all(),
             'endpoints' => ['api' => url('/api/v1'), 'docs' => url('/docs/api'), 'mcp' => url('/mcp')],
         ]);

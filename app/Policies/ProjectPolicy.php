@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Project;
 use App\Models\User;
+use App\Services\CurrentWorkspace;
 use Illuminate\Auth\Access\Response;
 
 class ProjectPolicy
@@ -19,6 +20,10 @@ class ProjectPolicy
     {
         if ($denied = $this->writable($user)) {
             return $denied;
+        }
+
+        if (! app(CurrentWorkspace::class)->id()) {
+            return Response::deny('You are not a member of any workspace yet. Ask an admin to invite you.');
         }
 
         return $user->tokenProjectIds() === null

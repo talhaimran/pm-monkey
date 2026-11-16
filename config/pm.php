@@ -1,6 +1,9 @@
 <?php
 
 return [
+    // self_hosted allows one workspace per install; cloud allows many (spec 7.0).
+    'edition' => env('PM_EDITION', 'self_hosted'),
+
     // Requests per minute per API token (or per user/IP without a token). Applies to /api/v1 and the MCP web endpoint.
     'api_rate_limit' => (int) env('PM_API_RATE_LIMIT', 120),
 

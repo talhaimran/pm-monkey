@@ -2,11 +2,11 @@
 
 namespace App\Http\Resources;
 
-use App\Models\ProjectInvitation;
+use App\Models\WorkspaceInvitation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin ProjectInvitation */
+/** @mixin WorkspaceInvitation */
 class ProjectInvitationResource extends JsonResource
 {
     public function toArray(Request $request): array
@@ -14,7 +14,7 @@ class ProjectInvitationResource extends JsonResource
         return [
             'id' => $this->id,
             'email' => $this->email,
-            'role' => $this->role->value,
+            'role' => $this->project_role?->value,
             'project' => $this->whenLoaded('project', fn () => ['key' => $this->project->key, 'name' => $this->project->name]),
             'created_at' => $this->created_at,
         ];

@@ -2,7 +2,6 @@
 
 use App\Enums\ProjectRole;
 use App\Mail\ProjectInvitationMail;
-use App\Models\ProjectInvitation;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 
@@ -51,7 +50,7 @@ test('members cannot invite', function () {
 test('members endpoint lists members and pending invitations', function () {
     $admin = User::factory()->create();
     $project = makeProject($admin);
-    ProjectInvitation::create(['project_id' => $project->id, 'email' => 'p@example.com', 'role' => 'viewer', 'invited_by' => $admin->id]);
+    makeInvitation($project, $admin, 'p@example.com', 'viewer');
 
     apiAs($admin);
     $this->getJson('/api/v1/projects/WEB/members')

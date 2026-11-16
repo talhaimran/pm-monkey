@@ -3,6 +3,7 @@
 namespace App\Mcp\Servers;
 
 use App\Models\User;
+use App\Services\CurrentWorkspace;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Sanctum\PersonalAccessToken;
 use RuntimeException;
@@ -31,7 +32,16 @@ class LocalPmServer extends PmServer
             );
         }
 
+        // Same rule as ResolveTokenWorkspace: the token acts in its workspace, and dies with the membership.
+        $workspace = $token->workspace_id ? $token->tokenable->workspaces()->find($token->workspace_id) : null;
+        if (! $workspace) {
+            $token->delete();
+
+            throw new RuntimeException('PM_MCP_TOKEN belongs to a workspace you are no longer a member of, so it was deleted. Create a new API token.');
+        }
+
         $token->forceFill(['last_used_at' => now()])->save();
+        app(CurrentWorkspace::class)->set($workspace);
         $user = $token->tokenable->withAccessToken($token);
         Auth::setUser($user);
 

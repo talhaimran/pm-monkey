@@ -3,14 +3,29 @@
 namespace App\Models;
 
 use App\Enums\ProjectRole;
+use App\Services\CurrentWorkspace;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['key', 'name', 'description'])]
 class Project extends Model
 {
+    /** Route keys ({project:key}) resolve only inside the current workspace: another workspace's key is a plain 404. */
+    public function resolveRouteBinding($value, $field = null): ?self
+    {
+        return $this->where($field ?? $this->getRouteKeyName(), $value)
+            ->where('workspace_id', app(CurrentWorkspace::class)->id() ?? 0)
+            ->first();
+    }
+
+    public function workspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class);
+    }
+
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class)->withPivot('role')->withTimestamps();
@@ -44,7 +59,7 @@ class Project extends Model
 
     public function invitations(): HasMany
     {
-        return $this->hasMany(ProjectInvitation::class);
+        return $this->hasMany(WorkspaceInvitation::class);
     }
 
     public function roleFor(User $user): ?ProjectRole

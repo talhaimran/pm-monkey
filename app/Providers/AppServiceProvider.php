@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Services\CurrentWorkspace;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->scoped(CurrentWorkspace::class);
     }
 
     /**
@@ -29,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
         Model::preventLazyLoading(! $this->app->isProduction());
+
+        // Every token belongs to the workspace it was made in (spec 7.0a); one made outside a workspace is never accepted.
+        PersonalAccessToken::creating(fn (PersonalAccessToken $token) => $token->workspace_id ??= app(CurrentWorkspace::class)->id());
 
         // Per-token API budget; falls back to user, then IP.
         RateLimiter::for('api', function (Request $request) {

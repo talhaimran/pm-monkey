@@ -12,7 +12,7 @@ use App\Http\Resources\LabelResource;
 use App\Http\Resources\ProjectInvitationResource;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
-use App\Models\ProjectInvitation;
+use App\Models\WorkspaceInvitation;
 use App\Services\IssueService;
 use App\Services\ProjectService;
 use Illuminate\Http\RedirectResponse;
@@ -32,7 +32,7 @@ class ProjectController extends Controller
         return Inertia::render('Projects/Index', [
             'projects' => ProjectResource::collection($user->accessibleProjects()->orderBy('key')->get())->resolve(),
             'invitations' => ProjectInvitationResource::collection(
-                ProjectInvitation::with('project')->where('email', strtolower($user->email))->latest()->get()
+                WorkspaceInvitation::with('project')->where('email', strtolower($user->email))->latest()->get()
             )->resolve(),
         ]);
     }
