@@ -3,6 +3,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import SocialButtons from '@/Components/SocialButtons';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -10,9 +11,11 @@ import { FormEventHandler } from 'react';
 export default function Login({
     status,
     canResetPassword,
+    socialProviders,
 }: {
     status?: string;
     canResetPassword: boolean;
+    socialProviders: string[];
 }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
@@ -105,6 +108,7 @@ export default function Login({
                     </PrimaryButton>
                 </div>
             </form>
+            <SocialButtons providers={socialProviders} />
         </GuestLayout>
     );
 }

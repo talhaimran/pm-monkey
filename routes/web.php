@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\SocialSignInController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Web\AuditLogController;
@@ -45,6 +46,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/two-factor/confirm', [TwoFactorController::class, 'confirm'])->middleware('throttle:6,1')->name('two-factor.confirm');
     Route::post('/profile/two-factor/recovery-codes', [TwoFactorController::class, 'recoveryCodes'])->name('two-factor.recovery-codes');
     Route::delete('/profile/two-factor', [TwoFactorController::class, 'destroy'])->name('two-factor.disable');
+    Route::delete('/profile/social/{provider}', [SocialSignInController::class, 'destroy'])->whereIn('provider', ['google', 'github'])->name('social.unlink');
     Route::post('/invitations/{invitation}/accept', [InvitationController::class, 'accept'])->name('invitations.accept')->whereNumber('invitation');
 
     Route::get('/workspaces/create', [WorkspaceController::class, 'create'])->name('workspaces.create');
@@ -72,6 +74,7 @@ Route::prefix('{workspace}')->where(['workspace' => '[a-z0-9-]{3,40}'])->middlew
     Route::get('/settings/usage', UsageController::class)->name('settings.usage');
     Route::get('/settings/security', [WorkspaceSettingsController::class, 'security'])->name('settings.security');
     Route::patch('/settings/security', [WorkspaceSettingsController::class, 'updateSecurity'])->name('settings.security.update');
+    Route::patch('/settings/sign-in-methods', [WorkspaceSettingsController::class, 'updateSignInMethods'])->name('settings.sign-in-methods.update');
     Route::get('/settings/audit-log/export', [AuditLogController::class, 'export'])->name('settings.audit-log.export');
     Route::post('/settings/members/invitations', [WorkspaceSettingsController::class, 'invite'])->name('settings.invitations.store')->middleware('throttle:invites');
     Route::post('/settings/members/invitations/{invitation}/resend', [WorkspaceSettingsController::class, 'resend'])->name('settings.invitations.resend')->whereNumber('invitation')->middleware('throttle:invites');

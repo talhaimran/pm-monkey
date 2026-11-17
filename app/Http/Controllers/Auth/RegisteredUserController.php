@@ -7,6 +7,7 @@ use App\Http\Controllers\Web\WorkspaceInvitationController;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\InvitationService;
+use App\Services\SocialSignInService;
 use App\Services\WorkspaceService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -39,6 +40,7 @@ class RegisteredUserController extends Controller
             'invitation' => $invitation ? ['token' => $request->query('invitation'), 'email' => $invitation->email, 'workspace' => $invitation->workspace->name] : null,
             'createsWorkspace' => ! $invitation && config('pm.edition') === 'cloud',
             'closedMessage' => $invitation ? null : $this->closedMessage(),
+            'socialProviders' => app(SocialSignInService::class)->configured(),
         ]);
     }
 
@@ -100,6 +102,7 @@ class RegisteredUserController extends Controller
         event(new Registered($user));
 
         Auth::login($user);
+        $request->session()->put('auth.method', 'password');
 
         return redirect($landing);
     }

@@ -2,6 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { PageProps } from '@/types';
 import { Head } from '@inertiajs/react';
 import DeleteUserForm from './Partials/DeleteUserForm';
+import SignInMethods, { SignInState } from './Partials/SignInMethods';
 import TwoFactorForm, { TwoFactorState } from './Partials/TwoFactorForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
@@ -10,7 +11,8 @@ export default function Edit({
     mustVerifyEmail,
     status,
     twoFactor,
-}: PageProps<{ mustVerifyEmail: boolean; status?: string; twoFactor: TwoFactorState }>) {
+    signIn,
+}: PageProps<{ mustVerifyEmail: boolean; status?: string; twoFactor: TwoFactorState; signIn: SignInState }>) {
     // "verification-link-sent" belongs to the profile form; anything else is a notice, e.g. a workspace requiring 2FA.
     const notice = status && status !== 'verification-link-sent' ? status : null;
 
@@ -43,6 +45,12 @@ export default function Edit({
                     <div className="rounded-card bg-card p-5 shadow sm:p-8">
                         <UpdatePasswordForm className="max-w-xl" />
                     </div>
+
+                    {(signIn.providers.length > 0 || Object.keys(signIn.linked).length > 0) && (
+                        <div className="rounded-card bg-card p-5 shadow sm:p-8">
+                            <SignInMethods state={signIn} className="max-w-xl" />
+                        </div>
+                    )}
 
                     <div className="rounded-card bg-card p-5 shadow sm:p-8">
                         <TwoFactorForm state={twoFactor} className="max-w-xl" />

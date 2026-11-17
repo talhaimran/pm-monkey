@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\SocialSignInController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Http\Controllers\TwoFactorAuthenticatedSessionController;
@@ -43,6 +44,10 @@ Route::middleware('guest')->group(function () {
         ->middleware('throttle:two-factor')
         ->name('two-factor.login.store');
 });
+
+// Spec 7.0f: guests sign in with a provider; signed-in people link one from their profile.
+Route::get('auth/{provider}/redirect', [SocialSignInController::class, 'redirect'])->whereIn('provider', ['google', 'github'])->middleware('throttle:20,1')->name('social.redirect');
+Route::get('auth/{provider}/callback', [SocialSignInController::class, 'callback'])->whereIn('provider', ['google', 'github'])->middleware('throttle:20,1')->name('social.callback');
 
 Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)
