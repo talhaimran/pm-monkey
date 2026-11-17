@@ -2,6 +2,7 @@
 
 A lightweight, self-hosted, Jira-like project tracker that people use through a web UI and AI agents use through an MCP server and a documented REST API.
 
+- **Workspaces** hold projects and people, with roles Owner, Admin and Member, an audit log, plan limits, two-factor authentication and Google or GitHub sign-in. Every page lives under the workspace's address (`/acme/projects/WEB`).
 - **Projects** with short keys (`WEB`) and issues numbered per project (`WEB-12`). Roles per project: Admin, Member, Viewer.
 - **Issues:** Task, Bug, Story and Epic types, priorities, assignee, labels, story points, due dates, epics and one level of sub-tasks. Descriptions and comments are Markdown, and an activity log records who changed what and whether it came via web, API or MCP (with the token name).
 - **Kanban board** with drag and drop and per-project columns. **Backlog** with drag-to-rank. **Sprints:** create, start and complete, with unfinished issues moved to the backlog or the next sprint.
@@ -44,15 +45,32 @@ Migrate and load the demo workspace:
 php artisan migrate:fresh --seed
 ```
 
-The seed prints a **demo API token** and creates:
+The seed prints a **demo API token** and creates workspace **Demo** at `/demo`:
 
-| Login | Password | Role in WEB |
-|---|---|---|
-| demo@example.com | password | Admin |
-| alex@example.com | password | Member |
-| sam@example.com | password | Viewer |
+| Login | Password | Workspace role | Role in WEB |
+|---|---|---|---|
+| demo@example.com | password | Owner | Admin |
+| alex@example.com | password | Admin | Member |
+| sam@example.com | password | Member | Viewer |
 
-It also creates project **WEB** (about 30 issues, labels, epics, sub-tasks, an active sprint and a planned one). Use `php artisan migrate` without `--seed` for an empty install, then register at `/register`.
+It also creates project **WEB** (about 30 issues, labels, epics, sub-tasks, an active sprint and a planned one). Use `php artisan migrate` without `--seed` for an empty install, then register at `/register`: the first person creates the workspace and becomes its Owner.
+
+### Editions
+
+`PM_EDITION` picks how sign-up works:
+
+- **`self_hosted`** (the default): one workspace per install. The first person to register creates it; everyone after needs an invitation from an Owner or Admin. There are no plan limits unless you set them.
+- **`cloud`**: anyone can sign up and gets their own workspace, can belong to several and switches between them from the top bar. New workspaces start on the free plan limits (2 billed users, 3 viewers, 1 project, 60 API requests per token per minute and 2,000 per day).
+
+Change a workspace's limits with `pm:entitlements`:
+
+```bash
+php artisan pm:entitlements demo --list                 # every limit, its value and where it came from
+php artisan pm:entitlements demo --set=projects=5       # override one
+php artisan pm:entitlements demo --unset=billed_users   # no limit
+```
+
+When a limit is reached, the web app shows a dialog naming it (with an upgrade link if `PM_BILLING_URL` is set), and the API and MCP return 403 with `"error": "plan_limit"`. Everyone in the workspace sees current use at **Settings → Usage**.
 
 ### Environment
 
@@ -61,10 +79,14 @@ It also creates project **WEB** (about 30 issues, labels, epics, sub-tasks, an a
 | `DB_*` | mysql / `pm_monkey` | Database connection. Tests use `pm_monkey_test` (see `phpunit.xml`). |
 | `APP_URL` | `http://localhost` | Base URL used in links and printed endpoints. Set it to where you serve the app. |
 | `MAIL_MAILER` | `log` | Invitations are written to `storage/logs/laravel.log`. Set SMTP to really send them. |
-| `PM_API_RATE_LIMIT` | `120` | Requests per minute per API token (REST and MCP over HTTP). |
+| `PM_EDITION` | `self_hosted` | `self_hosted` (one workspace, sign-up by invitation after the first person) or `cloud` (anyone signs up, many workspaces, free plan limits). See [Editions](#editions). |
+| `PM_API_RATE_LIMIT` | `120` | Requests per minute per API token (REST and MCP over HTTP), when the workspace has no `api_per_minute` limit. |
 | `PM_IDEMPOTENCY_TTL_HOURS` | `24` | How long a response is kept for `Idempotency-Key` replay. |
 | `PM_INVITE_RATE_LIMIT` | `30` | Invitation emails per hour per user (web and API). |
 | `PM_MCP_TOKEN` | — | Token the stdio MCP server acts as. Usually set in the MCP client's config, not `.env`. |
+| `PM_BILLING_URL` | — | Upgrade link in the plan-limit dialog. Leave empty on self-hosted. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | — | Google sign-in. Leave empty to hide the button. See below. |
+| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | — | GitHub sign-in. Leave empty to hide the button. See below. |
 
 ## Google and GitHub sign-in
 
@@ -100,11 +122,16 @@ For production, run `npm run build` and serve `public/` with any PHP host over H
 - Set `APP_ENV=production` and `APP_DEBUG=false`. With debug on, API and MCP errors include internal details.
 - Set `SESSION_SECURE_COOKIE=true`.
 - Configure real SMTP so verification and invitation emails arrive.
-- Remove the `register` routes in `routes/auth.php` if strangers shouldn't be able to sign up. Registration is open by default.
+- Run the scheduler (`php artisan schedule:work`, or cron with `schedule:run`). It runs `issues:purge` and `workspaces:purge` daily.
+- On `cloud`, registration is open to anyone. On `self_hosted`, only the first person and invited people can register.
 
 The app is at <http://localhost:8000>, and the API docs are at <http://localhost:8000/docs/api> (OpenAPI JSON at `/docs/api.json`).
 
 Keyboard shortcuts: **c** creates an issue (board, backlog and list), **/** focuses search, **Esc** closes dialogs. The sun/moon button toggles light, dark and system themes.
+
+### Deleting workspaces
+
+An Owner can delete a workspace at **Settings → General**. It locks at once and goes for good after 7 days, when `workspaces:purge` runs; until then an Owner can restore it from the locked page.
 
 ### Deleted issues
 
@@ -122,8 +149,9 @@ npm run build             # TypeScript check + production build
 
 ## API tokens
 
-Create tokens at **user menu → API tokens** (`/settings/tokens`):
+Create tokens at **user menu → API tokens** (`/demo/settings/tokens`, under your workspace's address):
 
+- **One workspace:** a token belongs to the workspace it was made in and only sees that workspace. Make one per workspace if you need several.
 - **Read-only** or **Read and write**. Read-only tokens (and Viewers) can never change anything.
 - **All my projects** or a chosen subset. A scoped token can't see or create anything outside its projects.
 - **Expiry:** 30 days, 90 days (the default), 1 year or never. Expired tokens stop working on REST and both MCP transports.
@@ -140,10 +168,10 @@ The base URL is `/api/v1`, documented at `/docs/api`. Highlights:
 - Destructive calls need `"confirm": true`: deleting a project or issue, and completing a sprint.
 - **Idempotency:** send `Idempotency-Key: <uuid>` on any POST. A retry with the same key and body returns the original response (header `Idempotent-Replayed: true`). The same key with a different body gets 422.
 - **Bulk:** `POST /api/v1/projects/WEB/issues/bulk` and `PATCH /api/v1/issues/bulk`, up to 50 items, all or nothing.
-- **Rate limit:** `PM_API_RATE_LIMIT` per minute per token; a 429 says when to retry.
+- **Rate limit:** per token, the workspace's `api_per_minute` and `api_per_day` limits (or `PM_API_RATE_LIMIT` per minute when unset); a 429 says when to retry.
 
 ```bash
-TOKEN=...   # from the seed output or /settings/tokens
+TOKEN=...   # from the seed output or /demo/settings/tokens
 curl -s http://localhost:8000/api/v1/me/issues -H "Authorization: Bearer $TOKEN"
 curl -s -X POST http://localhost:8000/api/v1/projects/WEB/issues \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -H "Idempotency-Key: $(uuidgen)" \
@@ -231,7 +259,7 @@ HTTP, through the `mcp-remote` bridge (a third-party npm package, needs Node), w
 php artisan mcp:inspector pm        # opens the MCP Inspector against the stdio server
 ```
 
-If the stdio server exits at once with "PM_MCP_TOKEN is missing or invalid", the token is wrong or revoked. Create a new one at `/settings/tokens`. Raw HTTP check:
+If the stdio server exits at once with "PM_MCP_TOKEN is missing or invalid", the token is wrong or revoked. Create a new one at `/{workspace}/settings/tokens`. Raw HTTP check:
 
 ```bash
 curl -s -X POST http://localhost:8000/mcp -H "Authorization: Bearer $TOKEN" \
