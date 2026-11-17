@@ -1,0 +1,174 @@
+<?php
+
+namespace App\Http\Controllers\Web;
+
+use App\Enums\ProjectRole;
+use App\Enums\WorkspaceRole;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Workspaces\DestroyWorkspaceRequest;
+use App\Http\Requests\Workspaces\InviteToWorkspaceRequest;
+use App\Http\Requests\Workspaces\RemoveWorkspaceMemberRequest;
+use App\Http\Requests\Workspaces\UpdateWorkspaceMemberRequest;
+use App\Http\Requests\Workspaces\UpdateWorkspaceRequest;
+use App\Models\User;
+use App\Models\Workspace;
+use App\Models\WorkspaceInvitation;
+use App\Services\CurrentWorkspace;
+use App\Services\InvitationService;
+use App\Services\WorkspaceMemberService;
+use App\Services\WorkspaceService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response;
+
+/** /{workspace}/settings/general and /members (spec 7.0b). Web only: tokens never reach settings. */
+class WorkspaceSettingsController extends Controller
+{
+    public function __construct(
+        private CurrentWorkspace $current,
+        private WorkspaceService $workspaces,
+        private WorkspaceMemberService $members,
+        private InvitationService $invitations,
+    ) {}
+
+    public function general(Request $request): Response
+    {
+        $workspace = $this->current->get();
+        Gate::authorize('update', $workspace);
+
+        return Inertia::render('Workspaces/Settings/General', [
+            'settings' => [
+                'name' => $workspace->name,
+                'slug' => $workspace->slug,
+                'members_can_create_projects' => (bool) $workspace->setting('members_can_create_projects'),
+            ],
+            'deletionScheduledAt' => $workspace->deletion_scheduled_at,
+            'can' => ['delete' => $request->user()->can('delete', $workspace)],
+        ]);
+    }
+
+    public function update(UpdateWorkspaceRequest $request): RedirectResponse
+    {
+        $workspace = $this->current->get();
+        Gate::authorize('update', $workspace);
+        $data = $request->validated();
+
+        $this->workspaces->rename($workspace, $data['name'], $data['slug']);
+        $workspace->forceFill(['settings' => [...($workspace->settings ?? []), 'members_can_create_projects' => (bool) $data['members_can_create_projects']]])->save();
+
+        return redirect(route('settings.general', ['workspace' => $workspace->slug], false));
+    }
+
+    public function destroy(DestroyWorkspaceRequest $request): RedirectResponse
+    {
+        $workspace = $this->current->get();
+        Gate::authorize('delete', $workspace);
+        $this->workspaces->scheduleDeletion($workspace, $request->user(), $request->validated('confirm_slug'));
+
+        return redirect(route('dashboard', ['workspace' => $workspace->slug], false));
+    }
+
+    public function members(Request $request): Response
+    {
+        $workspace = $this->current->get();
+        Gate::authorize('manageMembers', $workspace);
+
+        $members = $workspace->members()
+            ->with(['projects' => fn ($q) => $q->where('projects.workspace_id', $workspace->id)->orderBy('key')])
+            ->orderBy('name')->get();
+        $projects = $workspace->projects()->orderBy('key')
+            ->with(['members' => fn ($q) => $q->where('project_user.role', ProjectRole::Admin->value)])->get();
+
+        return Inertia::render('Workspaces/Settings/Members', [
+            'members' => $members->map(fn (User $m) => [
+                'id' => $m->id,
+                'name' => $m->name,
+                'email' => $m->email,
+                'role' => $m->pivot->role,
+                // Spec 4: Owners and Admins, and anyone Member or Admin in a project, are billed; the rest are Viewers.
+                'billed' => $m->pivot->role !== WorkspaceRole::Member->value
+                    || $m->projects->contains(fn ($p) => $p->pivot->role !== ProjectRole::Viewer->value),
+                'projects' => $m->projects->map(fn ($p) => ['key' => $p->key, 'role' => $p->pivot->role])->all(),
+                'last_active_at' => $m->pivot->last_active_at,
+            ])->all(),
+            'invitations' => $workspace->invitations()->with('project', 'inviter')->orderBy('email')->get()
+                ->map(fn (WorkspaceInvitation $i) => [
+                    'id' => $i->id,
+                    'email' => $i->email,
+                    'role' => $i->role->value,
+                    'project' => $i->project?->key,
+                    'project_role' => $i->project_role?->value,
+                    'invited_by' => $i->inviter?->name,
+                    'expires_at' => $i->expires_at,
+                ])->all(),
+            'projects' => $projects->pluck('key')->all(),
+            // Who needs a new project admin picked before they can be removed.
+            'soleAdminOf' => (object) $projects->filter(fn ($p) => $p->members->count() === 1)
+                ->groupBy(fn ($p) => $p->members->first()->id)->map(fn ($ps) => $ps->pluck('key')->values()->all())->all(),
+            'can' => ['manageOwners' => $request->user()->can('manageOwners', $workspace)],
+        ]);
+    }
+
+    public function invite(InviteToWorkspaceRequest $request): RedirectResponse
+    {
+        $workspace = $this->current->get();
+        Gate::authorize('manageMembers', $workspace);
+        $data = $request->validated();
+
+        $project = null;
+        if (filled($data['project'] ?? null)) {
+            $project = $workspace->projects()->where('key', strtoupper($data['project']))->first()
+                ?? throw ValidationException::withMessages(['project' => "No project {$data['project']} in {$workspace->name}. Projects: ".$workspace->projects()->orderBy('key')->pluck('key')->implode(', ').'.']);
+        }
+        $this->invitations->invite(
+            $workspace, $request->user(), $data['email'], WorkspaceRole::from($data['role']),
+            $project, $project ? ProjectRole::from($data['project_role'] ?? ProjectRole::Member->value) : null,
+        );
+
+        return back();
+    }
+
+    public function resend(int $invitation): RedirectResponse
+    {
+        $workspace = $this->current->get();
+        Gate::authorize('manageMembers', $workspace);
+        $this->invitations->resend($workspace->invitations()->findOrFail($invitation));
+
+        return back();
+    }
+
+    public function revoke(int $invitation): RedirectResponse
+    {
+        $workspace = $this->current->get();
+        Gate::authorize('manageMembers', $workspace);
+        $this->invitations->revoke($workspace->invitations()->findOrFail($invitation));
+
+        return back();
+    }
+
+    public function updateMember(UpdateWorkspaceMemberRequest $request, int $user): RedirectResponse
+    {
+        $workspace = $this->current->get();
+        Gate::authorize('manageMembers', $workspace);
+        $this->members->changeRole($workspace, $request->user(), $this->member($workspace, $user), WorkspaceRole::from($request->validated('role')));
+
+        return back();
+    }
+
+    public function removeMember(RemoveWorkspaceMemberRequest $request, int $user): RedirectResponse
+    {
+        $workspace = $this->current->get();
+        Gate::authorize('manageMembers', $workspace);
+        $this->members->remove($workspace, $request->user(), $this->member($workspace, $user), array_change_key_case($request->validated('new_admins') ?? [], CASE_UPPER));
+
+        return back();
+    }
+
+    private function member(Workspace $workspace, int $id): User
+    {
+        return $workspace->members()->findOrFail($id);
+    }
+}

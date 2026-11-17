@@ -87,7 +87,8 @@ class InvitationService
     public function refusal(?WorkspaceInvitation $invitation, ?User $user): ?string
     {
         return match (true) {
-            ! $invitation => self::GONE,
+            // A workspace scheduled for deletion (D2) takes no new members.
+            ! $invitation, (bool) $invitation->workspace->deletion_scheduled_at => self::GONE,
             $invitation->expires_at->isPast() => self::EXPIRED,
             $user && strtolower($user->email) !== $invitation->email => self::OTHER_EMAIL,
             default => null,

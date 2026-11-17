@@ -121,6 +121,7 @@ function isolationRouteCases(): array
         'PATCH {workspace}/projects/{project}/members/{user}' => ['alpha/projects/{P}/members/{U}', ['role' => 'viewer']],
         'DELETE {workspace}/projects/{project}/members/{user}' => ['alpha/projects/{P}/members/{U}', []],
         'GET {workspace}/projects/{project}/settings' => ['alpha/projects/{P}/settings', []],
+        'POST {workspace}/projects/{project}/join' => ['alpha/projects/{P}/join', []],
         'POST {workspace}/projects/{project}/sprints' => ['alpha/projects/{P}/sprints', []],
         'PATCH {workspace}/projects/{project}/sprints/{sprint}' => ['alpha/projects/{P}/sprints/{S}', ['goal' => 'x']],
         'DELETE {workspace}/projects/{project}/sprints/{sprint}' => ['alpha/projects/{P}/sprints/{S}', []],
@@ -129,6 +130,16 @@ function isolationRouteCases(): array
         'GET {workspace}/settings/tokens' => ['alpha/settings/tokens', []],
         'POST {workspace}/settings/tokens' => ['alpha/settings/tokens', ['name' => 'x', 'access' => 'read', 'projects' => ['{P}']]],
         'DELETE {workspace}/settings/tokens/{token}' => ['alpha/settings/tokens/{T}', []],
+        'GET {workspace}/settings/general' => ['alpha/settings/general', []],
+        'PATCH {workspace}/settings/general' => ['alpha/settings/general', ['name' => 'Alpha', 'slug' => 'alpha', 'members_can_create_projects' => true]],
+        // A wrong confirmation: deleting A for real would end the remaining cases.
+        'DELETE {workspace}/settings/general' => ['alpha/settings/general', ['confirm_slug' => '{P}']],
+        'GET {workspace}/settings/members' => ['alpha/settings/members', []],
+        'POST {workspace}/settings/members/invitations' => ['alpha/settings/members/invitations', ['email' => 'x@example.com', 'role' => 'member', 'project' => '{P}']],
+        'POST {workspace}/settings/members/invitations/{invitation}/resend' => ['alpha/settings/members/invitations/{INV}/resend', []],
+        'DELETE {workspace}/settings/members/invitations/{invitation}' => ['alpha/settings/members/invitations/{INV}', []],
+        'PATCH {workspace}/settings/members/{user}' => ['alpha/settings/members/{U}', ['role' => 'member']],
+        'DELETE {workspace}/settings/members/{user}' => ['alpha/settings/members/{U}', []],
     ];
 }
 
@@ -153,6 +164,7 @@ function isolationExemptRoutes(): array
         'GET {legacy}' => 'redirects into the current workspace only; UrlPrefixTest',
         'GET workspaces/create' => 'creates a new workspace; EditionTest', 'POST workspaces' => 'creates a new workspace; EditionTest',
         'GET workspaces/no-access' => 'shown only with no workspace; WorkspaceSwitchTest',
+        'POST workspaces/{slug}/restore' => "finds the slug among the user's own workspaces, Owner only; WorkspaceDeletionTest",
         'GET confirm-password' => $auth, 'POST confirm-password' => $auth, 'POST email/verification-notification' => $auth,
         'GET forgot-password' => $auth, 'POST forgot-password' => $auth, 'GET login' => $auth, 'POST login' => $auth,
         'POST logout' => $auth, 'GET register' => $auth, 'POST register' => $auth, 'POST reset-password' => $auth,

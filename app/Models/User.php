@@ -8,10 +8,13 @@ use App\Services\CurrentWorkspace;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -53,14 +56,21 @@ class User extends Authenticatable
     }
 
     /**
-     * Projects this request may touch: the user's projects in the current workspace, narrowed to the token's
-     * "project:{id}" abilities when the token has any. No current workspace, no projects.
+     * Projects this request may touch in the current workspace: the user's own, or every one for a workspace Owner or
+     * Admin (read-only until they join, spec 7.0b); narrowed to the token's "project:{id}" abilities when it has any.
+     * Each row carries my_role (null where not joined). No current workspace, no projects.
      * Use this, not projects(), for every lookup.
      */
-    public function accessibleProjects(): BelongsToMany
+    public function accessibleProjects(): Builder
     {
-        return $this->projects()
-            ->where('projects.workspace_id', app(CurrentWorkspace::class)->id() ?? 0)
+        $current = app(CurrentWorkspace::class);
+        $seesAll = $current->id() && Gate::forUser($this)->allows('viewAllProjects', $current->get());
+
+        return Project::query()
+            ->select('projects.*')
+            ->selectSub(DB::table('project_user')->select('role')->whereColumn('project_id', 'projects.id')->where('user_id', $this->id), 'my_role')
+            ->where('projects.workspace_id', $current->id() ?? 0)
+            ->unless($seesAll, fn ($q) => $q->whereHas('members', fn ($m) => $m->whereKey($this->id)))
             ->when($this->tokenProjectIds(), fn ($q, $ids) => $q->whereIn('projects.id', $ids));
     }
 

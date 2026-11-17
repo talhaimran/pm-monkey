@@ -40,6 +40,7 @@ test('read-write tokens can be scoped to projects', function () {
 
 test('tokens cannot be scoped to projects you are not in', function () {
     makeProject(User::factory()->create(), 'SECRET');
+    asWorkspaceMember($this->me);
 
     $this->actingAs($this->me)->post(w('/settings/tokens'), ['name' => 'x', 'access' => 'read', 'projects' => ['SECRET']])
         ->assertSessionHasErrors('projects');

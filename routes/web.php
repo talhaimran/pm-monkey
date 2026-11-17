@@ -12,6 +12,7 @@ use App\Http\Controllers\Web\SprintController;
 use App\Http\Controllers\Web\TokenController;
 use App\Http\Controllers\Web\WorkspaceController;
 use App\Http\Controllers\Web\WorkspaceInvitationController;
+use App\Http\Controllers\Web\WorkspaceSettingsController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -42,6 +43,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/workspaces/create', [WorkspaceController::class, 'create'])->name('workspaces.create');
     Route::post('/workspaces', [WorkspaceController::class, 'store'])->name('workspaces.store');
     Route::get('/workspaces/no-access', [WorkspaceController::class, 'noAccess'])->name('workspaces.no-access');
+    // Outside /{workspace}: a workspace scheduled for deletion locks everyone out of its own pages (D2).
+    Route::post('/workspaces/{slug}/restore', [WorkspaceController::class, 'restore'])->name('workspaces.restore')->where('slug', '[a-z0-9-]{3,40}');
 
     // E3: the old unprefixed pages redirect into the current workspace.
     Route::get('/{legacy}', [WorkspaceController::class, 'legacy'])->where('legacy', '(dashboard|search|projects|issues/.+|projects/.+|settings/tokens)');
@@ -53,6 +56,16 @@ Route::prefix('{workspace}')->where(['workspace' => '[a-z0-9-]{3,40}'])->middlew
     Route::get('/settings/tokens', [TokenController::class, 'index'])->name('tokens.index');
     Route::post('/settings/tokens', [TokenController::class, 'store'])->name('tokens.store');
     Route::delete('/settings/tokens/{token}', [TokenController::class, 'destroy'])->name('tokens.destroy');
+
+    Route::get('/settings/general', [WorkspaceSettingsController::class, 'general'])->name('settings.general');
+    Route::patch('/settings/general', [WorkspaceSettingsController::class, 'update'])->name('settings.general.update');
+    Route::delete('/settings/general', [WorkspaceSettingsController::class, 'destroy'])->name('settings.destroy');
+    Route::get('/settings/members', [WorkspaceSettingsController::class, 'members'])->name('settings.members');
+    Route::post('/settings/members/invitations', [WorkspaceSettingsController::class, 'invite'])->name('settings.invitations.store')->middleware('throttle:invites');
+    Route::post('/settings/members/invitations/{invitation}/resend', [WorkspaceSettingsController::class, 'resend'])->name('settings.invitations.resend')->whereNumber('invitation')->middleware('throttle:invites');
+    Route::delete('/settings/members/invitations/{invitation}', [WorkspaceSettingsController::class, 'revoke'])->name('settings.invitations.destroy')->whereNumber('invitation');
+    Route::patch('/settings/members/{user}', [WorkspaceSettingsController::class, 'updateMember'])->name('settings.members.update')->whereNumber('user');
+    Route::delete('/settings/members/{user}', [WorkspaceSettingsController::class, 'removeMember'])->name('settings.members.destroy')->whereNumber('user');
 
     Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
     Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
@@ -81,6 +94,7 @@ Route::prefix('{workspace}')->where(['workspace' => '[a-z0-9-]{3,40}'])->middlew
         Route::post('/sprints/{sprint}/start', [SprintController::class, 'start'])->name('sprints.start')->scopeBindings();
         Route::post('/sprints/{sprint}/complete', [SprintController::class, 'complete'])->name('sprints.complete')->scopeBindings();
         Route::get('/settings', [ProjectController::class, 'settings'])->name('settings');
+        Route::post('/join', [ProjectController::class, 'join'])->name('join');
         Route::post('/issues', [IssueController::class, 'store'])->name('issues.store');
         Route::post('/labels', [LabelController::class, 'store'])->name('labels.store');
         Route::patch('/labels/{label}', [LabelController::class, 'update'])->name('labels.update')->scopeBindings();

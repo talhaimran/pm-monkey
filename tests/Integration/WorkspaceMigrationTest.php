@@ -41,7 +41,8 @@ function reachBefore(int $userId): array
 function reachAfter(User $user): array
 {
     app(CurrentWorkspace::class)->set(Workspace::findOrFail($user->current_workspace_id));
-    $projects = $user->accessibleProjects()->orderBy('key')->pluck('projects.key', 'projects.id');
+    // Projects they are in: since PR 3 Owners and Admins also see the rest read-only (spec 7.0b).
+    $projects = $user->accessibleProjects()->whereHas('members', fn ($m) => $m->whereKey($user->id))->orderBy('key')->pluck('projects.key', 'projects.id');
 
     return [
         'projects' => $projects->values()->all(),

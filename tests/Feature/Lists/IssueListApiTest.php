@@ -49,6 +49,7 @@ test('search spans my projects only and understands keys', function () {
     makeIssue($this->project, $this->me, ['title' => 'Login page']);
     makeIssue($api, $this->me, ['title' => 'Login endpoint']);
     $other = makeProject(User::factory()->create(), 'SECRET');
+    asWorkspaceMember($this->me);
     makeIssue($other, $other->members()->first(), ['title' => 'Login secret']);
 
     expect($this->getJson('/api/v1/issues?q=login')->assertOk()->json('data.*.key'))->toEqualCanonicalizing(['WEB-1', 'API-1'])

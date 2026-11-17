@@ -10,6 +10,7 @@ test('projects index shows my projects and my pending invitations', function () 
     makeProject($me, 'MINE');
     $other = makeProject($owner = User::factory()->create(), 'THEIRS');
     makeInvitation($other, $owner, 'me@example.com', 'member');
+    asWorkspaceMember($me);
 
     $this->actingAs($me)->get(w('/projects'))
         ->assertOk()

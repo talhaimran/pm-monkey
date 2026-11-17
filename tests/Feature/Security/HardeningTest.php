@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ProjectRole;
+use App\Enums\WorkspaceRole;
 use App\Mail\ProjectInvitationMail;
 use App\Mcp\Servers\LocalPmServer;
 use App\Models\Project;
@@ -31,6 +32,8 @@ test('the sole admin of a project cannot delete their account', function () {
     $project = makeProject($owner, 'WEB');
     makeProject($owner, 'API');
     addMember($project, User::factory()->create(), ProjectRole::Member);
+    // Another workspace Owner, so only the project rule applies (E7 is tested in WorkspaceRolesTest).
+    $project->workspace->addMember(User::factory()->create(), WorkspaceRole::Owner);
 
     $this->actingAs($owner)->delete('/profile', ['password' => 'password'])
         ->assertSessionHasErrors(['password' => 'You are the only admin of API, WEB. Make another member an admin or delete those projects before deleting your account.']);

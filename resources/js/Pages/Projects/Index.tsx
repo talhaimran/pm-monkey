@@ -3,6 +3,7 @@ import { FolderKanban } from 'lucide-react';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton';
 import { ProjectAvatar } from '@/Components/ProjectNav';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -13,9 +14,11 @@ import { FormEventHandler, useState } from 'react';
 export default function Index({
     projects,
     invitations,
+    can,
 }: {
     projects: Project[];
     invitations: Invitation[];
+    can: { create: boolean; join: boolean };
 }) {
     const { data, setData, post, errors, processing } = useForm({
         key: '',
@@ -89,59 +92,65 @@ export default function Index({
                     </section>
                 )}
 
-                <section className="rounded-card bg-card p-5 shadow sm:p-6">
-                    <h3 className="text-lg text-text">
-                        New project
-                    </h3>
-                    <form
-                        onSubmit={create}
-                        className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start"
-                    >
-                        <div className="sm:w-40">
-                            <InputLabel htmlFor="key" value="Key" />
-                            <TextInput
-                                id="key"
-                                className="mt-1 block w-full uppercase"
-                                value={data.key}
-                                maxLength={10}
-                                placeholder="WEB"
-                                onChange={(e) =>
-                                    setData('key', e.target.value.toUpperCase())
-                                }
-                                required
-                            />
-                            <InputError className="mt-2" message={errors.key} />
-                        </div>
-                        <div className="flex-1">
-                            <InputLabel htmlFor="name" value="Name" />
-                            <TextInput
-                                id="name"
-                                className="mt-1 block w-full"
-                                value={data.name}
-                                placeholder="Website"
-                                onChange={(e) => setData('name', e.target.value)}
-                                required
-                            />
-                            <InputError className="mt-2" message={errors.name} />
-                        </div>
-                        <PrimaryButton className="sm:mt-6" disabled={processing}>
-                            Create
-                        </PrimaryButton>
-                    </form>
-                </section>
+                {can.create && (
+                    <section className="rounded-card bg-card p-5 shadow sm:p-6">
+                        <h3 className="text-lg text-text">
+                            New project
+                        </h3>
+                        <form
+                            onSubmit={create}
+                            className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start"
+                        >
+                            <div className="sm:w-40">
+                                <InputLabel htmlFor="key" value="Key" />
+                                <TextInput
+                                    id="key"
+                                    className="mt-1 block w-full uppercase"
+                                    value={data.key}
+                                    maxLength={10}
+                                    placeholder="WEB"
+                                    onChange={(e) =>
+                                        setData('key', e.target.value.toUpperCase())
+                                    }
+                                    required
+                                />
+                                <InputError className="mt-2" message={errors.key} />
+                            </div>
+                            <div className="flex-1">
+                                <InputLabel htmlFor="name" value="Name" />
+                                <TextInput
+                                    id="name"
+                                    className="mt-1 block w-full"
+                                    value={data.name}
+                                    placeholder="Website"
+                                    onChange={(e) => setData('name', e.target.value)}
+                                    required
+                                />
+                                <InputError className="mt-2" message={errors.name} />
+                            </div>
+                            <PrimaryButton className="sm:mt-6" disabled={processing}>
+                                Create
+                            </PrimaryButton>
+                        </form>
+                    </section>
+                )}
 
                 <section className="overflow-hidden rounded-card bg-card shadow">
                     {projects.length === 0 ? (
                         <div className="p-5">
-                            <EmptyState icon={FolderKanban} title="No projects yet." hint="Create your first project with the form above." />
+                            <EmptyState
+                                icon={FolderKanban}
+                                title="No projects yet."
+                                hint={can.create ? 'Create your first project with the form above.' : 'Ask an Owner or Admin to add you to a project.'}
+                            />
                         </div>
                     ) : (
                         <ul className="divide-y divide-line">
                             {projects.map((p) => (
-                                <li key={p.id}>
+                                <li key={p.id} className="flex items-center hover:bg-card-2">
                                     <Link
                                         href={route('projects.show', p.key)}
-                                        className="flex items-center gap-4 px-4 py-3 hover:bg-card-2 md:px-8"
+                                        className="flex min-w-0 flex-1 items-center gap-4 px-4 py-3 md:px-8"
                                     >
                                         <ProjectAvatar projectKey={p.key} />
                                         <span className="min-w-0 flex-1 truncate font-medium text-primary">
@@ -151,9 +160,18 @@ export default function Index({
                                             {p.key}
                                         </span>
                                         <span className="text-xs uppercase text-muted">
-                                            {p.my_role}
+                                            {p.my_role ?? 'View only'}
                                         </span>
                                     </Link>
+                                    {/* Spec 7.0b: Owners and Admins see every project; they join to make changes. */}
+                                    {can.join && !p.my_role && (
+                                        <SecondaryButton
+                                            className="me-4 shrink-0 md:me-8"
+                                            onClick={() => router.post(route('projects.join', p.key))}
+                                        >
+                                            Join as Admin
+                                        </SecondaryButton>
+                                    )}
                                 </li>
                             ))}
                         </ul>

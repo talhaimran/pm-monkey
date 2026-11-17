@@ -104,6 +104,14 @@ function joinWorkspace(User $user): Workspace
     return $workspace;
 }
 
+/** Makes $user a plain Member of the current workspace: they see only their own projects (Owners and Admins see all, spec 7.0b). */
+function asWorkspaceMember(User $user): User
+{
+    app(CurrentWorkspace::class)->get()->members()->updateExistingPivot($user->id, ['role' => WorkspaceRole::Member->value]);
+
+    return $user;
+}
+
 /** Creates the project in the current workspace (making one on first use), with $admin as its Admin. */
 function makeProject(User $admin, string $key = 'WEB', string $name = 'Website'): Project
 {
