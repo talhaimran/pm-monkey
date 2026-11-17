@@ -238,8 +238,9 @@ function normalizeAnswer(string $text, array $values): string
     uasort($values, fn ($a, $b) => strlen($b) <=> strlen($a));
     foreach ($values as $v) {
         $text = ctype_digit($v)
-            // Not JSON number values ("per_page":25): an id can collide with them. Skipping them only makes the check stricter.
-            ? preg_replace('/(?<![\w-])(?<!":)'.$v.'(?![\w-])/', '§', $text)
+            // Not next to ':' (JSON values like "per_page":25, timestamp parts like 21:54:35): an id can collide with them.
+            // Skipping them only makes the check stricter.
+            ? preg_replace('/(?<![\w:-])'.$v.'(?![\w:-])/', '§', $text)
             : str_ireplace([$v, json_encode($v), rawurlencode($v)], '§', $text);
     }
 
