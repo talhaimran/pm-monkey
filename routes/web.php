@@ -11,6 +11,7 @@ use App\Http\Controllers\Web\ProjectController;
 use App\Http\Controllers\Web\ProjectMemberController;
 use App\Http\Controllers\Web\SprintController;
 use App\Http\Controllers\Web\TokenController;
+use App\Http\Controllers\Web\UsageController;
 use App\Http\Controllers\Web\WorkspaceController;
 use App\Http\Controllers\Web\WorkspaceInvitationController;
 use App\Http\Controllers\Web\WorkspaceSettingsController;
@@ -63,6 +64,7 @@ Route::prefix('{workspace}')->where(['workspace' => '[a-z0-9-]{3,40}'])->middlew
     Route::delete('/settings/general', [WorkspaceSettingsController::class, 'destroy'])->name('settings.destroy');
     Route::get('/settings/members', [WorkspaceSettingsController::class, 'members'])->name('settings.members');
     Route::get('/settings/audit-log', [AuditLogController::class, 'index'])->name('settings.audit-log');
+    Route::get('/settings/usage', UsageController::class)->name('settings.usage');
     Route::get('/settings/audit-log/export', [AuditLogController::class, 'export'])->name('settings.audit-log.export');
     Route::post('/settings/members/invitations', [WorkspaceSettingsController::class, 'invite'])->name('settings.invitations.store')->middleware('throttle:invites');
     Route::post('/settings/members/invitations/{invitation}/resend', [WorkspaceSettingsController::class, 'resend'])->name('settings.invitations.resend')->whereNumber('invitation')->middleware('throttle:invites');

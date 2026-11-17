@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\Entitlement;
 use App\Enums\IssuePriority;
 use App\Enums\IssueType;
 use App\Enums\ProjectRole;
@@ -15,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 
 class ProjectService
 {
-    public function __construct(private CurrentWorkspace $current, private AuditLogger $audit) {}
+    public function __construct(private CurrentWorkspace $current, private AuditLogger $audit, private Entitlements $entitlements) {}
 
     public function listFor(User $user, int $perPage = 25, ?int $page = null): LengthAwarePaginator
     {
@@ -25,6 +26,8 @@ class ProjectService
     /** @param array{key: string, name: string, description?: ?string} $data */
     public function create(User $creator, array $data): Project
     {
+        $this->entitlements->ensure($this->current->get(), Entitlement::Projects);
+
         return DB::transaction(function () use ($creator, $data) {
             $project = new Project([...$data, 'key' => strtoupper($data['key'])]);
             $project->workspace_id = $this->current->get()->id;

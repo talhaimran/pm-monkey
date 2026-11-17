@@ -1,5 +1,6 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Avatar from '@/Components/Avatar';
+import PlanLimitDialog from '@/Components/PlanLimitDialog';
 import { projectLinks } from '@/Components/ProjectNav';
 import ThemeToggle from '@/Components/ThemeToggle';
 import Toaster from '@/Components/Toaster';
@@ -208,6 +209,7 @@ export default function Authenticated({
                 {children}
             </main>
             <Toaster />
+            <PlanLimitDialog />
         </div>
     );
 }

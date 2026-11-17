@@ -71,7 +71,11 @@ function makeWorkspace(User $owner, string $slug): Workspace
         config(['pm.edition' => 'cloud']);
     }
 
-    return useWorkspace(app(WorkspaceService::class)->create($owner, ucfirst($slug), $slug), $owner);
+    $workspace = app(WorkspaceService::class)->create($owner, ucfirst($slug), $slug);
+    // Tests run unlimited unless they set a limit; D6's Cloud defaults are tested in EntitlementEnforcementTest.
+    $workspace->entitlements()->delete();
+
+    return useWorkspace($workspace, $owner);
 }
 
 function useWorkspace(Workspace $workspace, ?User $user = null): Workspace

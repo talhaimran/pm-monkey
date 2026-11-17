@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\Entitlement;
 use App\Enums\ProjectRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Project;
@@ -20,10 +21,14 @@ class WorkspaceMemberService
 
     public const OWNERS_ONLY = 'Only Owners can add, change or remove Owners.';
 
-    public function __construct(private MembershipService $memberships, private AuditLogger $audit) {}
+    public function __construct(private MembershipService $memberships, private AuditLogger $audit, private Entitlements $entitlements, private WorkspaceUsage $usage) {}
 
     public function changeRole(Workspace $workspace, User $actor, User $member, WorkspaceRole $role): void
     {
+        // Spec 7.0c: a Member becoming Admin (or Owner) needs a billed seat.
+        $now = $this->usage->isBilled($workspace, $member->email);
+        $this->entitlements->ensurePerson($workspace, $now, $now === true || $role !== WorkspaceRole::Member);
+
         DB::transaction(function () use ($workspace, $actor, $member, $role) {
             $current = $this->lockAndCheck($workspace, $actor, $member, $role === WorkspaceRole::Owner, 'role');
             if ($current === WorkspaceRole::Owner && $role !== WorkspaceRole::Owner) {
@@ -51,6 +56,14 @@ class WorkspaceMemberService
      */
     public function remove(Workspace $workspace, User $actor, User $member, array $newAdmins = []): void
     {
+        // Spec 7.0c: new project admins who are Viewers become billed; the removed member's seat (if billed) frees one.
+        $newlyBilled = collect($newAdmins)->filter()->map(fn ($e) => strtolower(trim($e)))->unique()
+            ->reject(fn ($e) => $e === strtolower($member->email) || $this->usage->isBilled($workspace, $e) !== false)->count();
+        $adding = $newlyBilled - ($this->usage->isBilled($workspace, $member->email) ? 1 : 0);
+        if ($adding > 0) {
+            $this->entitlements->ensure($workspace, Entitlement::BilledUsers, $adding);
+        }
+
         DB::transaction(function () use ($workspace, $actor, $member, $newAdmins) {
             $role = $this->lockAndCheck($workspace, $actor, $member, false, 'member');
             if ($role === WorkspaceRole::Owner) {

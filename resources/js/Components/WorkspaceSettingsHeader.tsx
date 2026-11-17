@@ -1,18 +1,22 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 
+// [route, label, Owners and Admins only]
 const tabs = [
-    ['settings.general', 'General'],
-    ['settings.members', 'Members'],
-    ['settings.audit-log', 'Audit log'],
+    ['settings.general', 'General', true],
+    ['settings.members', 'Members', true],
+    ['settings.audit-log', 'Audit log', true],
+    ['settings.usage', 'Usage', false],
 ] as const;
 
 /** Title and tabs shared by the workspace settings pages (spec 7.0b). */
 export default function WorkspaceSettingsHeader() {
+    const role = usePage().props.workspace?.role;
+    const admin = role === 'owner' || role === 'admin';
     return (
         <div>
             <h1 className="text-display text-text">Workspace settings</h1>
             <nav aria-label="Workspace settings" className="mt-3 flex gap-1 border-b border-line">
-                {tabs.map(([name, label]) => {
+                {tabs.filter(([, , adminOnly]) => !adminOnly || admin).map(([name, label]) => {
                     const current = route().current(name);
                     return (
                         <Link

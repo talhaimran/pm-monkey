@@ -13,7 +13,7 @@ class WorkspaceService
 {
     public const DELETION_DAYS = 7;
 
-    public function __construct(private ProjectService $projects, private AuditLogger $audit) {}
+    public function __construct(private ProjectService $projects, private AuditLogger $audit, private Entitlements $entitlements) {}
 
     /** Creates a workspace with $owner as its Owner; a user with no current workspace switches to it. */
     public function create(User $owner, string $name, ?string $slug = null): Workspace
@@ -28,6 +28,9 @@ class WorkspaceService
             $this->claimRedirect($slug);
             $workspace = Workspace::create(['name' => trim($name), 'slug' => $slug]);
             $workspace->addMember($owner, WorkspaceRole::Owner);
+            if (config('pm.edition') === 'cloud') {
+                $this->entitlements->applyFreeDefaults($workspace);
+            }
             $this->audit->log('workspace.created', $workspace, ['slug' => $slug], $workspace, $owner);
 
             if (! $owner->current_workspace_id) {

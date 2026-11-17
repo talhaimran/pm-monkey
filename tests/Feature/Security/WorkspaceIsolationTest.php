@@ -139,6 +139,8 @@ function isolationRouteCases(): array
         // Filtering A's log by a user of B shows nothing of B.
         'GET {workspace}/settings/audit-log' => ['alpha/settings/audit-log?actor={U}', []],
         'GET {workspace}/settings/audit-log/export' => ['alpha/settings/audit-log/export?actor={U}', []],
+        // Takes no id: it must count only A's people and projects (B has more of both).
+        'GET {workspace}/settings/usage' => ['alpha/settings/usage', []],
         'POST {workspace}/settings/members/invitations' => ['alpha/settings/members/invitations', ['email' => 'x@example.com', 'role' => 'member', 'project' => '{P}']],
         'POST {workspace}/settings/members/invitations/{invitation}/resend' => ['alpha/settings/members/invitations/{INV}/resend', []],
         'DELETE {workspace}/settings/members/invitations/{invitation}' => ['alpha/settings/members/invitations/{INV}', []],

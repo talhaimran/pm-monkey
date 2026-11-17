@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\Entitlement;
 use App\Enums\ProjectRole;
 use App\Enums\WorkspaceRole;
 use App\Mail\ProjectInvitationMail;
@@ -18,7 +19,7 @@ use Illuminate\Validation\ValidationException;
 /** Workspace invitations (spec 7.0a): 14 days, emailed token stored hashed, one per workspace and email. */
 class InvitationService
 {
-    public function __construct(private AuditLogger $audit) {}
+    public function __construct(private AuditLogger $audit, private Entitlements $entitlements, private WorkspaceUsage $usage) {}
 
     public const DAYS = 14;
 
@@ -54,11 +55,17 @@ class InvitationService
             ]);
         }
 
+        // Spec 7.0c: pending invitations count, so room is needed now, for the person this would create.
+        $projectRole = $project ? ($projectRole ?? ProjectRole::Member) : null;
+        $asMember = $this->usage->memberBilled($workspace, $email);
+        $billed = $asMember === true || in_array($projectRole, [ProjectRole::Member, ProjectRole::Admin], true) || ($asMember === null && $role === WorkspaceRole::Admin);
+        $this->entitlements->ensurePerson($workspace, $this->usage->isBilled($workspace, $email), $billed);
+
         $token = Str::random(40);
         $invitation = WorkspaceInvitation::updateOrCreate(
             ['workspace_id' => $workspace->id, 'email' => $email],
             [
-                'role' => $role, 'project_id' => $project?->id, 'project_role' => $project ? ($projectRole ?? ProjectRole::Member) : null,
+                'role' => $role, 'project_id' => $project?->id, 'project_role' => $projectRole,
                 'invited_by' => $inviter->id, 'token' => hash('sha256', $token), 'expires_at' => now()->addDays(self::DAYS),
             ],
         );
@@ -107,6 +114,12 @@ class InvitationService
      */
     public function accept(WorkspaceInvitation $invitation, User $user): Workspace
     {
+        // Review focus 3: the invitation already counts, so this refuses only when the workspace is now over the limit.
+        if (! $this->refusal($invitation, $user)) {
+            $billed = $this->usage->isBilled($invitation->workspace, $invitation->email);
+            $this->entitlements->ensure($invitation->workspace, $billed ? Entitlement::BilledUsers : Entitlement::Viewers, 0);
+        }
+
         return DB::transaction(function () use ($invitation, $user) {
             $locked = WorkspaceInvitation::with('workspace', 'project')->lockForUpdate()->find($invitation->id);
             if ($reason = $this->refusal($locked, $user)) {
