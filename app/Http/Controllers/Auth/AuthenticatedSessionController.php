@@ -29,7 +29,12 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
+        // Two-factor users finish at Fortify's challenge, which reads login.id and signs them in.
+        if ($user = $request->authenticate()) {
+            $request->session()->put(['login.id' => $user->getKey(), 'login.remember' => $request->boolean('remember')]);
+
+            return redirect()->route('two-factor.login');
+        }
 
         $request->session()->regenerate();
 

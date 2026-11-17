@@ -51,6 +51,8 @@ class HandleInertiaRequests extends Middleware
                 'token' => fn () => $request->session()->get('token'),
                 // Spec 7.0c: what the plan-limit dialog shows after a refused action.
                 'planLimit' => fn () => $request->session()->get('planLimit'),
+                // Spec 7.0e: shown once, right after they are made.
+                'recoveryCodes' => fn () => $request->session()->get('recoveryCodes'),
                 // {message, method, url, data}: what the toast sends back when the person picks Undo (UndoService).
                 'undo' => fn () => $request->session()->get('undo'),
             ],

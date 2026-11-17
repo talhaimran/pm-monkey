@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequireTwoFactor;
 use App\Http\Middleware\ResolveTokenWorkspace;
 use App\Http\Middleware\ResolveWorkspace;
 use App\Http\Middleware\UseCurrentWorkspace;
@@ -25,7 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             UseCurrentWorkspace::class,
         ]);
 
-        $middleware->alias(['workspace' => ResolveWorkspace::class]);
+        $middleware->alias(['workspace' => ResolveWorkspace::class, 'require-2fa' => RequireTwoFactor::class]);
 
         // The workspace must be known before {project:key} is bound, and after auth.
         $middleware->prependToPriorityList(before: SubstituteBindings::class, prepend: UseCurrentWorkspace::class);
