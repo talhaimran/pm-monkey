@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Workspaces\AuditLogFilterRequest;
 use App\Http\Resources\AuditLogResource;
 use App\Models\AuditLog;
+use App\Models\User;
 use App\Models\Workspace;
 use App\Services\AuditLogger;
 use App\Services\CurrentWorkspace;
@@ -32,7 +33,10 @@ class AuditLogController extends Controller
         return Inertia::render('Workspaces/Settings/AuditLog', [
             'entries' => AuditLogResource::collection($this->query($workspace, $filters)->orderByDesc('id')->paginate(50)->withQueryString())->response()->getData(true),
             'filters' => (object) array_filter($filters),
-            'actors' => $workspace->members()->orderBy('name')->get(['users.id', 'name'])->map(fn ($u) => ['id' => $u->id, 'name' => $u->name])->all(),
+            // Current members plus anyone with entries here, so former members' history stays filterable.
+            'actors' => User::whereIn('id', $workspace->members()->select('users.id'))
+                ->orWhereIn('id', AuditLog::where('workspace_id', $workspace->id)->whereNotNull('actor_user_id')->select('actor_user_id'))
+                ->orderBy('name')->get(['id', 'name'])->map(fn ($u) => ['id' => $u->id, 'name' => $u->name])->all(),
             'groups' => AuditLog::where('workspace_id', $workspace->id)->selectRaw("distinct substring_index(action, '.', 1) as g")->orderBy('g')->pluck('g')->all(),
         ]);
     }
