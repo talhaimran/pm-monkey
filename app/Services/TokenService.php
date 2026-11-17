@@ -25,6 +25,10 @@ class TokenService
         $workspaceId = $this->current->id() ?? throw ValidationException::withMessages([
             'name' => 'You are not a member of any workspace yet, so there is nothing a token could reach.',
         ]);
+        $workspace = $this->current->get();
+        if ($workspace->setting('require_2fa') && ! $user->hasEnabledTwoFactorAuthentication()) {
+            throw ValidationException::withMessages(['name' => "{$workspace->name} requires two-factor authentication. Turn it on in your profile before creating a token."]);
+        }
         $abilities = $write ? ['read', 'write'] : ['read'];
 
         if ($projectKeys) {

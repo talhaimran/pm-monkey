@@ -10,12 +10,15 @@ use App\Services\AuditLogger;
 use App\Services\InvitationService;
 use App\Services\ProjectService;
 use App\Services\TokenService;
+use App\Services\TwoFactorService;
 use App\Services\WorkspaceMemberService;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
+use Laravel\Fortify\Fortify;
+use PragmaRX\Google2FA\Google2FA;
 
 beforeEach(function () {
     Mail::fake();
@@ -303,4 +306,23 @@ test('the Who filter lists former members who still have entries here, but not p
         ->where('actors', [['id' => $former->id, 'name' => 'Former Fay'], ['id' => $this->owner->id, 'name' => 'Olive']]));
     $this->actingAs($this->owner)->get("/acme/settings/audit-log?actor={$former->id}")->assertInertia(fn (Assert $page) => $page
         ->where('entries.data', fn ($rows) => collect($rows)->pluck('action')->all() === ['token.created']));
+});
+
+test('2fa events: enabled, recovery codes regenerated, recovery code used, disabled, in each of the user’s workspaces', function () {
+    $other = makeWorkspace($this->owner, 'other');
+    $service = app(TwoFactorService::class);
+    $this->actingAs($this->owner);
+
+    $service->enable($this->owner);
+    $secret = Fortify::currentEncrypter()->decrypt($this->owner->fresh()->two_factor_secret);
+    $codes = $service->confirm($this->owner->fresh(), (new Google2FA)->getCurrentOtp($secret));
+    $codes = $service->regenerateRecoveryCodes($this->owner->fresh());
+    $this->owner->fresh()->replaceRecoveryCode($codes[0]);
+    $service->disable($this->owner->fresh());
+
+    foreach (['2fa.enabled', '2fa.recovery_codes_regenerated', '2fa.recovery_code_used', '2fa.disabled'] as $action) {
+        expect(audits($action)->pluck('workspace_id')->sort()->values()->all())->toBe([$this->ws->id, $other->id])
+            ->and(audits($action)->pluck('actor_user_id')->unique()->all())->toBe([$this->owner->id]);
+    }
+    expect(json_encode(DB::table('audit_logs')->get()))->not->toContain($secret)->not->toContain($codes[0]);
 });

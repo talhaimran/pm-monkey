@@ -71,6 +71,32 @@ class WorkspaceSettingsController extends Controller
         return redirect(route('dashboard', ['workspace' => $workspace->slug], false));
     }
 
+    public function security(): Response
+    {
+        $workspace = $this->current->get();
+        Gate::authorize('manageSecurity', $workspace);
+
+        return Inertia::render('Workspaces/Settings/Security', [
+            'require2fa' => (bool) $workspace->setting('require_2fa'),
+            'members' => $workspace->members()->count(),
+            'membersWithout2fa' => $workspace->members()->whereNull('two_factor_confirmed_at')->count(),
+        ]);
+    }
+
+    public function updateSecurity(Request $request): RedirectResponse
+    {
+        $workspace = $this->current->get();
+        Gate::authorize('manageSecurity', $workspace);
+        $on = $request->validate(['require_2fa' => ['required', 'boolean']])['require_2fa'];
+        // Whoever turns it on would otherwise be sent to setup on their next page.
+        if ($on && ! $request->user()->hasEnabledTwoFactorAuthentication()) {
+            throw ValidationException::withMessages(['require_2fa' => 'Turn on two-factor authentication for your own account first, or you would be locked out.']);
+        }
+        $this->workspaces->updateSettings($workspace, ['require_2fa' => (bool) $on]);
+
+        return back();
+    }
+
     public function members(Request $request): Response
     {
         $workspace = $this->current->get();
@@ -93,6 +119,7 @@ class WorkspaceSettingsController extends Controller
                     || $m->projects->contains(fn ($p) => $p->pivot->role !== ProjectRole::Viewer->value),
                 'projects' => $m->projects->map(fn ($p) => ['key' => $p->key, 'role' => $p->pivot->role])->all(),
                 'last_active_at' => $m->pivot->last_active_at,
+                'two_factor' => $m->two_factor_confirmed_at !== null,
             ])->all(),
             'invitations' => $workspace->invitations()->with('project', 'inviter')->orderBy('email')->get()
                 ->map(fn (WorkspaceInvitation $i) => [

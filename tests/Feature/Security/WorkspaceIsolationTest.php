@@ -141,6 +141,8 @@ function isolationRouteCases(): array
         'GET {workspace}/settings/audit-log/export' => ['alpha/settings/audit-log/export?actor={U}', []],
         // Takes no id: it must count only A's people and projects (B has more of both).
         'GET {workspace}/settings/usage' => ['alpha/settings/usage', []],
+        'GET {workspace}/settings/security' => ['alpha/settings/security', []],
+        'PATCH {workspace}/settings/security' => ['alpha/settings/security', ['require_2fa' => false]],
         'POST {workspace}/settings/members/invitations' => ['alpha/settings/members/invitations', ['email' => 'x@example.com', 'role' => 'member', 'project' => '{P}']],
         'POST {workspace}/settings/members/invitations/{invitation}/resend' => ['alpha/settings/members/invitations/{INV}/resend', []],
         'DELETE {workspace}/settings/members/invitations/{invitation}' => ['alpha/settings/members/invitations/{INV}', []],
@@ -163,6 +165,9 @@ function isolationExemptRoutes(): array
         'GET mcp' => 'MCP transport; every tool is covered below', 'POST mcp' => 'MCP transport; every tool is covered below', 'DELETE mcp' => 'MCP transport; every tool is covered below',
         'GET profile' => 'account page, global by D10', 'PATCH profile' => 'account page, global by D10', 'DELETE profile' => 'account page, global by D10',
         'PUT password' => $auth,
+        'GET two-factor-challenge' => $auth, 'POST two-factor-challenge' => $auth,
+        'POST profile/two-factor' => 'account 2FA, global by D10', 'POST profile/two-factor/confirm' => 'account 2FA, global by D10',
+        'POST profile/two-factor/recovery-codes' => 'account 2FA, global by D10', 'DELETE profile/two-factor' => 'account 2FA, global by D10',
         // Invitations belong to the invitee, who may accept one from any workspace (InvitationTest, HardeningTest).
         'POST invitations/{invitation}/accept' => 'addressed to the invitee across workspaces',
         'GET invitations/{token}' => 'addressed by the emailed token, not a workspace id; InvitationTest',

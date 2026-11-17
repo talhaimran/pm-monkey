@@ -9,6 +9,7 @@
         "php": "^8.3",
         "dedoc/scramble": "^0.13.51",
         "inertiajs/inertia-laravel": "^2.0",
+        "laravel/fortify": "^1.42",
         "laravel/framework": "^13.17",
         "laravel/mcp": "^1.1",
         "laravel/sanctum": "^4.0",

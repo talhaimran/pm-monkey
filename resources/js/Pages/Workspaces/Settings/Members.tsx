@@ -22,6 +22,7 @@ type Member = {
     billed: boolean;
     projects: { key: string; role: ProjectRole }[];
     last_active_at: string | null;
+    two_factor: boolean;
 };
 type PendingInvitation = {
     id: number;
@@ -146,6 +147,9 @@ export default function Members({
                                 </div>
                                 <span className="w-16">
                                     <span className={`${pill} ${m.billed ? 'tint-cobalt' : 'tint-slate'}`}>{m.billed ? 'Billed' : 'Viewer'}</span>
+                                </span>
+                                <span className="w-16">
+                                    <span className={`${pill} ${m.two_factor ? 'tint-good' : 'tint-slate'}`}>{m.two_factor ? '2FA' : 'No 2FA'}</span>
                                 </span>
                                 <div className="w-40 truncate text-sm text-muted" title={m.projects.map((p) => `${p.key} (${p.role})`).join(', ')}>
                                     {m.projects.length ? m.projects.map((p) => p.key).join(', ') : 'No projects'}
