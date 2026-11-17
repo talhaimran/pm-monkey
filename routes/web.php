@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Web\AuditLogController;
 use App\Http\Controllers\Web\BoardController;
@@ -40,6 +41,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('/profile/two-factor', [TwoFactorController::class, 'store'])->name('two-factor.enable');
+    Route::post('/profile/two-factor/confirm', [TwoFactorController::class, 'confirm'])->middleware('throttle:6,1')->name('two-factor.confirm');
+    Route::post('/profile/two-factor/recovery-codes', [TwoFactorController::class, 'recoveryCodes'])->name('two-factor.recovery-codes');
+    Route::delete('/profile/two-factor', [TwoFactorController::class, 'destroy'])->name('two-factor.disable');
     Route::post('/invitations/{invitation}/accept', [InvitationController::class, 'accept'])->name('invitations.accept')->whereNumber('invitation');
 
     Route::get('/workspaces/create', [WorkspaceController::class, 'create'])->name('workspaces.create');
@@ -52,7 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/{legacy}', [WorkspaceController::class, 'legacy'])->where('legacy', '(dashboard|search|projects|issues/.+|projects/.+|settings/tokens)');
 });
 
-Route::prefix('{workspace}')->where(['workspace' => '[a-z0-9-]{3,40}'])->middleware(['auth', 'workspace'])->group(function () {
+Route::prefix('{workspace}')->where(['workspace' => '[a-z0-9-]{3,40}'])->middleware(['auth', 'workspace', 'require-2fa'])->group(function () {
     Route::get('/dashboard', [IssueListController::class, 'dashboard'])->middleware('verified')->name('dashboard');
 
     Route::get('/settings/tokens', [TokenController::class, 'index'])->name('tokens.index');
@@ -65,6 +70,8 @@ Route::prefix('{workspace}')->where(['workspace' => '[a-z0-9-]{3,40}'])->middlew
     Route::get('/settings/members', [WorkspaceSettingsController::class, 'members'])->name('settings.members');
     Route::get('/settings/audit-log', [AuditLogController::class, 'index'])->name('settings.audit-log');
     Route::get('/settings/usage', UsageController::class)->name('settings.usage');
+    Route::get('/settings/security', [WorkspaceSettingsController::class, 'security'])->name('settings.security');
+    Route::patch('/settings/security', [WorkspaceSettingsController::class, 'updateSecurity'])->name('settings.security.update');
     Route::get('/settings/audit-log/export', [AuditLogController::class, 'export'])->name('settings.audit-log.export');
     Route::post('/settings/members/invitations', [WorkspaceSettingsController::class, 'invite'])->name('settings.invitations.store')->middleware('throttle:invites');
     Route::post('/settings/members/invitations/{invitation}/resend', [WorkspaceSettingsController::class, 'resend'])->name('settings.invitations.resend')->whereNumber('invitation')->middleware('throttle:invites');

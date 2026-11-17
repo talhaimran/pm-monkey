@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
+use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -34,15 +36,19 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Attempt to authenticate the request's credentials.
+     * Check the credentials and sign in, unless the user has two-factor on: then nobody is signed in yet and the
+     * user is returned for the challenge (spec 7.0e).
      *
      * @throws ValidationException
      */
-    public function authenticate(): void
+    public function authenticate(): ?User
     {
         $this->ensureIsNotRateLimited();
+        $credentials = $this->only('email', 'password');
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        if (! Auth::validate($credentials)) {
+            // validate() doesn't fire Failed the way attempt() does; the audit log listens for it.
+            event(new Failed('web', Auth::getLastAttempted(), $credentials));
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -51,6 +57,13 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+        $user = Auth::getLastAttempted();
+        if ($user->hasEnabledTwoFactorAuthentication()) {
+            return $user;
+        }
+        Auth::login($user, $this->boolean('remember'));
+
+        return null;
     }
 
     /**

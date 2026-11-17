@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
+use Laravel\Fortify\Http\Controllers\TwoFactorAuthenticatedSessionController;
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
@@ -33,6 +34,14 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
+
+    // Spec 7.0e: Fortify's challenge after the password (E12: Fortify's other routes stay off).
+    Route::get('two-factor-challenge', [TwoFactorAuthenticatedSessionController::class, 'create'])
+        ->name('two-factor.login');
+
+    Route::post('two-factor-challenge', [TwoFactorAuthenticatedSessionController::class, 'store'])
+        ->middleware('throttle:two-factor')
+        ->name('two-factor.login.store');
 });
 
 Route::middleware('auth')->group(function () {

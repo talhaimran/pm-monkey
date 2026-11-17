@@ -11,10 +11,14 @@ use App\Services\CurrentWorkspace;
 use App\Services\InvitationService;
 use App\Services\IssueService;
 use App\Services\ProjectService;
+use App\Services\TwoFactorService;
 use App\Services\WorkspaceService;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
+use Laravel\Fortify\Fortify;
 use Laravel\Sanctum\Sanctum;
+use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
 /*
@@ -165,4 +169,20 @@ function apiAs(User $user, array $abilities = ['read', 'write']): User
     Sanctum::actingAs($user, $abilities);
 
     return $user;
+}
+
+/** The current code for $user's secret. Fortify refuses a code twice in its window, so tests clear its cache between uses. */
+function otp(User $user): string
+{
+    return (new Google2FA)->getCurrentOtp(Fortify::currentEncrypter()->decrypt($user->fresh()->two_factor_secret));
+}
+
+/** @return list<string> the recovery codes */
+function enableTwoFactor(User $user): array
+{
+    app(TwoFactorService::class)->enable($user);
+    $codes = app(TwoFactorService::class)->confirm($user->fresh(), otp($user));
+    Cache::flush();
+
+    return $codes;
 }
