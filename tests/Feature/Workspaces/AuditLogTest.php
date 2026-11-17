@@ -289,3 +289,18 @@ test('AuditLogger keeps the target label when the target is gone', function () {
     app(AuditLogger::class)->log('workspace.updated', $this->ws);
     expect(audits('workspace.updated')->last()->target_type)->toBe('workspace');
 });
+
+test('the Who filter lists former members who still have entries here, but not people from other workspaces', function () {
+    $former = User::factory()->create(['name' => 'Former Fay']);
+    $this->ws->addMember($former, WorkspaceRole::Admin);
+    $this->actingAs($former);
+    app(TokenService::class)->create($former, 'old token', false, null);
+    app(WorkspaceMemberService::class)->remove($this->ws, $this->owner, $former);
+    makeWorkspace(User::factory()->create(['name' => 'Stranger']), 'other');
+    useWorkspace($this->ws);
+
+    $this->actingAs($this->owner)->get('/acme/settings/audit-log')->assertInertia(fn (Assert $page) => $page
+        ->where('actors', [['id' => $former->id, 'name' => 'Former Fay'], ['id' => $this->owner->id, 'name' => 'Olive']]));
+    $this->actingAs($this->owner)->get("/acme/settings/audit-log?actor={$former->id}")->assertInertia(fn (Assert $page) => $page
+        ->where('entries.data', fn ($rows) => collect($rows)->pluck('action')->all() === ['token.created']));
+});
