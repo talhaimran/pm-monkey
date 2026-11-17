@@ -2,6 +2,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import SocialButtons from '@/Components/SocialButtons';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { slugify } from '@/slug';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -11,6 +12,7 @@ interface Props {
     invitation: { token: string; email: string; workspace: string } | null;
     createsWorkspace: boolean;
     closedMessage: string | null;
+    socialProviders: string[];
 }
 
 // Spec 7.0a: an invitation joins its workspace; on Cloud you otherwise name a new one; self-hosted closes after the first user.
@@ -18,6 +20,7 @@ export default function Register({
     invitation,
     createsWorkspace,
     closedMessage,
+    socialProviders,
 }: Props) {
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
@@ -231,6 +234,7 @@ export default function Register({
                     </div>
                 </form>
             )}
+            {!closedMessage && <SocialButtons providers={socialProviders} />}
         </GuestLayout>
     );
 }

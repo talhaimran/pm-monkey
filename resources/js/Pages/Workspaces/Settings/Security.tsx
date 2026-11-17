@@ -6,9 +6,30 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
-/** Spec 7.0e: require two-factor for everyone in the workspace. Sign-in methods arrive with Google and GitHub sign-in. */
-export default function Security({ require2fa, members, membersWithout2fa }: { require2fa: boolean; members: number; membersWithout2fa: number }) {
+/** Spec 7.0e and 7.0f: require two-factor, and choose which sign-in methods may enter the workspace. */
+const methods = [
+    ['password', 'Password'],
+    ['google', 'Google'],
+    ['github', 'GitHub'],
+] as const;
+
+export default function Security({
+    require2fa,
+    members,
+    membersWithout2fa,
+    signInMethods,
+    configured,
+}: {
+    require2fa: boolean;
+    members: number;
+    membersWithout2fa: number;
+    signInMethods: string[];
+    configured: string[];
+}) {
     const form = useForm({ require_2fa: require2fa });
+    const signIn = useForm({ sign_in_methods: signInMethods });
+    const toggle = (m: string, on: boolean) =>
+        signIn.setData('sign_in_methods', on ? [...signIn.data.sign_in_methods, m] : signIn.data.sign_in_methods.filter((x) => x !== m));
     const save: FormEventHandler = (e) => {
         e.preventDefault();
         form.patch(route('settings.security.update'), { preserveScroll: true });
@@ -47,6 +68,32 @@ export default function Security({ require2fa, members, membersWithout2fa }: { r
                         <InputError message={form.errors.require_2fa} />
                         <div className="flex justify-end">
                             <PrimaryButton disabled={form.processing || !form.isDirty}>Save changes</PrimaryButton>
+                        </div>
+                    </form>
+                </section>
+
+                <section className="rounded-card bg-card p-5 shadow sm:p-6">
+                    <h2 className="text-lg text-text">Sign-in methods</h2>
+                    <p className="mt-1 text-sm text-muted">People signed in another way can’t open this workspace until they sign in with one of these.</p>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            signIn.patch(route('settings.sign-in-methods.update'), { preserveScroll: true });
+                        }}
+                        className="mt-4 space-y-3"
+                    >
+                        {methods.map(([m, label]) => (
+                            <label key={m} className="flex min-h-control-h items-center gap-3">
+                                <Checkbox checked={signIn.data.sign_in_methods.includes(m)} onChange={(e) => toggle(m, e.target.checked)} />
+                                <span className="text-md text-text">
+                                    {label}
+                                    {m !== 'password' && !configured.includes(m) && <span className="block text-sm text-muted">Not set up on this install yet.</span>}
+                                </span>
+                            </label>
+                        ))}
+                        <InputError message={signIn.errors.sign_in_methods} />
+                        <div className="flex justify-end">
+                            <PrimaryButton disabled={signIn.processing || !signIn.isDirty}>Save changes</PrimaryButton>
                         </div>
                     </form>
                 </section>

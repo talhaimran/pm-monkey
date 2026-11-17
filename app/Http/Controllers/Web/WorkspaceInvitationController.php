@@ -21,8 +21,8 @@ class WorkspaceInvitationController extends Controller
         $invitation = $this->invitations->findByToken($token);
         $error = $this->invitations->refusal($invitation, $request->user());
         if (! $request->user()) {
-            // After logging in, come back here to accept.
-            $request->session()->put('url.intended', $request->fullUrl());
+            // After logging in, come back here to accept; a provider sign-up can join with the token.
+            $request->session()->put(['url.intended' => $request->fullUrl(), 'invitation.token' => $token]);
         }
 
         return Inertia::render('Invitations/Show', [

@@ -5,10 +5,12 @@ namespace App\Http\Middleware;
 use App\Http\Controllers\Web\WorkspaceController;
 use App\Models\Workspace;
 use App\Services\CurrentWorkspace;
+use App\Services\SocialSignInService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -41,6 +43,16 @@ class ResolveWorkspace
 
         if ($workspace->deletion_scheduled_at) {
             return WorkspaceController::scheduled($workspace, $user)->toResponse($request)->setStatusCode(403);
+        }
+
+        // Spec 7.0f: only sessions made with a method this workspace allows. Sessions from before step 0 PR 7 were passwords.
+        $allowed = $workspace->setting('sign_in_methods');
+        if (! in_array($request->session()->get('auth.method', 'password'), $allowed, true)) {
+            return Inertia::render('Workspaces/NoAccess', [
+                'message' => "{$workspace->name} allows sign-in with ".SocialSignInService::describe($allowed).'. Sign out, then sign in that way.',
+                'canCreate' => false,
+                'restoreUrl' => null,
+            ])->toResponse($request)->setStatusCode(403);
         }
 
         $this->current->set($workspace);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Services\MembershipService;
+use App\Services\SocialSignInService;
 use App\Services\TwoFactorService;
 use App\Services\WorkspaceMemberService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -30,6 +31,12 @@ class ProfileController extends Controller
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
+            // Spec 7.0f: sign-in methods; a password counts only once one is set.
+            'signIn' => [
+                'hasPassword' => $user->hasPassword(),
+                'providers' => app(SocialSignInService::class)->configured(),
+                'linked' => $user->socialAccounts()->pluck('email', 'provider'),
+            ],
             'twoFactor' => [
                 'enabled' => $user->hasEnabledTwoFactorAuthentication(),
                 'pending' => (bool) $pending,

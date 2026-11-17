@@ -66,6 +66,28 @@ It also creates project **WEB** (about 30 issues, labels, epics, sub-tasks, an a
 | `PM_INVITE_RATE_LIMIT` | `30` | Invitation emails per hour per user (web and API). |
 | `PM_MCP_TOKEN` | — | Token the stdio MCP server acts as. Usually set in the MCP client's config, not `.env`. |
 
+## Google and GitHub sign-in
+
+Both are optional. A provider's button appears only once its client id and secret are set; leave them empty to hide it.
+
+**Google**
+1. In the [Google Cloud console](https://console.cloud.google.com/apis/credentials), create an OAuth client ID of type *Web application*.
+2. Add `APP_URL/auth/google/callback` (for example `http://localhost:8000/auth/google/callback`) as an authorised redirect URI.
+3. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`.
+
+**GitHub**
+1. In GitHub, go to *Settings → Developer settings → OAuth Apps → New OAuth App*.
+2. Set the callback URL to `APP_URL/auth/github/callback`.
+3. Set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` in `.env`.
+
+How it behaves:
+- A provider account links to an existing user only through a **verified** email that matches. For GitHub that means the primary verified email.
+- New people follow the usual sign-up rules: on Cloud they get their own workspace; on self-hosted they need an invitation, unless they're the first person to sign up.
+- Two-factor authentication still applies after a provider sign-in.
+- Workspace Owners and Admins can limit which sign-in methods may enter, under *Workspace settings → Security*.
+- Someone who signed up with a provider has no password until they set one with *Forgot your password?*.
+- Nobody can unlink their last way to sign in.
+
 ## Running
 
 ```bash

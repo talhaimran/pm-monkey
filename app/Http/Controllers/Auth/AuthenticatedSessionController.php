@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\SocialSignInService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,7 @@ class AuthenticatedSessionController extends Controller
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
+            'socialProviders' => app(SocialSignInService::class)->configured(),
         ]);
     }
 
@@ -30,6 +32,7 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         // Two-factor users finish at Fortify's challenge, which reads login.id and signs them in.
+        $request->session()->put('auth.method', 'password');
         if ($user = $request->authenticate()) {
             $request->session()->put(['login.id' => $user->getKey(), 'login.remember' => $request->boolean('remember')]);
 

@@ -15,11 +15,13 @@ use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use App\Services\CurrentWorkspace;
 use App\Services\InvitationService;
+use App\Services\SocialSignInService;
 use App\Services\WorkspaceMemberService;
 use App\Services\WorkspaceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -80,6 +82,8 @@ class WorkspaceSettingsController extends Controller
             'require2fa' => (bool) $workspace->setting('require_2fa'),
             'members' => $workspace->members()->count(),
             'membersWithout2fa' => $workspace->members()->whereNull('two_factor_confirmed_at')->count(),
+            'signInMethods' => array_values($workspace->setting('sign_in_methods')),
+            'configured' => app(SocialSignInService::class)->configured(),
         ]);
     }
 
@@ -93,6 +97,26 @@ class WorkspaceSettingsController extends Controller
             throw ValidationException::withMessages(['require_2fa' => 'Turn on two-factor authentication for your own account first, or you would be locked out.']);
         }
         $this->workspaces->updateSettings($workspace, ['require_2fa' => (bool) $on]);
+
+        return back();
+    }
+
+    /** Spec 7.0f: which sign-in methods may enter; at least one, and never the one this session used. */
+    public function updateSignInMethods(Request $request): RedirectResponse
+    {
+        $workspace = $this->current->get();
+        Gate::authorize('manageSecurity', $workspace);
+        $all = ['password', ...array_keys(SocialSignInService::PROVIDERS)];
+        $methods = $request->validate([
+            'sign_in_methods' => ['required', 'array', 'min:1'],
+            'sign_in_methods.*' => ['string', Rule::in($all)],
+        ], ['sign_in_methods.required' => 'Keep at least one way to sign in.', 'sign_in_methods.min' => 'Keep at least one way to sign in.'])['sign_in_methods'];
+        $mine = $request->session()->get('auth.method', 'password');
+        if (! in_array($mine, $methods, true)) {
+            $how = $mine === 'password' ? 'a password' : SocialSignInService::PROVIDERS[$mine];
+            throw ValidationException::withMessages(['sign_in_methods' => "You signed in with {$how}. Keep it on, or sign in another way first."]);
+        }
+        $this->workspaces->updateSettings($workspace, ['sign_in_methods' => array_values(array_intersect($all, $methods))]);
 
         return back();
     }
