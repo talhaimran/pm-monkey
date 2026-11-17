@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Web\AuditLogController;
 use App\Http\Controllers\Web\BoardController;
 use App\Http\Controllers\Web\InvitationController;
 use App\Http\Controllers\Web\IssueController;
@@ -61,6 +62,8 @@ Route::prefix('{workspace}')->where(['workspace' => '[a-z0-9-]{3,40}'])->middlew
     Route::patch('/settings/general', [WorkspaceSettingsController::class, 'update'])->name('settings.general.update');
     Route::delete('/settings/general', [WorkspaceSettingsController::class, 'destroy'])->name('settings.destroy');
     Route::get('/settings/members', [WorkspaceSettingsController::class, 'members'])->name('settings.members');
+    Route::get('/settings/audit-log', [AuditLogController::class, 'index'])->name('settings.audit-log');
+    Route::get('/settings/audit-log/export', [AuditLogController::class, 'export'])->name('settings.audit-log.export');
     Route::post('/settings/members/invitations', [WorkspaceSettingsController::class, 'invite'])->name('settings.invitations.store')->middleware('throttle:invites');
     Route::post('/settings/members/invitations/{invitation}/resend', [WorkspaceSettingsController::class, 'resend'])->name('settings.invitations.resend')->whereNumber('invitation')->middleware('throttle:invites');
     Route::delete('/settings/members/invitations/{invitation}', [WorkspaceSettingsController::class, 'revoke'])->name('settings.invitations.destroy')->whereNumber('invitation');

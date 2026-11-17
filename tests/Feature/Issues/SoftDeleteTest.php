@@ -12,6 +12,7 @@ use App\Mcp\Tools\MyIssues;
 use App\Mcp\Tools\ProjectSummary;
 use App\Mcp\Tools\SearchIssues;
 use App\Models\Activity;
+use App\Models\AuditLog;
 use App\Models\Comment;
 use App\Models\Issue;
 use App\Models\User;
@@ -20,7 +21,6 @@ use App\Services\CommentService;
 use App\Services\IssueService;
 use App\Services\ProjectService;
 use App\Services\SprintService;
-use Illuminate\Support\Facades\Log;
 use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
@@ -201,7 +201,6 @@ test('deleted_at cannot be set through issue input', function () {
 });
 
 test('issues:purge removes what was deleted more than 30 days ago and logs it', function () {
-    Log::spy();
     $old = makeIssue($this->project, $this->admin, ['title' => 'Old']);
     $recent = makeIssue($this->project, $this->admin, ['title' => 'Recent']);
     $kept = makeIssue($this->project, $this->admin, ['title' => 'Kept']);
@@ -218,7 +217,8 @@ test('issues:purge removes what was deleted more than 30 days ago and logs it', 
 
     expect(Issue::withTrashed()->pluck('title')->all())->toEqual(['Recent', 'Kept'])
         ->and(Comment::withTrashed()->count())->toBe(0);
-    Log::shouldHaveReceived('info')->once()->withArgs(fn ($message, $context) => $message === 'issue.purged' && $context['key'] === 'WEB-1');
+    // E8: purges are recorded in the audit log (step 0 PR 4), by key.
+    expect(AuditLog::where('action', 'issue.purged')->pluck('target_label')->all())->toBe(['WEB-1']);
 });
 
 test('deleting a project removes its live and deleted issues for good', function () {

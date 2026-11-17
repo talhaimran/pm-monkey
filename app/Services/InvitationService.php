@@ -18,6 +18,8 @@ use Illuminate\Validation\ValidationException;
 /** Workspace invitations (spec 7.0a): 14 days, emailed token stored hashed, one per workspace and email. */
 class InvitationService
 {
+    public function __construct(private AuditLogger $audit) {}
+
     public const DAYS = 14;
 
     public const GONE = 'This invitation is no longer valid. Ask an admin to invite you again.';
@@ -61,6 +63,9 @@ class InvitationService
             ],
         );
         $this->send($invitation, $token);
+        $this->audit->log('member.invited', $invitation, array_filter([
+            'role' => $role->value, 'project' => $project?->key, 'project_role' => $invitation->project_role?->value,
+        ]), $workspace, $inviter);
 
         return $invitation;
     }
@@ -76,6 +81,7 @@ class InvitationService
     public function revoke(WorkspaceInvitation $invitation): void
     {
         $invitation->delete();
+        $this->audit->log('member.invitation_revoked', $invitation, [], $invitation->workspace()->first());
     }
 
     public function findByToken(string $token): ?WorkspaceInvitation
@@ -107,10 +113,12 @@ class InvitationService
                 throw ValidationException::withMessages(['invitation' => $reason]);
             }
 
-            if (! $user->workspaceRole($locked->workspace)) {
-                $locked->workspace->addMember($user, $locked->role);
+            $role = $user->workspaceRole($locked->workspace);
+            if (! $role) {
+                $locked->workspace->addMember($user, $role = $locked->role);
             }
             $locked->project?->members()->syncWithoutDetaching([$user->id => ['role' => $locked->project_role->value]]);
+            $this->audit->log('member.joined', $user, array_filter(['role' => $role->value, 'project' => $locked->project?->key]), $locked->workspace, $user);
             $user->forceFill(['current_workspace_id' => $locked->workspace_id])->save();
             $locked->delete();
 

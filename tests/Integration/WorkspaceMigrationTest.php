@@ -125,7 +125,8 @@ test('rolling back restores the pre-step-0 shape, invitations included', functio
     DB::table('project_invitations')->insert(['project_id' => $project, 'email' => 'new@example.com', 'role' => 'viewer', 'invited_by' => $owner, 'created_at' => $now, 'updated_at' => $now]);
     Artisan::call('migrate', ['--force' => true]);
 
-    expect(Artisan::call('migrate:rollback', ['--step' => 4, '--force' => true]))->toBe(0);
+    // Every step 0 migration ran in that one batch, so rolling back the batch undoes all of them.
+    expect(Artisan::call('migrate:rollback', ['--force' => true]))->toBe(0);
 
     expect(Schema::hasTable('workspaces'))->toBeFalse()
         ->and(Schema::hasColumn('projects', 'workspace_id'))->toBeFalse()
