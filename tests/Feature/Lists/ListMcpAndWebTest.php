@@ -28,7 +28,7 @@ test('list page renders with filters and sort', function () {
     makeIssue($this->project, $this->me, ['title' => 'Alpha', 'type' => 'bug']);
     makeIssue($this->project, $this->me, ['title' => 'Beta']);
 
-    $this->actingAs($this->me)->get('/projects/WEB/issues?type=bug&sort=title')
+    $this->actingAs($this->me)->get(w('/projects/WEB/issues?type=bug&sort=title'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Projects/Issues')
@@ -41,8 +41,8 @@ test('list page renders with filters and sort', function () {
 test('search page jumps to exact keys and lists other matches', function () {
     makeIssue($this->project, $this->me, ['title' => 'Login']);
 
-    $this->actingAs($this->me)->get('/search?q=web-1')->assertRedirect('/issues/WEB-1');
-    $this->actingAs($this->me)->get('/search?q=log')
+    $this->actingAs($this->me)->get(w('/search?q=web-1'))->assertRedirect(w('/issues/WEB-1'));
+    $this->actingAs($this->me)->get(w('/search?q=log'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page->component('Search')->where('issues.data.0.key', 'WEB-1'));
 });
@@ -50,7 +50,7 @@ test('search page jumps to exact keys and lists other matches', function () {
 test('dashboard shows my issues and project summaries', function () {
     makeIssue($this->project, $this->me, ['assignee' => 'me@example.com']);
 
-    $this->actingAs($this->me)->get('/dashboard')
+    $this->actingAs($this->me)->get(w('/dashboard'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Dashboard')

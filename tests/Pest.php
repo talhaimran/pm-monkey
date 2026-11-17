@@ -8,8 +8,8 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use App\Services\CurrentWorkspace;
+use App\Services\InvitationService;
 use App\Services\IssueService;
-use App\Services\MembershipService;
 use App\Services\ProjectService;
 use App\Services\WorkspaceService;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
@@ -66,6 +66,11 @@ expect()->extend('toBeOne', function () {
 /** A workspace owned by $owner, made current for service calls and for the owner's web requests. */
 function makeWorkspace(User $owner, string $slug): Workspace
 {
+    // Only Cloud allows a second workspace.
+    if (Workspace::exists()) {
+        config(['pm.edition' => 'cloud']);
+    }
+
     return useWorkspace(app(WorkspaceService::class)->create($owner, ucfirst($slug), $slug), $owner);
 }
 
@@ -123,7 +128,15 @@ function addMember(Project $project, User $user, ProjectRole $role): User
 /** A pending invitation to $project, as a project admin sends it. */
 function makeInvitation(Project $project, User $inviter, string $email, string $role): WorkspaceInvitation
 {
-    return app(MembershipService::class)->invite($project, $inviter, $email, ProjectRole::from($role));
+    return app(InvitationService::class)->invite($project->workspace, $inviter, $email, WorkspaceRole::Member, $project, ProjectRole::from($role));
+}
+
+/** E10: a web path inside the test's workspace, e.g. w('/projects/WEB') → '/ws-1/projects/WEB'. */
+function w(string $path): string
+{
+    $current = app(CurrentWorkspace::class);
+
+    return '/'.($current->id() ? $current->get() : Workspace::orderBy('id')->firstOrFail())->slug.$path;
 }
 
 function makeIssue(Project $project, User $reporter, array $data = []): Issue

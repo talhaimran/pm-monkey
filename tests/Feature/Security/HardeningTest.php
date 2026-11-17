@@ -13,7 +13,9 @@ test('unverified accounts cannot accept invitations, verified ones can', functio
     $project = makeProject($owner);
     $invitation = makeInvitation($project, $owner, 'cfo@victim.test', 'admin');
 
-    $this->post('/register', ['name' => 'Attacker', 'email' => 'cfo@victim.test', 'password' => 'password123', 'password_confirmation' => 'password123']);
+    // Cloud: anyone can sign up (with their own workspace), so an unverified account with the invited address can exist.
+    config(['pm.edition' => 'cloud']);
+    $this->post('/register', ['name' => 'Attacker', 'email' => 'cfo@victim.test', 'password' => 'password123', 'password_confirmation' => 'password123', 'workspace_name' => 'Attacker']);
     $user = User::where('email', 'cfo@victim.test')->sole();
 
     $this->post("/invitations/{$invitation->id}/accept")->assertForbidden();
@@ -55,7 +57,7 @@ test('invitations are rate limited per user', function () {
         ->assertStatus(429)
         ->assertJsonPath('message', fn ($m) => str_contains($m, 'invitations'));
 
-    $this->actingAs($admin)->post('/projects/WEB/invitations', ['email' => 'd@x.test', 'role' => 'member'])
+    $this->actingAs($admin)->post(w('/projects/WEB/invitations'), ['email' => 'd@x.test', 'role' => 'member'])
         ->assertRedirect()
         ->assertSessionHasErrors('email');
     Mail::assertSent(ProjectInvitationMail::class, 2);
@@ -65,18 +67,18 @@ test('tokens can expire and expired tokens are rejected', function () {
     $me = User::factory()->create();
     makeProject($me);
 
-    $this->actingAs($me)->post('/settings/tokens', ['name' => 'ci', 'access' => 'read', 'expires_in_days' => 30])->assertRedirect();
+    $this->actingAs($me)->post(w('/settings/tokens'), ['name' => 'ci', 'access' => 'read', 'expires_in_days' => 30])->assertRedirect();
     $token = PersonalAccessToken::sole();
     expect($token->expires_at->isSameDay(now()->addDays(30)))->toBeTrue();
 
-    $this->actingAs($me)->post('/settings/tokens', ['name' => 'bad', 'access' => 'read', 'expires_in_days' => 5000])
+    $this->actingAs($me)->post(w('/settings/tokens'), ['name' => 'bad', 'access' => 'read', 'expires_in_days' => 5000])
         ->assertSessionHasErrors('expires_in_days');
 
     $expired = $me->createToken('old', ['read'], now()->subMinute())->plainTextToken;
     app('auth')->forgetGuards(); // drop the web-session user set by actingAs; real API calls have no session
     $this->withToken($expired)->getJson('/api/v1/projects')->assertUnauthorized();
 
-    $this->actingAs($me)->get('/settings/tokens')->assertInertia(fn ($page) => $page
+    $this->actingAs($me)->get(w('/settings/tokens'))->assertInertia(fn ($page) => $page
         ->where('tokens', fn ($tokens) => collect($tokens)->firstWhere('name', 'ci')['expires_at'] !== null));
 });
 

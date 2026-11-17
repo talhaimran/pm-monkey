@@ -1,8 +1,11 @@
 <?php
 
 use App\Enums\ProjectRole;
+use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
+use App\Services\CurrentWorkspace;
+use App\Services\InvitationService;
 use Illuminate\Support\Facades\Mail;
 
 // Claude Security scan of step 0 PR 1: findings F1/F2 (retargeting another project's invitation) and F3/F4 (expiry not enforced).
@@ -47,4 +50,22 @@ test('an expired invitation cannot be accepted', function () {
 
     expect($carol->fresh()->workspaces()->exists())->toBeFalse()
         ->and($project->members()->where('users.id', $carol->id)->exists())->toBeFalse();
+});
+
+// Step 0 PR 2 review: the same takeover through a workspace-level invitation (no project), e.g. an Owner inviting an Admin.
+test('a project admin cannot overwrite a pending workspace-level invitation', function () {
+    $owner = User::factory()->create();
+    makeProject($owner, 'SEC');
+    $workspace = app(CurrentWorkspace::class)->get();
+    app(InvitationService::class)->invite($workspace, $owner, 'dana@example.com', WorkspaceRole::Admin);
+
+    $mallory = User::factory()->create();
+    makeProject($mallory, 'MAL');
+
+    apiAs($mallory);
+    $this->postJson('/api/v1/projects/MAL/invitations', ['email' => 'dana@example.com', 'role' => 'viewer'])
+        ->assertStatus(422)->assertJsonValidationErrors('email');
+
+    $invitation = WorkspaceInvitation::sole();
+    expect($invitation->role)->toBe(WorkspaceRole::Admin)->and($invitation->project_id)->toBeNull();
 });

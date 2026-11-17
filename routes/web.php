@@ -10,6 +10,8 @@ use App\Http\Controllers\Web\ProjectController;
 use App\Http\Controllers\Web\ProjectMemberController;
 use App\Http\Controllers\Web\SprintController;
 use App\Http\Controllers\Web\TokenController;
+use App\Http\Controllers\Web\WorkspaceController;
+use App\Http\Controllers\Web\WorkspaceInvitationController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -23,12 +25,30 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', [IssueListController::class, 'dashboard'])->middleware(['auth', 'verified'])->name('dashboard');
+// Before the /{workspace} routes, so a slug pattern never shadows them.
+require __DIR__.'/auth.php';
+
+// The emailed link: anyone can open it; accepting needs the invited address signed in.
+Route::get('/invitations/{token}', [WorkspaceInvitationController::class, 'show'])->name('invitations.show')->where('token', '[A-Za-z0-9]{40}');
+Route::post('/invitations/{token}', [WorkspaceInvitationController::class, 'join'])->name('invitations.join')->where('token', '[A-Za-z0-9]{40}')->middleware('auth');
 
 Route::middleware('auth')->group(function () {
+    // Profile and the account stay global (D10); everything else lives under /{workspace}.
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('/invitations/{invitation}/accept', [InvitationController::class, 'accept'])->name('invitations.accept')->whereNumber('invitation');
+
+    Route::get('/workspaces/create', [WorkspaceController::class, 'create'])->name('workspaces.create');
+    Route::post('/workspaces', [WorkspaceController::class, 'store'])->name('workspaces.store');
+    Route::get('/workspaces/no-access', [WorkspaceController::class, 'noAccess'])->name('workspaces.no-access');
+
+    // E3: the old unprefixed pages redirect into the current workspace.
+    Route::get('/{legacy}', [WorkspaceController::class, 'legacy'])->where('legacy', '(dashboard|search|projects|issues/.+|projects/.+|settings/tokens)');
+});
+
+Route::prefix('{workspace}')->where(['workspace' => '[a-z0-9-]{3,40}'])->middleware(['auth', 'workspace'])->group(function () {
+    Route::get('/dashboard', [IssueListController::class, 'dashboard'])->middleware('verified')->name('dashboard');
 
     Route::get('/settings/tokens', [TokenController::class, 'index'])->name('tokens.index');
     Route::post('/settings/tokens', [TokenController::class, 'store'])->name('tokens.store');
@@ -47,7 +67,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/issues/{key}/comments', [IssueController::class, 'comment'])->name('issues.comments.store');
     Route::patch('/comments/{comment}', [IssueController::class, 'updateComment'])->name('comments.update');
     Route::delete('/comments/{comment}', [IssueController::class, 'destroyComment'])->name('comments.destroy');
-    Route::post('/invitations/{invitation}/accept', [InvitationController::class, 'accept'])->name('invitations.accept');
 
     Route::prefix('/projects/{project:key}')->name('projects.')->group(function () {
         Route::get('/', [BoardController::class, 'show'])->name('show');
@@ -74,5 +93,3 @@ Route::middleware('auth')->group(function () {
         Route::delete('/members/{user}', [ProjectMemberController::class, 'destroy'])->name('members.destroy');
     });
 });
-
-require __DIR__.'/auth.php';

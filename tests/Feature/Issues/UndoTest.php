@@ -35,7 +35,7 @@ test('undo of a board move returns the issue to its column and position', functi
         makeIssue($this->project, $this->admin);
     }
 
-    $this->post('/issues/WEB-2/move', ['status' => 'Done', 'position' => 0])->assertRedirect();
+    $this->post(w('/issues/WEB-2/move'), ['status' => 'Done', 'position' => 0])->assertRedirect();
     expect(session('undo.message'))->toBe('WEB-2 moved to Done');
     expect($order('To Do'))->toBe([1, 3]);
 
@@ -51,7 +51,7 @@ test('undo of a reorder inside a column puts the issue back first', function () 
         makeIssue($this->project, $this->admin);
     }
 
-    $this->post('/issues/WEB-1/move', ['after' => 'WEB-3'])->assertRedirect();
+    $this->post(w('/issues/WEB-1/move'), ['after' => 'WEB-3'])->assertRedirect();
     expect($order('To Do'))->toBe([2, 3, 1]);
 
     sendUndo($this)->assertSessionHasNoErrors();
@@ -61,7 +61,7 @@ test('undo of a reorder inside a column puts the issue back first', function () 
 test('undo of a status change from the issue page', function () {
     makeIssue($this->project, $this->admin);
 
-    $this->patch('/issues/WEB-1', ['status' => 'In Review'])->assertRedirect();
+    $this->patch(w('/issues/WEB-1'), ['status' => 'In Review'])->assertRedirect();
     expect(session('undo.message'))->toBe('WEB-1 moved to In Review');
 
     sendUndo($this)->assertSessionHasNoErrors();
@@ -73,7 +73,7 @@ test('undo of field edits restores the exact previous values', function () {
     app(LabelService::class)->create($this->project, ['name' => 'ux', 'color' => '#111111']);
     makeIssue($this->project, $this->admin, ['title' => 'Before', 'description' => $long, 'assignee' => 'sam@example.com', 'labels' => ['ux'], 'story_points' => 3]);
 
-    $this->patch('/issues/WEB-1', ['title' => 'After', 'description' => 'Short', 'assignee' => null, 'labels' => [], 'story_points' => 8])->assertRedirect();
+    $this->patch(w('/issues/WEB-1'), ['title' => 'After', 'description' => 'Short', 'assignee' => null, 'labels' => [], 'story_points' => 8])->assertRedirect();
     expect(session('undo.message'))->toBe('WEB-1 updated');
 
     sendUndo($this)->assertSessionHasNoErrors();
@@ -89,7 +89,7 @@ test('undo of field edits restores the exact previous values', function () {
 test('an update that changes nothing offers no undo', function () {
     makeIssue($this->project, $this->admin, ['title' => 'Same']);
 
-    $this->patch('/issues/WEB-1', ['title' => 'Same'])->assertRedirect();
+    $this->patch(w('/issues/WEB-1'), ['title' => 'Same'])->assertRedirect();
 
     expect(session('undo'))->toBeNull();
 });
@@ -97,7 +97,7 @@ test('an update that changes nothing offers no undo', function () {
 test('undo of a delete restores the issue', function () {
     makeIssue($this->project, $this->admin);
 
-    $this->delete('/issues/WEB-1', ['confirm' => true])->assertRedirect();
+    $this->delete(w('/issues/WEB-1'), ['confirm' => true])->assertRedirect();
     expect(session('undo.message'))->toBe('WEB-1 deleted')->and(Issue::count())->toBe(0);
 
     sendUndo($this)->assertSessionHasNoErrors();
@@ -107,7 +107,7 @@ test('undo of a delete restores the issue', function () {
 test('undo of a comment delete restores the comment', function () {
     $comment = app(CommentService::class)->add(makeIssue($this->project, $this->admin), $this->admin, 'Hello');
 
-    $this->delete("/comments/{$comment->id}")->assertRedirect();
+    $this->delete(w("/comments/{$comment->id}"))->assertRedirect();
     expect(session('undo.message'))->toBe('Comment deleted')->and(Comment::count())->toBe(0);
 
     sendUndo($this)->assertSessionHasNoErrors();
@@ -116,7 +116,7 @@ test('undo of a comment delete restores the comment', function () {
 
 test('undo stops with a message when someone else changed the issue meanwhile', function () {
     $issue = makeIssue($this->project, $this->admin);
-    $this->post('/issues/WEB-1/move', ['status' => 'In Progress'])->assertRedirect();
+    $this->post(w('/issues/WEB-1/move'), ['status' => 'In Progress'])->assertRedirect();
     $undo = session('undo');
 
     app(IssueService::class)->update($issue->fresh(), $this->sam, ['status' => 'Done']);
@@ -127,7 +127,7 @@ test('undo stops with a message when someone else changed the issue meanwhile', 
 
 test('a comment by someone else does not block undo', function () {
     $issue = makeIssue($this->project, $this->admin);
-    $this->patch('/issues/WEB-1', ['title' => 'Renamed'])->assertRedirect();
+    $this->patch(w('/issues/WEB-1'), ['title' => 'Renamed'])->assertRedirect();
     $undo = session('undo');
 
     app(CommentService::class)->add($issue, $this->sam, 'Looks good');
@@ -138,7 +138,7 @@ test('a comment by someone else does not block undo', function () {
 
 test('undo into a column that was deleted meanwhile fails with the valid options', function () {
     makeIssue($this->project, $this->admin, ['status' => 'In Review']);
-    $this->post('/issues/WEB-1/move', ['status' => 'Done'])->assertRedirect();
+    $this->post(w('/issues/WEB-1/move'), ['status' => 'Done'])->assertRedirect();
     $undo = session('undo');
 
     app(ColumnService::class)->delete($this->project->columns()->where('name', 'In Review')->first(), null);
@@ -150,7 +150,7 @@ test('undo into a column that was deleted meanwhile fails with the valid options
 
 test('the same undo cannot run twice', function () {
     makeIssue($this->project, $this->admin);
-    $this->patch('/issues/WEB-1', ['title' => 'Renamed'])->assertRedirect();
+    $this->patch(w('/issues/WEB-1'), ['title' => 'Renamed'])->assertRedirect();
     $undo = session('undo');
 
     $this->patch($undo['url'], $undo['data'])->assertSessionHasNoErrors();
@@ -161,11 +161,11 @@ test('the same undo cannot run twice', function () {
 test('undo_of must be an activity of that issue', function () {
     makeIssue($this->project, $this->admin);
     makeIssue($this->project, $this->admin);
-    $this->patch('/issues/WEB-2', ['title' => 'Other'])->assertRedirect();
+    $this->patch(w('/issues/WEB-2'), ['title' => 'Other'])->assertRedirect();
     $other = session('undo.data.undo_of');
 
-    $this->patch('/issues/WEB-1', ['title' => 'Sneaky', 'undo_of' => $other])->assertSessionHasErrors('undo');
-    $this->patch('/issues/WEB-1', ['title' => 'Sneaky', 'undo_of' => 'abc'])->assertSessionHasErrors('undo_of');
+    $this->patch(w('/issues/WEB-1'), ['title' => 'Sneaky', 'undo_of' => $other])->assertSessionHasErrors('undo');
+    $this->patch(w('/issues/WEB-1'), ['title' => 'Sneaky', 'undo_of' => 'abc'])->assertSessionHasErrors('undo_of');
     expect(Issue::where('number', 1)->sole()->title)->toBe('Issue');
 });
 
@@ -180,7 +180,7 @@ test('the API input shape is unchanged: undo_of is ignored there', function () {
 
 test('a viewer cannot use an undo payload', function () {
     makeIssue($this->project, $this->admin);
-    $this->patch('/issues/WEB-1', ['title' => 'Renamed'])->assertRedirect();
+    $this->patch(w('/issues/WEB-1'), ['title' => 'Renamed'])->assertRedirect();
     $undo = session('undo');
     $viewer = addMember($this->project, User::factory()->create(), ProjectRole::Viewer);
 
@@ -196,12 +196,12 @@ test('undo of a backlog reorder and of a move into a sprint', function () {
     }
     $backlog = fn () => Issue::whereNull('sprint_id')->orderBy('rank')->pluck('number')->all();
 
-    $this->post('/issues/WEB-1/rank', ['after' => 'WEB-3'])->assertRedirect();
+    $this->post(w('/issues/WEB-1/rank'), ['after' => 'WEB-3'])->assertRedirect();
     expect($backlog())->toBe([2, 3, 1])->and(session('undo.message'))->toBe('WEB-1 moved');
     sendUndo($this)->assertSessionHasNoErrors();
     expect($backlog())->toBe([1, 2, 3]);
 
-    $this->post('/issues/WEB-2/rank', ['sprint' => 'S1', 'position' => 0])->assertRedirect();
+    $this->post(w('/issues/WEB-2/rank'), ['sprint' => 'S1', 'position' => 0])->assertRedirect();
     expect($backlog())->toBe([1, 3])->and(session('undo.message'))->toBe('WEB-2 moved to S1');
     sendUndo($this)->assertSessionHasNoErrors();
     expect($backlog())->toBe([1, 2, 3])
@@ -211,7 +211,7 @@ test('undo of a backlog reorder and of a move into a sprint', function () {
 test('undo of a backlog move stops when the issue changed meanwhile', function () {
     app(SprintService::class)->create($this->project, ['name' => 'S1']);
     $issue = makeIssue($this->project, $this->admin);
-    $this->post('/issues/WEB-1/rank', ['sprint' => 'S1'])->assertRedirect();
+    $this->post(w('/issues/WEB-1/rank'), ['sprint' => 'S1'])->assertRedirect();
     $undo = session('undo');
 
     app(IssueService::class)->update($issue->fresh(), $this->sam, ['title' => 'Edited by Sam']);

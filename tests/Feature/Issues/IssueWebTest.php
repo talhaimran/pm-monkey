@@ -12,7 +12,7 @@ beforeEach(function () {
 test('project board page includes create options', function () {
     makeIssue($this->project, $this->admin, ['title' => 'Hello']);
 
-    $this->actingAs($this->admin)->get('/projects/WEB')
+    $this->actingAs($this->admin)->get(w('/projects/WEB'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Projects/Board')
@@ -22,14 +22,14 @@ test('project board page includes create options', function () {
 });
 
 test('creating from the web redirects to the issue', function () {
-    $this->actingAs($this->admin)->post('/projects/WEB/issues', ['title' => 'Web issue'])
-        ->assertRedirect('/issues/WEB-1');
+    $this->actingAs($this->admin)->post(w('/projects/WEB/issues'), ['title' => 'Web issue'])
+        ->assertRedirect(w('/issues/WEB-1'));
 });
 
 test('issue page renders markdown safely', function () {
     makeIssue($this->project, $this->admin, ['description' => '**bold** <script>alert(1)</script> [x](javascript:alert(1))']);
 
-    $this->actingAs($this->admin)->get('/issues/WEB-1')
+    $this->actingAs($this->admin)->get(w('/issues/WEB-1'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Issues/Show')
@@ -43,7 +43,7 @@ test('issue page renders markdown safely', function () {
 test('web edits are logged as via web without a token name', function () {
     makeIssue($this->project, $this->admin);
 
-    $this->actingAs($this->admin)->patch('/issues/WEB-1', ['priority' => 'low'])->assertRedirect();
+    $this->actingAs($this->admin)->patch(w('/issues/WEB-1'), ['priority' => 'low'])->assertRedirect();
 
     $activity = Activity::where('action', 'updated')->sole();
     expect($activity->via)->toBe('web')->and($activity->token_name)->toBeNull();
@@ -52,6 +52,6 @@ test('web edits are logged as via web without a token name', function () {
 test('web comments and deletes', function () {
     makeIssue($this->project, $this->admin);
 
-    $this->actingAs($this->admin)->post('/issues/WEB-1/comments', ['body' => 'Nice'])->assertRedirect();
-    $this->actingAs($this->admin)->delete('/issues/WEB-1', ['confirm' => true])->assertRedirect('/projects/WEB');
+    $this->actingAs($this->admin)->post(w('/issues/WEB-1/comments'), ['body' => 'Nice'])->assertRedirect();
+    $this->actingAs($this->admin)->delete(w('/issues/WEB-1'), ['confirm' => true])->assertRedirect(w('/projects/WEB'));
 });

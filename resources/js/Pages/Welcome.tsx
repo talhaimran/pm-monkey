@@ -14,7 +14,7 @@ export default function Welcome({ auth }: PageProps) {
                 <p className="max-w-md text-muted">A calm, fast issue tracker where people and AI agents work the same board.</p>
                 <div className="flex gap-2">
                     {auth.user ? (
-                        <Link href={route('dashboard')} className={`${button} bg-primary text-on-primary`}>
+                        <Link href="/dashboard" className={`${button} bg-primary text-on-primary`}>
                             Open your work
                         </Link>
                     ) : (

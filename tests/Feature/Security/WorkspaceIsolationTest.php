@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ProjectRole;
+use App\Enums\WorkspaceRole;
 use App\Mcp\Servers\LocalPmServer;
 use App\Mcp\Servers\PmServer;
 use App\Mcp\Tools;
@@ -15,8 +16,8 @@ use App\Models\Workspace;
 use App\Services\ColumnService;
 use App\Services\CommentService;
 use App\Services\CurrentWorkspace;
+use App\Services\InvitationService;
 use App\Services\LabelService;
-use App\Services\MembershipService;
 use App\Services\SprintService;
 use App\Services\TokenService;
 use Illuminate\Support\Facades\Auth;
@@ -88,46 +89,46 @@ function isolationRouteCases(): array
         'POST api/v1/projects/{key}/sprints/{sprint}/start' => ['api/v1/projects/{P}/sprints/{SN}/start', []],
         'GET api/v1/projects/{key}/summary' => ['api/v1/projects/{P}/summary', []],
 
-        // Web, as ann signed in with workspace A current.
-        'PATCH comments/{comment}' => ['comments/{C}', ['body' => 'x']],
-        'DELETE comments/{comment}' => ['comments/{C}', []],
-        'POST comments/{comment}/restore' => ['comments/{C}/restore', []],
-        'GET dashboard' => ['dashboard', []],
-        'GET search' => ['search?q=secret', []],
-        'GET issues/{key}' => ['issues/{I}', []],
-        'PATCH issues/{key}' => ['issues/{I}', ['title' => 'x']],
-        'DELETE issues/{key}' => ['issues/{I}', []],
-        'POST issues/{key}/comments' => ['issues/{I}/comments', ['body' => 'x']],
-        'POST issues/{key}/move' => ['issues/{I}/move', ['status' => '{COLN}']],
-        'POST issues/{key}/rank' => ['issues/{I}/rank', ['sprint' => '{SN}']],
-        'POST issues/{key}/restore' => ['issues/{I}/restore', []],
-        'GET projects' => ['projects', []],
-        'POST projects' => ['projects', ['key' => '{P}', 'name' => 'x'], false],
-        'GET projects/{project}' => ['projects/{P}', []],
-        'PATCH projects/{project}' => ['projects/{P}', ['name' => 'x']],
-        'DELETE projects/{project}' => ['projects/{P}', $confirm],
-        'GET projects/{project}/backlog' => ['projects/{P}/backlog', []],
-        'POST projects/{project}/columns' => ['projects/{P}/columns', ['name' => 'x']],
-        'PATCH projects/{project}/columns/{column}' => ['projects/{P}/columns/{COL}', ['name' => 'x']],
-        'DELETE projects/{project}/columns/{column}' => ['projects/{P}/columns/{COL}', []],
-        'POST projects/{project}/invitations' => ['projects/{P}/invitations', ['email' => 'x@example.com', 'role' => 'member']],
-        'DELETE projects/{project}/invitations/{invitation}' => ['projects/{P}/invitations/{INV}', []],
-        'GET projects/{project}/issues' => ['projects/{P}/issues', []],
-        'POST projects/{project}/issues' => ['projects/{P}/issues', ['title' => 'x']],
-        'POST projects/{project}/labels' => ['projects/{P}/labels', ['name' => 'x']],
-        'PATCH projects/{project}/labels/{label}' => ['projects/{P}/labels/{L}', ['name' => 'x']],
-        'DELETE projects/{project}/labels/{label}' => ['projects/{P}/labels/{L}', []],
-        'PATCH projects/{project}/members/{user}' => ['projects/{P}/members/{U}', ['role' => 'viewer']],
-        'DELETE projects/{project}/members/{user}' => ['projects/{P}/members/{U}', []],
-        'GET projects/{project}/settings' => ['projects/{P}/settings', []],
-        'POST projects/{project}/sprints' => ['projects/{P}/sprints', []],
-        'PATCH projects/{project}/sprints/{sprint}' => ['projects/{P}/sprints/{S}', ['goal' => 'x']],
-        'DELETE projects/{project}/sprints/{sprint}' => ['projects/{P}/sprints/{S}', []],
-        'POST projects/{project}/sprints/{sprint}/complete' => ['projects/{P}/sprints/{S}/complete', ['confirm' => true, 'move_open_issues_to' => 'backlog']],
-        'POST projects/{project}/sprints/{sprint}/start' => ['projects/{P}/sprints/{S}/start', []],
-        'GET settings/tokens' => ['settings/tokens', []],
-        'POST settings/tokens' => ['settings/tokens', ['name' => 'x', 'access' => 'read', 'projects' => ['{P}']]],
-        'DELETE settings/tokens/{token}' => ['settings/tokens/{T}', []],
+        // Web, as ann signed in, inside workspace A's URL prefix.
+        'PATCH {workspace}/comments/{comment}' => ['alpha/comments/{C}', ['body' => 'x']],
+        'DELETE {workspace}/comments/{comment}' => ['alpha/comments/{C}', []],
+        'POST {workspace}/comments/{comment}/restore' => ['alpha/comments/{C}/restore', []],
+        'GET {workspace}/dashboard' => ['alpha/dashboard', []],
+        'GET {workspace}/search' => ['alpha/search?q=secret', []],
+        'GET {workspace}/issues/{key}' => ['alpha/issues/{I}', []],
+        'PATCH {workspace}/issues/{key}' => ['alpha/issues/{I}', ['title' => 'x']],
+        'DELETE {workspace}/issues/{key}' => ['alpha/issues/{I}', []],
+        'POST {workspace}/issues/{key}/comments' => ['alpha/issues/{I}/comments', ['body' => 'x']],
+        'POST {workspace}/issues/{key}/move' => ['alpha/issues/{I}/move', ['status' => '{COLN}']],
+        'POST {workspace}/issues/{key}/rank' => ['alpha/issues/{I}/rank', ['sprint' => '{SN}']],
+        'POST {workspace}/issues/{key}/restore' => ['alpha/issues/{I}/restore', []],
+        'GET {workspace}/projects' => ['alpha/projects', []],
+        'POST {workspace}/projects' => ['alpha/projects', ['key' => '{P}', 'name' => 'x'], false],
+        'GET {workspace}/projects/{project}' => ['alpha/projects/{P}', []],
+        'PATCH {workspace}/projects/{project}' => ['alpha/projects/{P}', ['name' => 'x']],
+        'DELETE {workspace}/projects/{project}' => ['alpha/projects/{P}', $confirm],
+        'GET {workspace}/projects/{project}/backlog' => ['alpha/projects/{P}/backlog', []],
+        'POST {workspace}/projects/{project}/columns' => ['alpha/projects/{P}/columns', ['name' => 'x']],
+        'PATCH {workspace}/projects/{project}/columns/{column}' => ['alpha/projects/{P}/columns/{COL}', ['name' => 'x']],
+        'DELETE {workspace}/projects/{project}/columns/{column}' => ['alpha/projects/{P}/columns/{COL}', []],
+        'POST {workspace}/projects/{project}/invitations' => ['alpha/projects/{P}/invitations', ['email' => 'x@example.com', 'role' => 'member']],
+        'DELETE {workspace}/projects/{project}/invitations/{invitation}' => ['alpha/projects/{P}/invitations/{INV}', []],
+        'GET {workspace}/projects/{project}/issues' => ['alpha/projects/{P}/issues', []],
+        'POST {workspace}/projects/{project}/issues' => ['alpha/projects/{P}/issues', ['title' => 'x']],
+        'POST {workspace}/projects/{project}/labels' => ['alpha/projects/{P}/labels', ['name' => 'x']],
+        'PATCH {workspace}/projects/{project}/labels/{label}' => ['alpha/projects/{P}/labels/{L}', ['name' => 'x']],
+        'DELETE {workspace}/projects/{project}/labels/{label}' => ['alpha/projects/{P}/labels/{L}', []],
+        'PATCH {workspace}/projects/{project}/members/{user}' => ['alpha/projects/{P}/members/{U}', ['role' => 'viewer']],
+        'DELETE {workspace}/projects/{project}/members/{user}' => ['alpha/projects/{P}/members/{U}', []],
+        'GET {workspace}/projects/{project}/settings' => ['alpha/projects/{P}/settings', []],
+        'POST {workspace}/projects/{project}/sprints' => ['alpha/projects/{P}/sprints', []],
+        'PATCH {workspace}/projects/{project}/sprints/{sprint}' => ['alpha/projects/{P}/sprints/{S}', ['goal' => 'x']],
+        'DELETE {workspace}/projects/{project}/sprints/{sprint}' => ['alpha/projects/{P}/sprints/{S}', []],
+        'POST {workspace}/projects/{project}/sprints/{sprint}/complete' => ['alpha/projects/{P}/sprints/{S}/complete', ['confirm' => true, 'move_open_issues_to' => 'backlog']],
+        'POST {workspace}/projects/{project}/sprints/{sprint}/start' => ['alpha/projects/{P}/sprints/{S}/start', []],
+        'GET {workspace}/settings/tokens' => ['alpha/settings/tokens', []],
+        'POST {workspace}/settings/tokens' => ['alpha/settings/tokens', ['name' => 'x', 'access' => 'read', 'projects' => ['{P}']]],
+        'DELETE {workspace}/settings/tokens/{token}' => ['alpha/settings/tokens/{T}', []],
     ];
 }
 
@@ -145,8 +146,13 @@ function isolationExemptRoutes(): array
         'GET mcp' => 'MCP transport; every tool is covered below', 'POST mcp' => 'MCP transport; every tool is covered below', 'DELETE mcp' => 'MCP transport; every tool is covered below',
         'GET profile' => 'account page, global by D10', 'PATCH profile' => 'account page, global by D10', 'DELETE profile' => 'account page, global by D10',
         'PUT password' => $auth,
-        // Invitations belong to the invitee, who may accept one from any workspace; PR 2 replaces the id with a hashed token.
+        // Invitations belong to the invitee, who may accept one from any workspace (InvitationTest, HardeningTest).
         'POST invitations/{invitation}/accept' => 'addressed to the invitee across workspaces',
+        'GET invitations/{token}' => 'addressed by the emailed token, not a workspace id; InvitationTest',
+        'POST invitations/{token}' => 'addressed by the emailed token, not a workspace id; InvitationTest',
+        'GET {legacy}' => 'redirects into the current workspace only; UrlPrefixTest',
+        'GET workspaces/create' => 'creates a new workspace; EditionTest', 'POST workspaces' => 'creates a new workspace; EditionTest',
+        'GET workspaces/no-access' => 'shown only with no workspace; WorkspaceSwitchTest',
         'GET confirm-password' => $auth, 'POST confirm-password' => $auth, 'POST email/verification-notification' => $auth,
         'GET forgot-password' => $auth, 'POST forgot-password' => $auth, 'GET login' => $auth, 'POST login' => $auth,
         'POST logout' => $auth, 'GET register' => $auth, 'POST register' => $auth, 'POST reset-password' => $auth,
@@ -232,8 +238,9 @@ function normalizeAnswer(string $text, array $values): string
     uasort($values, fn ($a, $b) => strlen($b) <=> strlen($a));
     foreach ($values as $v) {
         $text = ctype_digit($v)
-            // Not JSON number values ("per_page":25): an id can collide with them. Skipping them only makes the check stricter.
-            ? preg_replace('/(?<![\w-])(?<!":)'.$v.'(?![\w-])/', '§', $text)
+            // Not next to ':' (JSON values like "per_page":25, timestamp parts like 21:54:35): an id can collide with them.
+            // Skipping them only makes the check stricter.
+            ? preg_replace('/(?<![\w:-])'.$v.'(?![\w:-])/', '§', $text)
             : str_ireplace([$v, json_encode($v), rawurlencode($v)], '§', $text);
     }
 
@@ -273,7 +280,7 @@ beforeEach(function () {
     $this->bLabel = app(LabelService::class)->create($ops, ['name' => 'b-secret']);
     $this->bColumn = app(ColumnService::class)->create($ops, ['name' => 'B-SECRET col']);
     $this->bSprint = app(SprintService::class)->create($ops, ['name' => 'B-SECRET sprint']);
-    $this->bInvitation = app(MembershipService::class)->invite($ops, $this->bob, 'carol@example.com', ProjectRole::Member);
+    $this->bInvitation = app(InvitationService::class)->invite($this->b, $this->bob, 'carol@example.com', WorkspaceRole::Member, $ops, ProjectRole::Member);
     $this->annB = app(TokenService::class)->create($this->ann, 'B-SECRET token', true, null);
 
     // Workspace A: ann's current workspace.

@@ -42,7 +42,7 @@ test('project page is the board and accepts filters', function () {
     makeIssue($this->project, $this->admin, ['title' => 'Alpha', 'type' => 'bug']);
     makeIssue($this->project, $this->admin, ['title' => 'Beta']);
 
-    $this->actingAs($this->admin)->get('/projects/WEB?type=bug')
+    $this->actingAs($this->admin)->get(w('/projects/WEB?type=bug'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Projects/Board')
@@ -55,21 +55,21 @@ test('project page is the board and accepts filters', function () {
 test('web move endpoint and column management', function () {
     makeIssue($this->project, $this->admin);
 
-    $this->actingAs($this->admin)->post('/issues/WEB-1/move', ['status' => 'Done'])->assertRedirect();
-    $this->actingAs($this->admin)->post('/projects/WEB/columns', ['name' => 'Blocked'])->assertRedirect();
+    $this->actingAs($this->admin)->post(w('/issues/WEB-1/move'), ['status' => 'Done'])->assertRedirect();
+    $this->actingAs($this->admin)->post(w('/projects/WEB/columns'), ['name' => 'Blocked'])->assertRedirect();
 
     expect($this->project->columns()->pluck('name')->last())->toBe('Blocked');
 });
 
 test('board page includes the active sprint with stats, or null', function () {
-    $this->actingAs($this->admin)->get('/projects/WEB')->assertInertia(fn (Assert $page) => $page->where('active_sprint', null));
+    $this->actingAs($this->admin)->get(w('/projects/WEB'))->assertInertia(fn (Assert $page) => $page->where('active_sprint', null));
 
     $sprints = app(SprintService::class);
     $sprint = $sprints->create($this->project, ['name' => 'WEB Sprint 1']);
     makeIssue($this->project, $this->admin, ['sprint' => 'WEB Sprint 1', 'story_points' => 3]);
     $sprints->start($sprint->setRelation('project', $this->project), []);
 
-    $this->actingAs($this->admin)->get('/projects/WEB')->assertInertia(fn (Assert $page) => $page
+    $this->actingAs($this->admin)->get(w('/projects/WEB'))->assertInertia(fn (Assert $page) => $page
         ->where('active_sprint.name', 'WEB Sprint 1')
         ->where('active_sprint.state', 'active')
         ->where('active_sprint.issue_count', 1)

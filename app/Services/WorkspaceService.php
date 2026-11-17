@@ -14,7 +14,10 @@ class WorkspaceService
     /** Creates a workspace with $owner as its Owner; a user with no current workspace switches to it. */
     public function create(User $owner, string $name, ?string $slug = null): Workspace
     {
-        $slug = $slug === null ? $this->slugFor($name) : strtolower(trim($slug));
+        if (! $this->canCreate()) {
+            throw ValidationException::withMessages(['name' => 'This install has one workspace. Ask an admin of '.Workspace::value('name').' to invite you.']);
+        }
+        $slug = blank($slug) ? $this->slugFor($name) : strtolower(trim($slug));
         $this->ensureSlugAvailable($slug);
 
         return DB::transaction(function () use ($owner, $name, $slug) {
@@ -27,6 +30,15 @@ class WorkspaceService
 
             return $workspace;
         });
+    }
+
+    /**
+     * Self-hosted allows exactly one workspace per install; Cloud allows many (spec 3).
+     * shortcut: not locked, so two first sign-ups in the same instant could both create one; add a lock if that shows up.
+     */
+    public function canCreate(): bool
+    {
+        return config('pm.edition') === 'cloud' || ! Workspace::exists();
     }
 
     /** E2: a slug suggestion for $name that fits 3–40 characters, isn't reserved and isn't taken. */
@@ -45,14 +57,17 @@ class WorkspaceService
         return $slug;
     }
 
-    /** The workspace a web request acts in: the user's current one if they still belong to it, else their first. */
+    /**
+     * The workspace a web request acts in: the user's current one if they still belong to it, else their first.
+     * With none left, current_workspace_id is kept so the no-access page can name the workspace they left.
+     */
     public function currentFor(User $user): ?Workspace
     {
         $workspace = $user->current_workspace_id ? $user->workspaces()->find($user->current_workspace_id) : null;
         $workspace ??= $user->workspaces()->orderBy('workspaces.id')->first();
 
-        if ($workspace?->id !== $user->current_workspace_id) {
-            $user->forceFill(['current_workspace_id' => $workspace?->id])->save();
+        if ($workspace && $workspace->id !== $user->current_workspace_id) {
+            $user->forceFill(['current_workspace_id' => $workspace->id])->save();
         }
 
         return $workspace;

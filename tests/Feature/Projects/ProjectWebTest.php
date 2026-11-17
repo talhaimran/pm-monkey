@@ -11,7 +11,7 @@ test('projects index shows my projects and my pending invitations', function () 
     $other = makeProject($owner = User::factory()->create(), 'THEIRS');
     makeInvitation($other, $owner, 'me@example.com', 'member');
 
-    $this->actingAs($me)->get('/projects')
+    $this->actingAs($me)->get(w('/projects'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Projects/Index')
@@ -24,8 +24,8 @@ test('creating a project from the web redirects to its settings', function () {
     $me = User::factory()->create();
     joinWorkspace($me);
 
-    $this->actingAs($me)->post('/projects', ['key' => 'web', 'name' => 'Website'])
-        ->assertRedirect('/projects/WEB/settings');
+    $this->actingAs($me)->post(w('/projects'), ['key' => 'web', 'name' => 'Website'])
+        ->assertRedirect(w('/projects/WEB/settings'));
 });
 
 test('invited user accepts and joins with the invited role', function () {
@@ -52,14 +52,14 @@ test('viewers can open settings but not update', function () {
     $project = makeProject(User::factory()->create());
     $viewer = addMember($project, User::factory()->create(), ProjectRole::Viewer);
 
-    $this->actingAs($viewer)->get('/projects/WEB/settings')
+    $this->actingAs($viewer)->get(w('/projects/WEB/settings'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Projects/Settings')
             ->where('can.manage', false)
             ->has('project.members', 2)
             ->where('project.members', fn ($m) => collect($m)->pluck('role')->sort()->values()->all() === ['admin', 'viewer']));
-    $this->actingAs($viewer)->patch('/projects/WEB', ['name' => 'X'])->assertForbidden();
+    $this->actingAs($viewer)->patch(w('/projects/WEB'), ['name' => 'X'])->assertForbidden();
 });
 
 test('non-members cannot open settings', function () {
@@ -68,13 +68,13 @@ test('non-members cannot open settings', function () {
     $outsider = User::factory()->create();
     joinWorkspace($outsider); // in the workspace, not in the project
 
-    $this->actingAs($outsider)->get('/projects/WEB/settings')->assertForbidden();
+    $this->actingAs($outsider)->get(w('/projects/WEB/settings'))->assertForbidden();
 });
 
 test('admins can delete from the web with confirmation', function () {
     $admin = User::factory()->create();
     makeProject($admin);
 
-    $this->actingAs($admin)->delete('/projects/WEB', ['confirm' => true])->assertRedirect('/projects');
+    $this->actingAs($admin)->delete(w('/projects/WEB'), ['confirm' => true])->assertRedirect(w('/projects'));
     $this->assertDatabaseCount('projects', 0);
 });

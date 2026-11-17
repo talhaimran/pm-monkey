@@ -48,8 +48,8 @@ test('backlog tools over mcp', function () {
 test('backlog page renders sprints and backlog', function () {
     makeIssue($this->project, $this->admin);
 
-    $this->actingAs($this->admin)->post('/projects/WEB/sprints', [])->assertRedirect();
-    $this->actingAs($this->admin)->get('/projects/WEB/backlog')
+    $this->actingAs($this->admin)->post(w('/projects/WEB/sprints'), [])->assertRedirect();
+    $this->actingAs($this->admin)->get(w('/projects/WEB/backlog'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Projects/Backlog')
@@ -60,12 +60,12 @@ test('backlog page renders sprints and backlog', function () {
 
 test('web start, rank and complete', function () {
     makeIssue($this->project, $this->admin);
-    $this->actingAs($this->admin)->post('/projects/WEB/sprints', []);
+    $this->actingAs($this->admin)->post(w('/projects/WEB/sprints'), []);
     $sprint = $this->project->sprints()->first();
 
-    $this->actingAs($this->admin)->post('/issues/WEB-1/rank', ['sprint' => 'WEB Sprint 1'])->assertRedirect();
-    $this->actingAs($this->admin)->post("/projects/WEB/sprints/{$sprint->id}/start", [])->assertRedirect();
-    $this->actingAs($this->admin)->post("/projects/WEB/sprints/{$sprint->id}/complete", ['confirm' => true, 'move_open_issues_to' => 'backlog'])
+    $this->actingAs($this->admin)->post(w('/issues/WEB-1/rank'), ['sprint' => 'WEB Sprint 1'])->assertRedirect();
+    $this->actingAs($this->admin)->post(w("/projects/WEB/sprints/{$sprint->id}/start"), [])->assertRedirect();
+    $this->actingAs($this->admin)->post(w("/projects/WEB/sprints/{$sprint->id}/complete"), ['confirm' => true, 'move_open_issues_to' => 'backlog'])
         ->assertRedirect();
 
     expect($sprint->fresh()->state->value)->toBe('completed');

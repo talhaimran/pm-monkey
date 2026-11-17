@@ -5,12 +5,24 @@ export interface User {
     email_verified_at?: string;
 }
 
+export type WorkspaceRole = 'owner' | 'admin' | 'member';
+
+export interface CurrentWorkspace {
+    id: number;
+    name: string;
+    slug: string;
+    role: WorkspaceRole | null;
+}
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
     auth: {
         user: User;
     };
+    workspace: CurrentWorkspace | null;
+    workspaces: { name: string; slug: string }[];
+    edition: 'self_hosted' | 'cloud';
 };
 
 export type ProjectRole = 'admin' | 'member' | 'viewer';
