@@ -3,14 +3,21 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Services\AuditLogger;
 use App\Services\CurrentWorkspace;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class AppServiceProvider extends ServiceProvider
@@ -57,5 +64,13 @@ class AppServiceProvider extends ServiceProvider
 
         // API docs are public so agents can discover the API without a token.
         Gate::define('viewApiDocs', fn (?User $user = null) => true);
+
+        // Spec 7.0d: sign-in events go to every workspace the user belongs to. Never the credentials themselves.
+        $audit = fn (string $action, $user, array $metadata = []) => app(AuditLogger::class)->forEveryWorkspaceOf($user instanceof User ? $user : null, $action, $metadata);
+        Event::listen(Login::class, fn (Login $e) => $audit('auth.login', $e->user));
+        Event::listen(Logout::class, fn (Logout $e) => $e->user ? $audit('auth.logout', $e->user) : null);
+        Event::listen(PasswordReset::class, fn (PasswordReset $e) => $audit('auth.password_reset', $e->user));
+        // An unknown address has no workspace: one unscoped row naming the address tried.
+        Event::listen(Failed::class, fn (Failed $e) => $audit('auth.login_failed', $e->user, $e->user ? [] : ['email' => Str::limit((string) ($e->credentials['email'] ?? ''), 255, '')]));
     }
 }

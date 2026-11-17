@@ -15,15 +15,25 @@ class ActivityLogger
     /** @param array<string, array{from: mixed, to: mixed}>|null $changes */
     public function log(Issue $issue, ?User $user, string $action, ?array $changes = null): Activity
     {
-        $token = $user?->currentAccessToken();
-        $token = $token instanceof PersonalAccessToken ? $token : null;
-
         return $issue->activities()->create([
             'user_id' => $user?->id,
             'action' => $action,
             'changes' => $changes,
-            'via' => app()->bound(self::VIA_BINDING) ? app(self::VIA_BINDING) : ($token ? 'api' : 'web'),
-            'token_name' => $token?->name,
+            'via' => self::via($user),
+            'token_name' => self::token($user)?->name,
         ]);
+    }
+
+    /** How the change came in: mcp (set by the MCP server), api (a personal access token), else web. AuditLogger uses it too. */
+    public static function via(?User $user): string
+    {
+        return app()->bound(self::VIA_BINDING) ? app(self::VIA_BINDING) : (self::token($user) ? 'api' : 'web');
+    }
+
+    public static function token(?User $user): ?PersonalAccessToken
+    {
+        $token = $user?->currentAccessToken();
+
+        return $token instanceof PersonalAccessToken ? $token : null;
     }
 }

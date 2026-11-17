@@ -13,7 +13,7 @@ class WorkspaceService
 {
     public const DELETION_DAYS = 7;
 
-    public function __construct(private ProjectService $projects) {}
+    public function __construct(private ProjectService $projects, private AuditLogger $audit) {}
 
     /** Creates a workspace with $owner as its Owner; a user with no current workspace switches to it. */
     public function create(User $owner, string $name, ?string $slug = null): Workspace
@@ -28,6 +28,7 @@ class WorkspaceService
             $this->claimRedirect($slug);
             $workspace = Workspace::create(['name' => trim($name), 'slug' => $slug]);
             $workspace->addMember($owner, WorkspaceRole::Owner);
+            $this->audit->log('workspace.created', $workspace, ['slug' => $slug], $workspace, $owner);
 
             if (! $owner->current_workspace_id) {
                 $owner->forceFill(['current_workspace_id' => $workspace->id])->save();
@@ -48,10 +49,20 @@ class WorkspaceService
                 $this->claimRedirect($slug);
                 DB::table('workspace_slug_redirects')->insert(['old_slug' => $workspace->slug, 'workspace_id' => $workspace->id, 'created_at' => now()]);
             }
+            $before = $workspace->only('name', 'slug');
             $workspace->update(['name' => trim($name), 'slug' => $slug]);
+            $this->logChanges('workspace.updated', $workspace, $before, $workspace->only('name', 'slug'));
 
             return $workspace;
         });
+    }
+
+    /** @param array<string, mixed> $changes settings keys to change; workspace.settings_changed keeps before and after of the changed ones. */
+    public function updateSettings(Workspace $workspace, array $changes): void
+    {
+        $before = collect($changes)->mapWithKeys(fn ($v, $key) => [$key => $workspace->setting($key)])->all();
+        $workspace->forceFill(['settings' => [...($workspace->settings ?? []), ...$changes]])->save();
+        $this->logChanges('workspace.settings_changed', $workspace, $before, $changes);
     }
 
     /** D2: the Owner types the slug; members are locked out for 7 days, then workspaces:purge deletes it. */
@@ -61,19 +72,25 @@ class WorkspaceService
             throw ValidationException::withMessages(['confirm_slug' => "Type {$workspace->slug} to confirm."]);
         }
         $workspace->forceFill(['deletion_scheduled_at' => now()->addDays(self::DELETION_DAYS)])->save();
+        $this->audit->log('workspace.deletion_scheduled', $workspace, ['delete_after' => $workspace->deletion_scheduled_at->toIso8601String()], $workspace, $owner);
     }
 
     public function cancelDeletion(Workspace $workspace, User $owner): void
     {
         $workspace->forceFill(['deletion_scheduled_at' => null])->save();
+        $this->audit->log('workspace.deletion_cancelled', $workspace, [], $workspace, $owner);
     }
 
-    /** Deletes the workspace for good: projects with their issues, then (by cascade) tokens, invitations, members and redirects. */
+    /**
+     * Deletes the workspace for good: projects with their issues, then (by cascade) tokens, invitations, members,
+     * redirects and its audit log. One unscoped workspace.deleted row stays.
+     */
     public function purge(Workspace $workspace): void
     {
         DB::transaction(function () use ($workspace) {
             $workspace->projects()->each(fn ($project) => $this->projects->delete($project));
             $workspace->delete();
+            $this->audit->system('workspace.deleted', $workspace, null, ['slug' => $workspace->slug]);
         });
     }
 
@@ -141,6 +158,14 @@ class WorkspaceService
 
         if ($error) {
             throw ValidationException::withMessages(['slug' => $error]);
+        }
+    }
+
+    private function logChanges(string $action, Workspace $workspace, array $before, array $after): void
+    {
+        $changed = array_keys(array_filter($after, fn ($v, $key) => $before[$key] !== $v, ARRAY_FILTER_USE_BOTH));
+        if ($changed) {
+            $this->audit->log($action, $workspace, ['before' => array_intersect_key($before, array_flip($changed)), 'after' => array_intersect_key($after, array_flip($changed))], $workspace);
         }
     }
 

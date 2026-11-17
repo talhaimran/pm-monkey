@@ -57,7 +57,7 @@ class WorkspaceSettingsController extends Controller
         $data = $request->validated();
 
         $this->workspaces->rename($workspace, $data['name'], $data['slug']);
-        $workspace->forceFill(['settings' => [...($workspace->settings ?? []), 'members_can_create_projects' => (bool) $data['members_can_create_projects']]])->save();
+        $this->workspaces->updateSettings($workspace, ['members_can_create_projects' => (bool) $data['members_can_create_projects']]);
 
         return redirect(route('settings.general', ['workspace' => $workspace->slug], false));
     }

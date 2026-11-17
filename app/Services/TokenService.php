@@ -14,7 +14,7 @@ use Laravel\Sanctum\PersonalAccessToken;
  */
 class TokenService
 {
-    public function __construct(private CurrentWorkspace $current) {}
+    public function __construct(private CurrentWorkspace $current, private AuditLogger $audit) {}
 
     /**
      * @param  list<string>|null  $projectKeys  null or empty = all of the user's projects
@@ -43,13 +43,16 @@ class TokenService
 
         $token = $user->createToken(trim($name), $abilities, $expiresInDays ? now()->addDays($expiresInDays) : null);
         $token->accessToken->forceFill(['workspace_id' => $workspaceId])->save();
+        $this->audit->log('token.created', $token->accessToken, ['write' => $write, 'projects' => $projectKeys ? $keys->values()->all() : null], actor: $user);
 
         return $token;
     }
 
     public function revoke(User $user, int $id): void
     {
-        $this->tokensHere($user)->whereKey($id)->firstOrFail()->delete();
+        $token = $this->tokensHere($user)->whereKey($id)->firstOrFail();
+        $token->delete();
+        $this->audit->log('token.revoked', $token, actor: $user);
     }
 
     /** Tokens for display: access level, project keys (null = all), last use. */

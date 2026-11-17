@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /*
  * Spec 7.0a: acting in workspace A, nothing of workspace B is ever shown or changed, and B's ids and keys
@@ -135,6 +136,9 @@ function isolationRouteCases(): array
         // A wrong confirmation: deleting A for real would end the remaining cases.
         'DELETE {workspace}/settings/general' => ['alpha/settings/general', ['confirm_slug' => '{P}']],
         'GET {workspace}/settings/members' => ['alpha/settings/members', []],
+        // Filtering A's log by a user of B shows nothing of B.
+        'GET {workspace}/settings/audit-log' => ['alpha/settings/audit-log?actor={U}', []],
+        'GET {workspace}/settings/audit-log/export' => ['alpha/settings/audit-log/export?actor={U}', []],
         'POST {workspace}/settings/members/invitations' => ['alpha/settings/members/invitations', ['email' => 'x@example.com', 'role' => 'member', 'project' => '{P}']],
         'POST {workspace}/settings/members/invitations/{invitation}/resend' => ['alpha/settings/members/invitations/{INV}/resend', []],
         'DELETE {workspace}/settings/members/invitations/{invitation}' => ['alpha/settings/members/invitations/{INV}', []],
@@ -323,12 +327,14 @@ function answerRoute($t, string $route, array $values): string
         $errors = $errors instanceof ViewErrorBag ? $errors->getBag('default')->toArray() : $errors;
         // Web errors are a status page or a redirect with session errors; the 404 page itself is static HTML.
         $answer = $response->headers->get('Location').' '.json_encode($errors);
-        expect($response->getContent())->not->toContain(B_MARKER);
+        // The CSV export streams its body.
+        $content = $response->baseResponse instanceof StreamedResponse ? $response->streamedContent() : $response->getContent();
+        expect($content)->not->toContain(B_MARKER);
         $t->flushSession();
     }
 
     // The status stays out of normalizing: an id can be 404 too.
-    return $response->status().' '.normalizeAnswer($answer, $values);
+    return $response->getStatusCode().' '.normalizeAnswer($answer, $values);
 }
 
 function answerTool($t, string $tool, array $values): string

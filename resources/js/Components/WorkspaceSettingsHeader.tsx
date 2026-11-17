@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/react';
 const tabs = [
     ['settings.general', 'General'],
     ['settings.members', 'Members'],
+    ['settings.audit-log', 'Audit log'],
 ] as const;
 
 /** Title and tabs shared by the workspace settings pages (spec 7.0b). */

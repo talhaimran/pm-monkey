@@ -15,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 
 class ProjectService
 {
-    public function __construct(private CurrentWorkspace $current) {}
+    public function __construct(private CurrentWorkspace $current, private AuditLogger $audit) {}
 
     public function listFor(User $user, int $perPage = 25, ?int $page = null): LengthAwarePaginator
     {
@@ -33,6 +33,7 @@ class ProjectService
             $project->columns()->createMany(
                 collect(Column::DEFAULTS)->map(fn ($name, $i) => ['name' => $name, 'position' => $i])->all()
             );
+            $this->audit->log('project.created', $project, ['name' => $project->name], $this->current->get(), $creator);
 
             return $project;
         });
@@ -54,6 +55,7 @@ class ProjectService
             $project->issues()->withTrashed()->whereNotNull('parent_id')->forceDelete();
             $project->issues()->withTrashed()->forceDelete();
             $project->delete();
+            $this->audit->log('project.deleted', $project, ['name' => $project->name], $project->workspace()->first());
         });
     }
 

@@ -20,7 +20,7 @@ class WorkspaceMemberService
 
     public const OWNERS_ONLY = 'Only Owners can add, change or remove Owners.';
 
-    public function __construct(private MembershipService $memberships) {}
+    public function __construct(private MembershipService $memberships, private AuditLogger $audit) {}
 
     public function changeRole(Workspace $workspace, User $actor, User $member, WorkspaceRole $role): void
     {
@@ -30,6 +30,15 @@ class WorkspaceMemberService
                 $this->ensureAnotherOwner($workspace, $member, 'role');
             }
             $workspace->members()->updateExistingPivot($member->id, ['role' => $role->value]);
+
+            if ($current !== $role) {
+                $action = match (WorkspaceRole::Owner) {
+                    $role => 'owner.added',
+                    $current => 'owner.removed',
+                    default => 'member.role_changed',
+                };
+                $this->audit->log($action, $member, ['from' => $current->value, 'to' => $role->value], $workspace, $actor);
+            }
         });
     }
 
@@ -43,7 +52,8 @@ class WorkspaceMemberService
     public function remove(Workspace $workspace, User $actor, User $member, array $newAdmins = []): void
     {
         DB::transaction(function () use ($workspace, $actor, $member, $newAdmins) {
-            if ($this->lockAndCheck($workspace, $actor, $member, false, 'member') === WorkspaceRole::Owner) {
+            $role = $this->lockAndCheck($workspace, $actor, $member, false, 'member');
+            if ($role === WorkspaceRole::Owner) {
                 $this->ensureAnotherOwner($workspace, $member, 'member');
             }
 
@@ -67,6 +77,7 @@ class WorkspaceMemberService
             $member->projects()->detach($workspace->projects()->pluck('id'));
             $member->tokens()->where('workspace_id', $workspace->id)->delete();
             $workspace->members()->detach($member->id);
+            $this->audit->log('member.removed', $member, array_filter(['role' => $role->value, 'new_admins' => $newAdmins ? array_intersect_key($newAdmins, array_flip($keys)) : null]), $workspace, $actor);
         });
     }
 
@@ -74,6 +85,7 @@ class WorkspaceMemberService
     public function joinProjectAsAdmin(Project $project, User $actor): void
     {
         $project->members()->syncWithoutDetaching([$actor->id => ['role' => ProjectRole::Admin->value]]);
+        $this->audit->log('project.admin_joined', $project, [], $project->workspace()->first(), $actor);
     }
 
     /** E7: names of workspaces $user is the only Owner of; their account can't be deleted while this isn't empty. */
