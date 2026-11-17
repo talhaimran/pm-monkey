@@ -1,11 +1,11 @@
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { Link, usePage } from '@inertiajs/react';
-import { Check, ChevronsUpDown, Plus } from 'lucide-react';
+import { Check, ChevronsUpDown, Plus, Settings } from 'lucide-react';
 
 /** The workspace's initial in a tinted square (D4: no logo upload until step 6). */
-function Mark({ name, tone }: { name: string; tone: string }) {
+export function Mark({ name, tone, size = 'h-7 w-7 text-sm' }: { name: string; tone: string; size?: string }) {
     return (
-        <span aria-hidden="true" className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-tile text-sm ${tone}`}>
+        <span aria-hidden="true" className={`flex ${size} shrink-0 items-center justify-center rounded-tile ${tone}`}>
             {name.trim().charAt(0).toUpperCase()}
         </span>
     );
@@ -17,6 +17,7 @@ const item = 'flex h-control-h w-full items-center gap-2.5 rounded-ctl px-2.5 te
 export default function WorkspaceSwitcher() {
     const { workspace, workspaces, edition } = usePage().props;
     if (!workspace) return null;
+    const manage = workspace.role === 'owner' || workspace.role === 'admin';
 
     return (
         <Menu as="div" className="relative mb-2 max-md:me-9">
@@ -40,8 +41,15 @@ export default function WorkspaceSwitcher() {
                         </Link>
                     </MenuItem>
                 ))}
-                {/* "Workspace settings" for Owners and Admins arrives with the settings pages (step 0 PR 3). */}
-                {edition === 'cloud' && <div className="my-1 border-t border-line" />}
+                {(manage || edition === 'cloud') && <div className="my-1 border-t border-line" />}
+                {manage && (
+                    <MenuItem>
+                        <Link href={route('settings.general')} className={item}>
+                            <Settings className="h-4 w-4 text-muted" aria-hidden="true" />
+                            Workspace settings
+                        </Link>
+                    </MenuItem>
+                )}
                 {edition === 'cloud' && (
                     <MenuItem>
                         <Link href={route('workspaces.create')} className={item}>

@@ -4,8 +4,8 @@ import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, router } from '@inertiajs/react';
 import { Lock } from 'lucide-react';
 
-/** D11: signed in, but no longer in any workspace. */
-export default function NoAccess({ message, canCreate }: { message: string; canCreate: boolean }) {
+/** D11: signed in, but in no workspace; also D2: the workspace is scheduled for deletion, and its Owner can undo. */
+export default function NoAccess({ message, canCreate, restoreUrl }: { message: string; canCreate: boolean; restoreUrl: string | null }) {
     return (
         <GuestLayout>
             <Head title="No access" />
@@ -16,7 +16,8 @@ export default function NoAccess({ message, canCreate }: { message: string; canC
                 <h1 className="text-heading-2xl text-text">No access</h1>
                 <p className="text-muted">{message}</p>
                 <div className="mt-3 flex flex-wrap justify-center gap-3">
-                    {canCreate && (
+                    {restoreUrl && <PrimaryButton onClick={() => router.post(restoreUrl)}>Undo deletion</PrimaryButton>}
+                    {canCreate && !restoreUrl && (
                         <PrimaryButton onClick={() => router.visit(route('workspaces.create'))}>Create workspace</PrimaryButton>
                     )}
                     <SecondaryButton onClick={() => router.visit(route('profile.edit'))}>Profile</SecondaryButton>

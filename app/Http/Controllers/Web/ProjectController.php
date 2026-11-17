@@ -13,8 +13,10 @@ use App\Http\Resources\ProjectInvitationResource;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use App\Models\WorkspaceInvitation;
+use App\Services\CurrentWorkspace;
 use App\Services\IssueService;
 use App\Services\ProjectService;
+use App\Services\WorkspaceMemberService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -34,7 +36,20 @@ class ProjectController extends Controller
             'invitations' => ProjectInvitationResource::collection(
                 WorkspaceInvitation::with('project')->where('email', strtolower($user->email))->latest()->get()
             )->resolve(),
+            'can' => [
+                'create' => $user->can('create', Project::class),
+                // Owners and Admins see every project; ones they aren't in show "Join as Admin" (spec 7.0b).
+                'join' => $user->can('viewAllProjects', app(CurrentWorkspace::class)->get()),
+            ],
         ]);
+    }
+
+    public function join(Request $request, Project $project): RedirectResponse
+    {
+        Gate::authorize('join', $project);
+        app(WorkspaceMemberService::class)->joinProjectAsAdmin($project, $request->user());
+
+        return redirect()->route('projects.show', $project->key);
     }
 
     public function store(StoreProjectRequest $request): RedirectResponse

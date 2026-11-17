@@ -11,6 +11,10 @@ use Illuminate\Validation\ValidationException;
 
 class WorkspaceService
 {
+    public const DELETION_DAYS = 7;
+
+    public function __construct(private ProjectService $projects) {}
+
     /** Creates a workspace with $owner as its Owner; a user with no current workspace switches to it. */
     public function create(User $owner, string $name, ?string $slug = null): Workspace
     {
@@ -21,6 +25,7 @@ class WorkspaceService
         $this->ensureSlugAvailable($slug);
 
         return DB::transaction(function () use ($owner, $name, $slug) {
+            $this->claimRedirect($slug);
             $workspace = Workspace::create(['name' => trim($name), 'slug' => $slug]);
             $workspace->addMember($owner, WorkspaceRole::Owner);
 
@@ -30,6 +35,56 @@ class WorkspaceService
 
             return $workspace;
         });
+    }
+
+    /** Spec 7.0b: a new slug keeps the old one as a permanent redirect, until some workspace claims it. */
+    public function rename(Workspace $workspace, string $name, string $slug): Workspace
+    {
+        $slug = strtolower(trim($slug));
+
+        return DB::transaction(function () use ($workspace, $name, $slug) {
+            if ($slug !== $workspace->slug) {
+                $this->ensureSlugAvailable($slug);
+                $this->claimRedirect($slug);
+                DB::table('workspace_slug_redirects')->insert(['old_slug' => $workspace->slug, 'workspace_id' => $workspace->id, 'created_at' => now()]);
+            }
+            $workspace->update(['name' => trim($name), 'slug' => $slug]);
+
+            return $workspace;
+        });
+    }
+
+    /** D2: the Owner types the slug; members are locked out for 7 days, then workspaces:purge deletes it. */
+    public function scheduleDeletion(Workspace $workspace, User $owner, string $typedSlug): void
+    {
+        if ($typedSlug !== $workspace->slug) {
+            throw ValidationException::withMessages(['confirm_slug' => "Type {$workspace->slug} to confirm."]);
+        }
+        $workspace->forceFill(['deletion_scheduled_at' => now()->addDays(self::DELETION_DAYS)])->save();
+    }
+
+    public function cancelDeletion(Workspace $workspace, User $owner): void
+    {
+        $workspace->forceFill(['deletion_scheduled_at' => null])->save();
+    }
+
+    /** Deletes the workspace for good: projects with their issues, then (by cascade) tokens, invitations, members and redirects. */
+    public function purge(Workspace $workspace): void
+    {
+        DB::transaction(function () use ($workspace) {
+            $workspace->projects()->each(fn ($project) => $this->projects->delete($project));
+            $workspace->delete();
+        });
+    }
+
+    /** What members see while it waits to be deleted; the Owner can undo it. */
+    public function lockedMessage(Workspace $workspace, ?User $user): string
+    {
+        $when = "{$workspace->name} is scheduled for deletion on {$workspace->deletion_scheduled_at->format('j F Y')}.";
+
+        return $user?->workspaceRole($workspace) === WorkspaceRole::Owner
+            ? "{$when} You can undo this until then."
+            : "{$when} Ask its Owner to undo this if it's a mistake.";
     }
 
     /**
@@ -59,12 +114,14 @@ class WorkspaceService
 
     /**
      * The workspace a web request acts in: the user's current one if they still belong to it, else their first.
+     * A workspace scheduled for deletion is skipped (D2).
      * With none left, current_workspace_id is kept so the no-access page can name the workspace they left.
      */
     public function currentFor(User $user): ?Workspace
     {
-        $workspace = $user->current_workspace_id ? $user->workspaces()->find($user->current_workspace_id) : null;
-        $workspace ??= $user->workspaces()->orderBy('workspaces.id')->first();
+        $active = fn () => $user->workspaces()->whereNull('deletion_scheduled_at');
+        $workspace = $user->current_workspace_id ? $active()->find($user->current_workspace_id) : null;
+        $workspace ??= $active()->orderBy('workspaces.id')->first();
 
         if ($workspace && $workspace->id !== $user->current_workspace_id) {
             $user->forceFill(['current_workspace_id' => $workspace->id])->save();
@@ -78,7 +135,7 @@ class WorkspaceService
         $error = match (true) {
             ! preg_match('/^[a-z0-9-]{3,40}$/', $slug) => 'The address must be 3–40 lowercase letters, digits or hyphens.',
             in_array($slug, Workspace::RESERVED_SLUGS, true) => "\"{$slug}\" is reserved. Choose another address.",
-            $this->taken($slug) => "\"{$slug}\" is already taken. Choose another address.",
+            Workspace::where('slug', $slug)->exists() => "\"{$slug}\" is already taken. Choose another address.",
             default => null,
         };
 
@@ -87,6 +144,13 @@ class WorkspaceService
         }
     }
 
+    /** Another workspace's old slug may be claimed (spec 7.0b), which ends that redirect. */
+    private function claimRedirect(string $slug): void
+    {
+        DB::table('workspace_slug_redirects')->where('old_slug', $slug)->delete();
+    }
+
+    /** Suggestions avoid old slugs too, so a redirect isn't ended by accident. */
     private function taken(string $slug): bool
     {
         return Workspace::where('slug', $slug)->exists()

@@ -16,9 +16,11 @@ class ProjectResource extends JsonResource
             'key' => $this->key,
             'name' => $this->name,
             'description' => $this->description,
-            // Listed via $user->projects the pivot already carries the role; otherwise look it up.
+            // accessibleProjects() rows carry my_role (null where not joined); otherwise look it up.
             // auth() rather than $request: MCP calls don't run through the HTTP request.
-            'my_role' => $this->pivot->role ?? (auth()->user() ? $this->roleFor(auth()->user())?->value : null),
+            'my_role' => array_key_exists('my_role', $this->resource->getAttributes())
+                ? $this->resource->getAttribute('my_role')
+                : (auth()->user() ? $this->roleFor(auth()->user())?->value : null),
             // Resolved to a plain array: Inertia would wrap a nested resource in {data: [...]}.
             'members' => $this->whenLoaded('members', fn () => MemberResource::collection($this->members)->resolve()),
             'created_at' => $this->created_at,

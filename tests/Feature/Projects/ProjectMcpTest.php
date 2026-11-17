@@ -24,6 +24,7 @@ test('list_projects returns only my projects', function () {
     $me = User::factory()->create();
     makeProject($me, 'MINE');
     makeProject(User::factory()->create(), 'THEIRS');
+    asWorkspaceMember($me);
 
     apiAs($me);
     PmServer::tool(ListProjects::class)

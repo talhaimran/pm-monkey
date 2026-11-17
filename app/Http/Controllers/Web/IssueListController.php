@@ -72,7 +72,7 @@ class IssueListController extends Controller
             'projects' => $projects->map(fn ($p) => [
                 'key' => $p->key,
                 'name' => $p->name,
-                'my_role' => $p->pivot->role,
+                'my_role' => $p->my_role,
                 'summary' => $summaries[$p->id],
             ])->all(),
         ]);

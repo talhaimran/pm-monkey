@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\ProjectRole;
 use App\Models\Project;
 use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -28,10 +29,11 @@ class MembershipService
         });
     }
 
-    /** Keys of projects where $user is the only admin (they'd be left unmanageable without them). */
-    public function soleAdminProjectKeys(User $user): array
+    /** Keys of projects where $user is the only admin (they'd be left unmanageable without them), optionally in one workspace. */
+    public function soleAdminProjectKeys(User $user, ?Workspace $workspace = null): array
     {
         return $user->projects()
+            ->when($workspace, fn ($q) => $q->where('projects.workspace_id', $workspace->id))
             ->wherePivot('role', ProjectRole::Admin->value)
             ->withCount(['members as admin_count' => fn ($q) => $q->where('project_user.role', ProjectRole::Admin->value)])
             ->orderBy('key')

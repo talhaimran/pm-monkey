@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Services\MembershipService;
+use App\Services\WorkspaceMemberService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,13 +46,20 @@ class ProfileController extends Controller
     /**
      * Delete the user's account.
      */
-    public function destroy(Request $request, MembershipService $memberships): RedirectResponse
+    public function destroy(Request $request, MembershipService $memberships, WorkspaceMemberService $workspaceMembers): RedirectResponse
     {
         $request->validate([
             'password' => ['required', 'current_password'],
         ]);
 
         $user = $request->user();
+
+        // E7: a workspace always keeps an Owner.
+        if ($names = $workspaceMembers->soleOwnerOf($user)) {
+            throw ValidationException::withMessages([
+                'password' => 'You are the last Owner of '.implode(', ', $names).'. Make someone else an Owner or delete those workspaces first.',
+            ]);
+        }
 
         if ($keys = $memberships->soleAdminProjectKeys($user)) {
             throw ValidationException::withMessages([

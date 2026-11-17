@@ -31,6 +31,7 @@ test('index lists only projects the user belongs to', function () {
     $me = User::factory()->create();
     makeProject($me, 'MINE');
     makeProject(User::factory()->create(), 'THEIRS');
+    asWorkspaceMember($me);
 
     apiAs($me);
     $this->getJson('/api/v1/projects')
@@ -43,6 +44,7 @@ test('non-members get a 404 that lists accessible project keys', function () {
     $me = User::factory()->create();
     makeProject($me, 'MINE');
     makeProject(User::factory()->create(), 'THEIRS');
+    asWorkspaceMember($me);
 
     apiAs($me);
     $this->getJson('/api/v1/projects/THEIRS')

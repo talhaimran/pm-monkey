@@ -29,6 +29,7 @@ test('without ?issue= there is no peek', function (string $url) {
 test('a key the user cannot see, a deleted key or junk never opens a drawer or leaks', function (string $url) {
     $other = User::factory()->create();
     makeIssue(makeProject($other, 'OPS'), $other, ['title' => 'Secret plan']);
+    asWorkspaceMember($this->admin);
     $gone = makeIssue($this->project, $this->admin, ['title' => 'Deleted one']);
     app(IssueService::class)->delete($gone, $this->admin);
 

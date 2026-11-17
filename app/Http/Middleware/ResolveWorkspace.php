@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\Web\WorkspaceController;
 use App\Models\Workspace;
 use App\Services\CurrentWorkspace;
 use Closure;
@@ -36,6 +37,10 @@ class ResolveWorkspace
             $path = preg_replace('#^/'.preg_quote($slug, '#').'(?=/|$)#', '/'.$workspace->slug, '/'.ltrim($request->path(), '/'));
 
             return redirect($path.($request->getQueryString() ? '?'.$request->getQueryString() : ''), 301);
+        }
+
+        if ($workspace->deletion_scheduled_at) {
+            return WorkspaceController::scheduled($workspace, $user)->toResponse($request)->setStatusCode(403);
         }
 
         $this->current->set($workspace);

@@ -30,6 +30,9 @@ class ResolveTokenWorkspace
 
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
+            if ($workspace->deletion_scheduled_at) {
+                return response()->json(['message' => $this->workspaces->lockedMessage($workspace, $user)], 403);
+            }
         } else {
             $workspace = $user ? $this->workspaces->currentFor($user) : null;
         }
