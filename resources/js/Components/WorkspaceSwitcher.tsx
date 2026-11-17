@@ -1,6 +1,6 @@
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { Link, usePage } from '@inertiajs/react';
-import { Check, ChevronsUpDown, Plus, Settings } from 'lucide-react';
+import { Check, ChevronsUpDown, Gauge, Plus, Settings } from 'lucide-react';
 
 /** The workspace's initial in a tinted square (D4: no logo upload until step 6). */
 export function Mark({ name, tone, size = 'h-7 w-7 text-sm' }: { name: string; tone: string; size?: string }) {
@@ -41,7 +41,7 @@ export default function WorkspaceSwitcher() {
                         </Link>
                     </MenuItem>
                 ))}
-                {(manage || edition === 'cloud') && <div className="my-1 border-t border-line" />}
+                <div className="my-1 border-t border-line" />
                 {manage && (
                     <MenuItem>
                         <Link href={route('settings.general')} className={item}>
@@ -50,6 +50,13 @@ export default function WorkspaceSwitcher() {
                         </Link>
                     </MenuItem>
                 )}
+                <MenuItem>
+                    <Link href={route('settings.usage')} className={item}>
+                        <Gauge className="h-4 w-4 text-muted" aria-hidden="true" />
+                        Usage and limits
+                    </Link>
+                </MenuItem>
+                {edition === 'cloud' && <div className="my-1 border-t border-line" />}
                 {edition === 'cloud' && (
                     <MenuItem>
                         <Link href={route('workspaces.create')} className={item}>

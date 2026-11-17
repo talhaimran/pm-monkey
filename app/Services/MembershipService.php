@@ -11,8 +11,15 @@ use Illuminate\Validation\ValidationException;
 
 class MembershipService
 {
+    public function __construct(private Entitlements $entitlements, private WorkspaceUsage $usage) {}
+
     public function changeRole(Project $project, User $member, ProjectRole $role): void
     {
+        // Spec 7.0c: a Viewer becoming Member or Admin needs a billed seat.
+        $workspace = $project->workspace()->first();
+        $now = $this->usage->isBilled($workspace, $member->email);
+        $this->entitlements->ensurePerson($workspace, $now, $now === true || $role !== ProjectRole::Viewer);
+
         DB::transaction(function () use ($project, $member, $role) {
             if ($role !== ProjectRole::Admin) {
                 $this->ensureNotLastAdmin($project, $member, 'role');
