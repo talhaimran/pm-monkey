@@ -18,6 +18,7 @@ use Illuminate\Database\Seeder;
 /**
  * Demo workspace built through the real services, so keys, ranks and the activity log are valid.
  * Logins (local only): demo@example.com / password; alex@example.com and sam@example.com use the same password.
+ * Workspace "Demo" (/demo): demo is Owner, alex Admin, sam Member (and a Viewer in WEB).
  */
 class DemoSeeder extends Seeder
 {
@@ -41,9 +42,8 @@ class DemoSeeder extends Seeder
         $alex = User::factory()->create(['name' => 'Alex Rivera', 'email' => 'alex@example.com']);
         $sam = User::factory()->create(['name' => 'Sam Chen', 'email' => 'sam@example.com']);
 
-        // shortcut: workspace named after the app with every demo user in it; step 0 PR 8 makes it "Demo" / demo with alex as Admin.
-        $workspace = $workspaces->create($demo, config('app.name'));
-        $workspace->addMember($alex, WorkspaceRole::Member);
+        $workspace = $workspaces->create($demo, 'Demo', 'demo');
+        $workspace->addMember($alex, WorkspaceRole::Admin);
         $workspace->addMember($sam, WorkspaceRole::Member);
         User::whereKey([$alex->id, $sam->id])->update(['current_workspace_id' => $workspace->id]);
         $current->set($workspace);
@@ -134,6 +134,6 @@ class DemoSeeder extends Seeder
         $this->command?->line('  REST: curl -H "Authorization: Bearer <token>" '.url('/api/v1/projects'));
         $this->command?->line('  MCP over HTTP: '.url('/mcp').' (Authorization: Bearer <token>)');
         $this->command?->line('  MCP over stdio: PM_MCP_TOKEN=<token> php artisan mcp:start pm');
-        $this->command?->warn('  The token is shown only now. Revoke it at /settings/tokens when you are done.');
+        $this->command?->warn('  The token is shown only now. Revoke it at '.url('/demo/settings/tokens').' when you are done.');
     }
 }

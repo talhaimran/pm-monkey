@@ -33,9 +33,19 @@ UI follows docs/design-system (start with README.md); spec 5.1 wins on conflicts
 - Issue input shape is the same for web, API and MCP: `status` column name, `assignee` email, `labels` names, `epic`/`parent` keys. `IssueService::resolveInput` maps them to ids.
 - Activity `via` comes from `ActivityLogger`: the container binding `pm.via` (set by `PmServer::createContext`) means mcp, a PersonalAccessToken means api, otherwise web.
 - Ordering uses `issues.rank` through `RankService::place()` (needs the project row locked in a transaction). Don't add other position columns.
-- Never query `$user->projects()` for access: use `$user->accessibleProjects()` (applies API token project scope).
+- Never query `$user->projects()` for access: use `$user->accessibleProjects()` (applies the workspace and API token project scope).
 - In tests, switching tokens needs `flushHeaders()` + `app('auth')->forgetGuards()`; headers and the Sanctum user persist within a test.
 - MySQL JSON columns reorder keys; compare JSON arrays in tests with `toEqual`, not `toBe`.
+
+## Workspaces (step 0)
+Spec section 5 lists the conventions for all new code; these are how step 0 built them.
+- Web routes live under `/{workspace}` (the `workspace` middleware, `ResolveWorkspace`, then `require-2fa`); `URL::defaults` fills `{workspace}`, so `route('projects.index')` needs no argument; tests use `w('/projects/WEB')` for paths. API and `/mcp` take the workspace from the token (`ResolveTokenWorkspace`). Only auth, profile, invitations and the workspace list sit outside the prefix.
+- Read the current workspace from `CurrentWorkspace` only. New top-level tables get `workspace_id`; project children reach it through the project.
+- `$user->accessibleProjects()` also applies the workspace: Owners and Admins see every project read-only (`viewAllProjects`) and need to join to write (`ProjectPolicy`).
+- Workspace roles: `WorkspacePolicy` abilities. Role changes and removals go through `WorkspaceMemberService`, which locks the workspace row so the last Owner can't be lost.
+- Plan limits: `Entitlements::ensure($workspace, Entitlement::X, $adding)` before anything that adds to a counted thing; it throws `PlanLimitReached` (API `plan_limit` 403, web dialog). People are counted by `WorkspaceUsage`, pending invitations included. Gate Cloud Free by entitlements, never by edition.
+- Admin and security events go to `AuditLogger` (append-only `audit_logs`, workspace audit log); issue changes go to `ActivityLogger`. Neither stores secrets, tokens or codes.
+- Test helpers in `tests/Pest.php`: `makeWorkspace`, `useWorkspace`, `asWorkspaceMember`, `joinWorkspace`, `makeProject`, `apiAs`, `w()`, `otp()`, `enableTwoFactor()`. Every new route, endpoint or MCP tool gets a case in `tests/Feature/Security/WorkspaceIsolationTest.php`.
 
 ## UI rules (step U)
 - Tokens: `tailwind.config.js` reads `docs/design-system/tokens.json`; use the token classes (`bg-card`, `text-muted`, `tint-amber`, `rounded-ctl`, `h-control-h`…). No hex colours, no default Tailwind colours, no `/40`-style opacity on token colours (they are CSS variables). `tests/Feature/Ui/DesignTokensTest.php` enforces this.
@@ -48,7 +58,7 @@ UI follows docs/design-system (start with README.md); spec 5.1 wins on conflicts
 
 ## Commands
 - Dev servers: `composer run dev` (runs `php artisan dev`: server + queue + vite). Browser preview: `.claude/launch.json` entries `dev` (vite :5173) and `app` (artisan serve :8000).
-- Demo data: `php artisan migrate:fresh --seed` (DemoSeeder) creates demo@example.com / password, project WEB (~29 issues, active sprint) and prints a demo API token. Re-running without fresh skips.
+- Demo data: `php artisan migrate:fresh --seed` (DemoSeeder) creates workspace Demo (`/demo`) with demo@example.com / password as Owner, project WEB (~29 issues, active sprint) and prints a demo API token. Re-running without fresh skips.
 - Tests: `php artisan test` (Pest), one file: `php artisan test tests/Feature/XTest.php`. Tests run on MySQL db `pm_monkey_test` (phpunit.xml), not SQLite, because row locks matter.
 - Lint: `vendor/bin/pint` (PHP); `npm run build` runs `tsc` as the TS check
 - Build frontend: `npm run build`

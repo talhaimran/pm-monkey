@@ -41,6 +41,11 @@ class SocialSignInService
 
         $email = $this->verifiedEmail($provider, $profile);
         if ($user = User::firstWhere('email', $email)) {
+            // Whoever registered an address without proving it must not end up sharing the real owner's account.
+            if (! $user->hasVerifiedEmail()) {
+                $name = self::PROVIDERS[$provider];
+                throw ValidationException::withMessages(['email' => "An account with {$email} exists, but its email address was never verified, so {$name} can’t sign in to it. Sign in with its password and verify the address, then link {$name} from your profile."]);
+            }
             $this->attach($user, $provider, $profile, $email);
 
             return [$user, null];
@@ -49,10 +54,11 @@ class SocialSignInService
         return $this->createUser($provider, $profile, $email, $invitationToken);
     }
 
-    /** Signed in and linking from the profile: the provider's verified email must be the user's. */
-    public function link(User $user, string $provider, SocialiteUser $profile): void
+    /** Signed in and linking from the profile: the provider's verified email must be the user's verified email. */
+    public function link(User $user, string $provider, SocialiteUser $profile, string $sessionMethod): void
     {
         $name = self::PROVIDERS[$provider];
+        $this->ensureSessionAllowed($user, $sessionMethod, "link {$name}");
         $taken = SocialAccount::where(['provider' => $provider, 'provider_user_id' => (string) $profile->getId()])->value('user_id');
         if ($taken === $user->id) {
             return;
@@ -61,10 +67,25 @@ class SocialSignInService
             throw ValidationException::withMessages(['social' => "That {$name} account is linked to another person. Unlink it there first."]);
         }
         $email = $this->verifiedEmail($provider, $profile, 'social');
+        if (! $user->hasVerifiedEmail()) {
+            throw ValidationException::withMessages(['social' => "Verify your email address first, then link {$name}."]);
+        }
         if ($email !== strtolower($user->email)) {
             throw ValidationException::withMessages(['social' => "That {$name} account’s verified email is {$email}, not {$user->email}. Sign in to {$name} with {$user->email} to link it."]);
         }
         $this->attach($user, $provider, $profile, $email);
+    }
+
+    /**
+     * Adding a way in (linking, or changing the email a provider matches) needs a session made with a method that
+     * every one of the user's workspaces allows, or a leaked password would get past a "Google only" workspace.
+     */
+    public function ensureSessionAllowed(User $user, string $sessionMethod, string $doing, string $field = 'social'): void
+    {
+        $refusing = $user->workspaces()->get()->first(fn (Workspace $w) => ! in_array($sessionMethod, $w->setting('sign_in_methods'), true));
+        if ($refusing) {
+            throw ValidationException::withMessages([$field => "{$refusing->name} allows sign-in with ".self::describe($refusing->setting('sign_in_methods')).". Sign in that way to {$doing}."]);
+        }
     }
 
     /** Never the last way in: a password, or another linked provider, must remain. */
@@ -122,6 +143,9 @@ class SocialSignInService
         $invited = $invitation && ! $this->invitations->refusal($invitation, null) && $invitation->email === $email;
         if (! $invited && ! $this->workspaces->canCreate()) {
             throw ValidationException::withMessages(['email' => 'Ask an admin of '.Workspace::value('name').' to invite you.']);
+        }
+        if ($invited) {
+            $this->invitations->ensureRoom($invitation);
         }
 
         return DB::transaction(function () use ($provider, $profile, $email, $invited, $invitation) {

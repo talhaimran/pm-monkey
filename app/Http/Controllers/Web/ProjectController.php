@@ -34,7 +34,8 @@ class ProjectController extends Controller
         return Inertia::render('Projects/Index', [
             'projects' => ProjectResource::collection($user->accessibleProjects()->orderBy('key')->get())->resolve(),
             'invitations' => ProjectInvitationResource::collection(
-                WorkspaceInvitation::with('project')->where('email', strtolower($user->email))->latest()->get()
+                // Only to a verified address: anyone can type an email they don't own.
+                $user->hasVerifiedEmail() ? WorkspaceInvitation::with('project')->where('email', strtolower($user->email))->latest()->get() : []
             )->resolve(),
             'can' => [
                 'create' => $user->can('create', Project::class),

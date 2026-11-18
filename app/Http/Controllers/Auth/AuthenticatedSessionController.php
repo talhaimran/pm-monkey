@@ -54,6 +54,8 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
+        // Drops the encrypted history (the profile's 2FA codes) so Back can't show it to the next person.
+        Inertia::clearHistory();
 
         return redirect('/');
     }

@@ -70,6 +70,7 @@ class RegisteredUserController extends Controller
             if ($invitation->email !== $data['email']) {
                 throw ValidationException::withMessages(['email' => InvitationService::OTHER_EMAIL]);
             }
+            $this->invitations->ensureRoom($invitation);
         } elseif ($closed = $this->closedMessage()) {
             throw ValidationException::withMessages(['email' => $closed]);
         }

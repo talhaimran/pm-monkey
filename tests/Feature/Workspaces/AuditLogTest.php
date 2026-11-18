@@ -134,7 +134,7 @@ test('member events: invited, revoked, joined, role changed, owner added and rem
     $this->actingAs($this->owner);
 
     $inv = $invitations->invite($this->ws, $this->owner, 'gone@example.com', WorkspaceRole::Member);
-    $invitations->revoke($inv);
+    $invitations->revoke($inv, $this->owner);
     expectOneAudit('member.invitation_revoked', $this->ws, $this->owner, 'gone@example.com');
 
     $inv = $invitations->invite($this->ws, $this->owner, 'new@example.com', WorkspaceRole::Member, $this->project, ProjectRole::Member);

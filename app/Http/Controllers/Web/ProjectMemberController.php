@@ -28,10 +28,10 @@ class ProjectMemberController extends Controller
         return back();
     }
 
-    public function revoke(Project $project, WorkspaceInvitation $invitation): RedirectResponse
+    public function revoke(Request $request, Project $project, WorkspaceInvitation $invitation): RedirectResponse
     {
         Gate::authorize('manage', $project);
-        $this->invitations->revoke($invitation);
+        $this->invitations->revoke($invitation, $request->user());
 
         return back();
     }

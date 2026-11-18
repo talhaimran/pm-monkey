@@ -4,6 +4,7 @@ use App\Enums\Entitlement;
 use App\Enums\ProjectRole;
 use App\Enums\WorkspaceRole;
 use App\Exceptions\PlanLimitReached;
+use App\Models\AuditLog;
 use App\Models\User;
 use App\Services\Entitlements;
 use App\Services\ProjectService;
@@ -46,4 +47,19 @@ test('a Viewer handover is refused when it would add a billed person', function 
         ->toThrow(PlanLimitReached::class);
     expect($leaver->workspaceRole($this->ws))->toBe(WorkspaceRole::Member)
         ->and($one->members()->wherePivot('role', 'admin')->pluck('email')->all())->toBe([$leaver->email]);
+});
+
+/** Step 0 PR 8 scan, F5: creating a project makes you its Admin, a billed seat. */
+test('a Viewer who creates a project needs a billed seat for it', function () {
+    $viewer = addMember($this->project, User::factory()->create(), ProjectRole::Viewer);
+    app(Entitlements::class)->set($this->ws, Entitlement::BilledUsers, '1', 'override');
+    useWorkspace($this->ws);
+
+    expect(fn () => app(ProjectService::class)->create($viewer, ['key' => 'MINE', 'name' => 'Mine']))
+        ->toThrow(PlanLimitReached::class, 'Your plan allows 1 billed user.');
+    expect($this->ws->projects()->where('key', 'MINE')->exists())->toBeFalse()
+        ->and(AuditLog::where('action', 'plan_limit.reached')->count())->toBe(1);
+
+    // Someone already billed takes no new seat.
+    expect(app(ProjectService::class)->create($this->owner, ['key' => 'OWN', 'name' => 'Own'])->key)->toBe('OWN');
 });

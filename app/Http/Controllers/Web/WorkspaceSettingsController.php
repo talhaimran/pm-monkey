@@ -18,6 +18,7 @@ use App\Services\InvitationService;
 use App\Services\SocialSignInService;
 use App\Services\WorkspaceMemberService;
 use App\Services\WorkspaceService;
+use App\Services\WorkspaceUsage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -121,7 +122,7 @@ class WorkspaceSettingsController extends Controller
         return back();
     }
 
-    public function members(Request $request): Response
+    public function members(Request $request, WorkspaceUsage $usage): Response
     {
         $workspace = $this->current->get();
         Gate::authorize('manageMembers', $workspace);
@@ -129,6 +130,7 @@ class WorkspaceSettingsController extends Controller
         $members = $workspace->members()
             ->with(['projects' => fn ($q) => $q->where('projects.workspace_id', $workspace->id)->orderBy('key')])
             ->orderBy('name')->get();
+        $billed = $usage->people($workspace, withInvitations: false);
         $projects = $workspace->projects()->orderBy('key')
             ->with(['members' => fn ($q) => $q->where('project_user.role', ProjectRole::Admin->value)])->get();
 
@@ -138,9 +140,7 @@ class WorkspaceSettingsController extends Controller
                 'name' => $m->name,
                 'email' => $m->email,
                 'role' => $m->pivot->role,
-                // Spec 4: Owners and Admins, and anyone Member or Admin in a project, are billed; the rest are Viewers.
-                'billed' => $m->pivot->role !== WorkspaceRole::Member->value
-                    || $m->projects->contains(fn ($p) => $p->pivot->role !== ProjectRole::Viewer->value),
+                'billed' => $billed[strtolower($m->email)],
                 'projects' => $m->projects->map(fn ($p) => ['key' => $p->key, 'role' => $p->pivot->role])->all(),
                 'last_active_at' => $m->pivot->last_active_at,
                 'two_factor' => $m->two_factor_confirmed_at !== null,
@@ -191,11 +191,11 @@ class WorkspaceSettingsController extends Controller
         return back();
     }
 
-    public function revoke(int $invitation): RedirectResponse
+    public function revoke(Request $request, int $invitation): RedirectResponse
     {
         $workspace = $this->current->get();
         Gate::authorize('manageMembers', $workspace);
-        $this->invitations->revoke($workspace->invitations()->findOrFail($invitation));
+        $this->invitations->revoke($workspace->invitations()->findOrFail($invitation), $request->user());
 
         return back();
     }

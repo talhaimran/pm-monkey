@@ -24,6 +24,8 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        // Recovery codes and a pending secret are props here; keep them out of plain-text browser history.
+        Inertia::encryptHistory();
         $user = $request->user();
         // The secret and QR code are shown only while setup waits for a code; never once it is confirmed.
         $pending = $user->two_factor_secret && ! $user->hasEnabledTwoFactorAuthentication();
@@ -49,11 +51,12 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(ProfileUpdateRequest $request, SocialSignInService $social): RedirectResponse
     {
         $request->user()->fill($request->validated());
 
         if ($request->user()->isDirty('email')) {
+            $social->ensureSessionAllowed($request->user(), $request->session()->get('auth.method', 'password'), 'change your email', 'email');
             $request->user()->email_verified_at = null;
         }
 

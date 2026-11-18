@@ -2,9 +2,11 @@
 
 use App\Enums\IssueType;
 use App\Enums\SprintState;
+use App\Enums\WorkspaceRole;
 use App\Models\Issue;
 use App\Models\Project;
 use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Support\Facades\Artisan;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -13,7 +15,15 @@ test('demo seed builds a usable project and prints a working token', function ()
         ->expectsOutputToContain('demo@example.com')
         ->expectsOutputToContain('Demo API token')
         ->expectsOutputToContain('PM_MCP_TOKEN')
+        ->expectsOutputToContain('/demo/settings/tokens')
         ->assertSuccessful();
+
+    $workspace = Workspace::sole();
+    $role = fn (string $email) => User::firstWhere('email', $email)->workspaceRole($workspace);
+    expect($workspace->only('name', 'slug'))->toBe(['name' => 'Demo', 'slug' => 'demo'])
+        ->and($role('demo@example.com'))->toBe(WorkspaceRole::Owner)
+        ->and($role('alex@example.com'))->toBe(WorkspaceRole::Admin)
+        ->and($role('sam@example.com'))->toBe(WorkspaceRole::Member);
 
     $demo = User::where('email', 'demo@example.com')->sole();
     $project = Project::where('key', 'WEB')->sole();
@@ -21,6 +31,8 @@ test('demo seed builds a usable project and prints a working token', function ()
 
     expect($project->roleFor($demo)?->value)->toBe('admin')
         ->and($project->members()->count())->toBe(3)
+        ->and($project->roleFor(User::firstWhere('email', 'sam@example.com'))?->value)->toBe('viewer')
+        ->and($project->workspace_id)->toBe($workspace->id)
         ->and(Issue::count())->toBeGreaterThanOrEqual(28)->toBeLessThanOrEqual(35)
         ->and(Issue::where('type', IssueType::Epic)->count())->toBe(3)
         ->and(Issue::whereNotNull('parent_id')->count())->toBeGreaterThan(0)
