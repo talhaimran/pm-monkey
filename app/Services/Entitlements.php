@@ -5,12 +5,39 @@ namespace App\Services;
 use App\Enums\Entitlement;
 use App\Exceptions\PlanLimitReached;
 use App\Models\Workspace;
+use Closure;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /** Spec 7.0c: per-workspace limits. No row means unlimited; gates use these, never the edition. */
 class Entitlements
 {
+    /** Inside locked(), a refusal is logged after the rollback so the audit row survives. */
+    private int $locking = 0;
+
     public function __construct(private WorkspaceUsage $usage, private AuditLogger $audit) {}
+
+    /**
+     * Runs $write in a transaction holding the workspace row, so the limit checks it makes and the write they guard
+     * can't interleave with another request's (two simultaneous adds both passing).
+     */
+    public function locked(Workspace $workspace, Closure $write): mixed
+    {
+        $this->locking++;
+        try {
+            return DB::transaction(function () use ($workspace, $write) {
+                Workspace::whereKey($workspace->id)->lockForUpdate()->first();
+
+                return $write();
+            });
+        } catch (PlanLimitReached $e) {
+            $this->logReached($workspace, $e);
+
+            throw $e;
+        } finally {
+            $this->locking--;
+        }
+    }
 
     /** The cast value, or null when the workspace has no row (unlimited / enabled). */
     public function get(Workspace $workspace, Entitlement $key): int|bool|string|null
@@ -27,9 +54,7 @@ class Entitlements
 
     /**
      * Refuses an action that would take $key past its limit; $adding = 0 refuses only when already over (an invitation
-     * accepted after the limit dropped). Logs plan_limit.reached.
-     *
-     * shortcut: checked before the write's transaction, so two simultaneous adds can both pass; lock the workspace row if that shows up.
+     * accepted after the limit dropped). Logs plan_limit.reached. Call it inside locked() with the write it guards.
      */
     public function ensure(Workspace $workspace, Entitlement $key, int $adding = 1): void
     {
@@ -39,10 +64,18 @@ class Entitlements
         }
         $current = $this->usage->current($workspace, $key);
         if ($current + $adding > $allowed) {
-            $this->audit->log('plan_limit.reached', null, ['limit' => $key->value, 'allowed' => $allowed, 'current' => $current], $workspace);
+            $e = new PlanLimitReached($key, $allowed, $current);
+            if (! $this->locking) {
+                $this->logReached($workspace, $e);
+            }
 
-            throw new PlanLimitReached($key, $allowed, $current);
+            throw $e;
         }
+    }
+
+    private function logReached(Workspace $workspace, PlanLimitReached $e): void
+    {
+        $this->audit->log('plan_limit.reached', null, ['limit' => $e->limit->value, 'allowed' => $e->allowed, 'current' => $e->current], $workspace);
     }
 
     /** A person moving from $now (billed, Viewer, or not counted: null) to billed or Viewer needs room there. */

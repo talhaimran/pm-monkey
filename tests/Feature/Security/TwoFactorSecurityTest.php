@@ -32,3 +32,15 @@ test('the shared auth.user never carries the secret or recovery codes, even duri
         ->missing('auth.user.two_factor_secret')
         ->missing('auth.user.two_factor_recovery_codes'));
 });
+
+/** Step 0 PR 8 scan, F9/F13: the profile's history entries are encrypted, and signing out clears them. */
+test('the profile page encrypts its browser history and signing out clears it', function () {
+    app(TwoFactorService::class)->enable($this->user);
+
+    // Other pages stay unencrypted. (Checked first: the Inertia factory is a singleton for the whole test.)
+    expect($this->actingAs($this->user)->get('/acme/dashboard')->viewData('page')['encryptHistory'])->toBeFalse()
+        ->and($this->get('/profile')->viewData('page')['encryptHistory'])->toBeTrue();
+
+    $this->post('/logout');
+    expect($this->get('/')->viewData('page')['clearHistory'])->toBeTrue();
+});

@@ -15,6 +15,7 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Markdown;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
@@ -39,6 +40,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+        // Names people choose (workspace, inviter, project) are echoed into Markdown mail: keep them text, not links.
+        Markdown::withSecuredEncoding();
         Model::preventLazyLoading(! $this->app->isProduction());
 
         // Every token belongs to the workspace it was made in (spec 7.0a); one made outside a workspace is never accepted.

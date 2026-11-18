@@ -17,10 +17,9 @@ class MembershipService
     {
         // Spec 7.0c: a Viewer becoming Member or Admin needs a billed seat.
         $workspace = $project->workspace()->first();
-        $now = $this->usage->isBilled($workspace, $member->email);
-        $this->entitlements->ensurePerson($workspace, $now, $now === true || $role !== ProjectRole::Viewer);
-
-        DB::transaction(function () use ($project, $member, $role) {
+        $this->entitlements->locked($workspace, function () use ($workspace, $project, $member, $role) {
+            $now = $this->usage->isBilled($workspace, $member->email);
+            $this->entitlements->ensurePerson($workspace, $now, $now === true || $role !== ProjectRole::Viewer);
             if ($role !== ProjectRole::Admin) {
                 $this->ensureNotLastAdmin($project, $member, 'role');
             }

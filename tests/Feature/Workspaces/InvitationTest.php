@@ -112,7 +112,7 @@ test('a late or wrong acceptance is refused with the reason and creates no membe
         return $carol;
     }, 'This invitation has expired. Ask an admin to invite you again.'],
     'revoked' => [function (User $carol) {
-        app(InvitationService::class)->revoke(WorkspaceInvitation::sole());
+        app(InvitationService::class)->revoke($sole = WorkspaceInvitation::sole(), $sole->inviter);
 
         return $carol;
     }, 'This invitation is no longer valid. Ask an admin to invite you again.'],

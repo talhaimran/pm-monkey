@@ -39,7 +39,7 @@ class SocialSignInController extends Controller
 
         try {
             if ($user = $request->user()) {
-                $this->social->link($user, $provider, $profile);
+                $this->social->link($user, $provider, $profile, $request->session()->get('auth.method', 'password'));
 
                 return $back->with('status', "{$name} is linked. You can now sign in with it.");
             }

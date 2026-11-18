@@ -191,11 +191,11 @@ class WorkspaceSettingsController extends Controller
         return back();
     }
 
-    public function revoke(int $invitation): RedirectResponse
+    public function revoke(Request $request, int $invitation): RedirectResponse
     {
         $workspace = $this->current->get();
         Gate::authorize('manageMembers', $workspace);
-        $this->invitations->revoke($workspace->invitations()->findOrFail($invitation));
+        $this->invitations->revoke($workspace->invitations()->findOrFail($invitation), $request->user());
 
         return back();
     }

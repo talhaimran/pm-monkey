@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 
 class ProjectService
 {
-    public function __construct(private CurrentWorkspace $current, private AuditLogger $audit, private Entitlements $entitlements) {}
+    public function __construct(private CurrentWorkspace $current, private AuditLogger $audit, private Entitlements $entitlements, private WorkspaceUsage $usage) {}
 
     public function listFor(User $user, int $perPage = 25, ?int $page = null): LengthAwarePaginator
     {
@@ -26,9 +26,13 @@ class ProjectService
     /** @param array{key: string, name: string, description?: ?string} $data */
     public function create(User $creator, array $data): Project
     {
-        $this->entitlements->ensure($this->current->get(), Entitlement::Projects);
+        $workspace = $this->current->get();
 
-        return DB::transaction(function () use ($creator, $data) {
+        return $this->entitlements->locked($workspace, function () use ($creator, $data, $workspace) {
+            $this->entitlements->ensure($workspace, Entitlement::Projects);
+            // The creator becomes the project's Admin: a billed seat if they were a Viewer.
+            $this->entitlements->ensurePerson($workspace, $this->usage->isBilled($workspace, $creator->email), true);
+
             $project = new Project([...$data, 'key' => strtoupper($data['key'])]);
             $project->workspace_id = $this->current->get()->id;
             $project->save();

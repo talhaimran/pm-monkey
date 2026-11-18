@@ -109,6 +109,8 @@ How it behaves:
 - Workspace Owners and Admins can limit which sign-in methods may enter, under *Workspace settings → Security*.
 - Someone who signed up with a provider has no password until they set one with *Forgot your password?*.
 - Nobody can unlink their last way to sign in.
+- A provider links to an existing account only when that account's email is verified; otherwise sign in with the password, verify the email, then link it from the profile.
+- If one of your workspaces doesn't allow the method you signed in with, you can't link a provider or change your email in that session.
 
 ## Running
 
