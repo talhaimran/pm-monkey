@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Spec section 4 billing terms. Billed: workspace Owners and Admins, and anyone Member or Admin in a project.
- * Viewers: everyone else. Pending invitations count as the person they would create, once per address.
+ * Viewers: everyone else. Pending (unexpired) invitations count as the person they would create, once per address.
  */
 class WorkspaceUsage
 {
@@ -71,7 +71,7 @@ class WorkspaceUsage
      *
      * shortcut: loads every member and invitation of the workspace (three queries); move to SQL if workspaces grow past a few thousand people.
      */
-    private function people(Workspace $workspace, bool $withInvitations = true): array
+    public function people(Workspace $workspace, bool $withInvitations = true): array
     {
         $billedProjectRoles = [ProjectRole::Member->value, ProjectRole::Admin->value];
         $inBilledProject = DB::table('project_user')->join('projects', 'projects.id', '=', 'project_user.project_id')
@@ -86,7 +86,8 @@ class WorkspaceUsage
             return $people;
         }
 
-        foreach ($workspace->invitations()->get(['email', 'role', 'project_role']) as $invitation) {
+        // Only pending ones: an expired invitation can't be accepted until it is resent, which checks again.
+        foreach ($workspace->invitations()->where('expires_at', '>', now())->get(['email', 'role', 'project_role']) as $invitation) {
             $email = strtolower($invitation->email);
             // Accepting keeps a member's workspace role, so only the project role can make them billed.
             $wouldBe = in_array($invitation->project_role?->value, $billedProjectRoles, true)

@@ -4,6 +4,7 @@ use App\Enums\Entitlement;
 use App\Enums\ProjectRole;
 use App\Enums\WorkspaceRole;
 use App\Exceptions\PlanLimitReached;
+use App\Mail\ProjectInvitationMail;
 use App\Mcp\Servers\PmServer;
 use App\Mcp\Tools\CreateProject;
 use App\Models\AuditLog;
@@ -14,6 +15,7 @@ use App\Services\InvitationService;
 use App\Services\WorkspaceMemberService;
 use App\Services\WorkspaceService;
 use Illuminate\Support\Facades\Mail;
+use Laravel\Socialite\Facades\Socialite;
 
 beforeEach(function () {
     Mail::fake();
@@ -142,4 +144,45 @@ test('D6: a new Cloud workspace starts with the Free values; self-hosted gets no
     expect($rows)->toMatchArray(['billed_users' => '2', 'viewers' => '3', 'projects' => '1', 'api_per_minute' => '60', 'api_per_day' => '2000', 'webhooks' => '0'])
         ->and($cloud->entitlements()->distinct()->pluck('source')->all())->toBe(['default'])
         ->and(app(Entitlements::class)->get($cloud, Entitlement::Webhooks))->toBeFalse();
+});
+
+/** The invitation token from the last invitation mail sent. */
+function lastInvitationToken(): string
+{
+    $token = null;
+    Mail::assertSent(ProjectInvitationMail::class, function ($mail) use (&$token) {
+        $token = $mail->token;
+
+        return true;
+    });
+
+    return $token;
+}
+
+test('an expired invitation no longer holds a seat, and resending it needs one again', function () {
+    $old = $this->invitations->invite($this->ws, $this->owner, 'old@example.com', WorkspaceRole::Admin);
+    $this->travel(InvitationService::DAYS + 1)->days();
+
+    $this->invitations->invite($this->ws, $this->owner, 'new@example.com', WorkspaceRole::Admin);
+
+    expect(fn () => $this->invitations->resend($old->fresh()))->toThrow(PlanLimitReached::class, 'Your plan allows 2 billed users.');
+    expect($old->fresh()->expires_at->isPast())->toBeTrue();
+});
+
+test('a sign-up refused at accept time leaves its plan_limit.reached row (password and provider)', function () {
+    config(['services.google' => ['client_id' => 'g-id', 'client_secret' => 'g-secret', 'redirect' => '/auth/google/callback']]);
+    $this->invitations->invite($this->ws, $this->owner, 'late@example.com', WorkspaceRole::Admin);
+    $token = lastInvitationToken();
+    app(Entitlements::class)->set($this->ws, Entitlement::BilledUsers, '1', 'plan');
+
+    $this->post('/register', ['name' => 'Late', 'email' => 'late@example.com', 'password' => 'password', 'password_confirmation' => 'password', 'invitation' => $token])
+        ->assertSessionHas('planLimit');
+    expect(User::where('email', 'late@example.com')->exists())->toBeFalse()
+        ->and(AuditLog::where('action', 'plan_limit.reached')->count())->toBe(1);
+
+    Socialite::fake('google', Laravel\Socialite\Two\User::fake(['id' => 'g-9', 'name' => 'Late', 'email' => 'late@example.com', 'email_verified' => true]));
+    $this->get("/invitations/{$token}")->assertOk();
+    $this->get('/auth/google/callback')->assertSessionHas('planLimit');
+    expect(User::where('email', 'late@example.com')->exists())->toBeFalse()
+        ->and(AuditLog::where('action', 'plan_limit.reached')->count())->toBe(2);
 });

@@ -144,6 +144,9 @@ class SocialSignInService
         if (! $invited && ! $this->workspaces->canCreate()) {
             throw ValidationException::withMessages(['email' => 'Ask an admin of '.Workspace::value('name').' to invite you.']);
         }
+        if ($invited) {
+            $this->invitations->ensureRoom($invitation);
+        }
 
         return DB::transaction(function () use ($provider, $profile, $email, $invited, $invitation) {
             $name = trim((string) ($profile->getName() ?: $profile->getNickname())) ?: Str::before($email, '@');
