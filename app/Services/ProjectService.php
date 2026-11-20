@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Enums\AgentStatus;
 use App\Enums\Entitlement;
 use App\Enums\IssuePriority;
 use App\Enums\IssueType;
 use App\Enums\ProjectRole;
 use App\Enums\SprintState;
+use App\Models\Agent;
 use App\Models\Column;
 use App\Models\Project;
 use App\Models\User;
@@ -16,7 +18,7 @@ use Illuminate\Validation\ValidationException;
 
 class ProjectService
 {
-    public function __construct(private CurrentWorkspace $current, private AuditLogger $audit, private Entitlements $entitlements, private WorkspaceUsage $usage) {}
+    public function __construct(private CurrentWorkspace $current, private AuditLogger $audit, private Entitlements $entitlements, private WorkspaceUsage $usage, private AgentService $agents) {}
 
     public function listFor(User $user, int $perPage = 25, ?int $page = null): LengthAwarePaginator
     {
@@ -61,6 +63,10 @@ class ProjectService
             // Deleting a project is permanent: its issues go for good, including soft-deleted ones.
             $project->issues()->withTrashed()->whereNotNull('parent_id')->forceDelete();
             $project->issues()->withTrashed()->forceDelete();
+            // An agent limited to this project alone would be left with none, which means all of them: revoke it.
+            Agent::where('status', '!=', AgentStatus::Revoked)->whereHas('projects', fn ($q) => $q->whereKey($project->id))
+                ->withCount('projects')->get()->where('projects_count', 1)
+                ->each(fn (Agent $agent) => $this->agents->revoke($agent, null, 'projects_deleted'));
             $project->delete();
             $this->audit->log('project.deleted', $project, ['name' => $project->name], $project->workspace()->first());
         });

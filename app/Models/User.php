@@ -28,6 +28,8 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, TwoFactorAuthenticatable;
 
+    private ?Agent $requestAgent = null;
+
     /**
      * Get the attributes that should be cast.
      *
@@ -71,7 +73,7 @@ class User extends Authenticatable
 
     /**
      * Projects this request may touch in the current workspace: the user's own, or every one for a workspace Owner or
-     * Admin (read-only until they join, spec 7.0b); narrowed to the token's "project:{id}" abilities when it has any.
+     * Admin (read-only until they join, spec 7.0b); narrowed to the agent's projects when it has any.
      * Each row carries my_role (null where not joined). No current workspace, no projects.
      * Use this, not projects(), for every lookup.
      */
@@ -88,27 +90,37 @@ class User extends Authenticatable
             ->when($this->tokenProjectIds(), fn ($q, $ids) => $q->whereIn('projects.id', $ids));
     }
 
-    /** @return list<int>|null project ids the current token is limited to; null when unrestricted */
-    public function tokenProjectIds(): ?array
+    /** The agent whose token made this request (spec 8, A-D1); null for people. Cached for the token in use. */
+    public function agent(): ?Agent
     {
         $token = $this->currentAccessToken();
-
-        if (! $token instanceof PersonalAccessToken) {
+        if (! $token instanceof PersonalAccessToken || ! $token->agent_id) {
             return null;
         }
+        if ($this->requestAgent?->id !== $token->agent_id) {
+            $this->requestAgent = Agent::find($token->agent_id);
+        }
 
-        $ids = collect($token->abilities)
-            ->filter(fn ($a) => str_starts_with($a, 'project:'))
-            ->map(fn ($a) => (int) substr($a, 8))
-            ->values()
-            ->all();
+        return $this->requestAgent;
+    }
+
+    /** @return list<int>|null project ids the current agent is limited to; null when unrestricted */
+    public function tokenProjectIds(): ?array
+    {
+        $ids = $this->agent()?->projects->pluck('id')->all();
 
         return $ids ?: null;
     }
 
-    /** Session users (no token) may write; token users need the "write" ability. */
+    /** People may write; an agent needs Write or Delete. A token with no agent never writes (it is refused anyway). */
     public function canWrite(): bool
     {
-        return $this->currentAccessToken() === null || $this->tokenCan('write');
+        return ! $this->currentAccessToken() instanceof PersonalAccessToken || (bool) $this->agent()?->permission_level->canWrite();
+    }
+
+    /** People may delete; an agent only at the Delete level. */
+    public function canDelete(): bool
+    {
+        return ! $this->currentAccessToken() instanceof PersonalAccessToken || (bool) $this->agent()?->permission_level->canDelete();
     }
 }

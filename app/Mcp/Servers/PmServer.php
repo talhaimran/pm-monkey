@@ -41,11 +41,16 @@ use App\Mcp\Tools\UpdateLabel;
 use App\Mcp\Tools\UpdateProject;
 use App\Mcp\Tools\UpdateSprint;
 use App\Services\ActivityLogger;
+use App\Services\AgentService;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Laravel\Mcp\Exceptions\JsonRpcException;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Version;
 use Laravel\Mcp\Server\ServerContext;
+use Laravel\Mcp\Transport\JsonRpcRequest;
+use Laravel\Mcp\Transport\JsonRpcResponse;
 
 #[Name('PmOps')]
 #[Version('1.0.0')]
@@ -115,4 +120,18 @@ class PmServer extends Server
     }
 
     protected array $prompts = [];
+
+    /** Re-checks the agent on every call, so pausing or revoking stops a long-lived stdio process at its next call. */
+    protected function runMethodHandle(JsonRpcRequest $request, ServerContext $context): iterable|JsonRpcResponse
+    {
+        try {
+            app(AgentService::class)->ensureUsable(auth()->user()?->agent());
+        } catch (HttpResponseException $e) {
+            $error = $e->getResponse()->getData(true);
+
+            throw new JsonRpcException($error['message'], -32001, $request->id, $error);
+        }
+
+        return parent::runMethodHandle($request, $context);
+    }
 }

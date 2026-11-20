@@ -1,21 +1,13 @@
 <?php
 
+use App\Enums\AgentLevel;
 use App\Models\Issue;
 use App\Models\User;
-
-/** Fresh headers and guards per call: withHeader/withToken persist and Sanctum caches the user within a test. */
-function asToken(string $token, array $headers = [])
-{
-    test()->flushHeaders();
-    app('auth')->forgetGuards();
-
-    return test()->withToken($token)->withHeaders($headers);
-}
 
 beforeEach(function () {
     $this->me = User::factory()->create();
     $this->project = makeProject($this->me, 'WEB');
-    $this->token = $this->me->createToken('agent', ['read', 'write'])->plainTextToken;
+    $this->token = makeAgent($this->me, AgentLevel::Write, name: 'agent')[1];
 });
 
 test('idempotency key replays the first response', function () {
@@ -33,7 +25,7 @@ test('idempotency key replays the first response', function () {
 });
 
 test('idempotency keys are per token and optional', function () {
-    $other = $this->me->createToken('other', ['read', 'write'])->plainTextToken;
+    $other = makeAgent($this->me, AgentLevel::Write, name: 'other')[1];
 
     foreach ([$this->token, $other] as $token) {
         asToken($token, ['Idempotency-Key' => 'same'])->postJson('/api/v1/projects/WEB/issues', ['title' => 'x'])->assertCreated();
@@ -53,7 +45,7 @@ test('failed requests are not stored for replay', function () {
 
 test('rate limit is per token', function () {
     config(['pm.api_rate_limit' => 3]);
-    $other = $this->me->createToken('other', ['read'])->plainTextToken;
+    $other = makeAgent($this->me, AgentLevel::Read, name: 'other')[1];
 
     foreach (range(1, 3) as $i) {
         asToken($this->token)->getJson('/api/v1/projects')->assertOk();

@@ -21,6 +21,7 @@ class ActivityLogger
             'changes' => $changes,
             'via' => self::via($user),
             'token_name' => self::token($user)?->name,
+            'agent_id' => $user?->agent()?->id,
         ]);
     }
 

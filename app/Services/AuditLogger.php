@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Agent;
 use App\Models\AuditLog;
 use App\Models\Issue;
 use App\Models\Project;
@@ -52,6 +53,7 @@ class AuditLogger
             'workspace_id' => $workspaceId,
             'actor_user_id' => $actor?->id,
             'actor_type' => $actorType,
+            'agent_id' => $actor?->agent()?->id,
             'via' => $actorType === 'system' ? 'system' : ActivityLogger::via($actor),
             'action' => $action,
             'target_type' => $target ? $this->type($target) : null,
@@ -80,6 +82,7 @@ class AuditLogger
             $target instanceof Project, $target instanceof Issue => $target->key,
             $target instanceof User, $target instanceof WorkspaceInvitation => $target->email,
             $target instanceof PersonalAccessToken => $target->name,
+            $target instanceof Agent => $target->label(),
             default => null,
         };
     }

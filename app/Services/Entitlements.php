@@ -58,11 +58,19 @@ class Entitlements
      */
     public function ensure(Workspace $workspace, Entitlement $key, int $adding = 1): void
     {
+        // Only count when there is a limit: counting people takes three queries.
+        if ($this->get($workspace, $key) !== null) {
+            $this->ensureCount($workspace, $key, $this->usage->current($workspace, $key), $adding);
+        }
+    }
+
+    /** ensure() for a count the caller makes, like a person's agents (agents_per_user). */
+    public function ensureCount(Workspace $workspace, Entitlement $key, int $current, int $adding = 1): void
+    {
         $allowed = $this->get($workspace, $key);
         if ($allowed === null) {
             return;
         }
-        $current = $this->usage->current($workspace, $key);
         if ($current + $adding > $allowed) {
             $e = new PlanLimitReached($key, $allowed, $current);
             if (! $this->locking) {

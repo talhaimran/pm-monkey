@@ -41,7 +41,7 @@ class ProjectPolicy
 
         return $user->tokenProjectIds() === null
             ? Gate::forUser($user)->inspect('createProject', $current->get())
-            : Response::deny('This token is limited to specific projects, so it cannot create projects. Use a token with access to all projects.');
+            : Response::deny('This agent is limited to specific projects, so it cannot create projects. Use an agent with access to all projects.');
     }
 
     /** Create and edit issues, comments and labels: members and admins with a writable token. */
@@ -109,6 +109,6 @@ class ProjectPolicy
     {
         return $user->canWrite()
             ? null
-            : Response::deny('This API token is read-only. Use a read-write token to make changes.');
+            : Response::deny('This agent is read-only. Its owner can change its level in Settings → Agents.');
     }
 }
