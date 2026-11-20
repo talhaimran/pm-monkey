@@ -32,8 +32,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /*
  * Spec 7.0a: acting in workspace A, nothing of workspace B is ever shown or changed, and B's ids and keys
- * get the same error as ids and keys that don't exist. ann is in A and B (and Admin of B's projects, so
- * only the workspace boundary stops her); bob is only in B. B's text all carries the marker "B-SECRET".
+ * get the same error as ids and keys that don't exist. ann is in A and B (and Admin of B's projects, with Delete-level
+ * agents, so only the workspace boundary stops her); bob is only in B. B's text all carries the marker "B-SECRET".
  *
  * Every registered route and MCP tool needs a case below or a reasoned exemption; a new one fails
  * the coverage test until it gets one.
@@ -310,7 +310,7 @@ beforeEach(function () {
     $this->bColumn = app(ColumnService::class)->create($ops, ['name' => 'B-SECRET col']);
     $this->bSprint = app(SprintService::class)->create($ops, ['name' => 'B-SECRET sprint']);
     $this->bInvitation = app(InvitationService::class)->invite($this->b, $this->bob, 'carol@example.com', WorkspaceRole::Member, $ops, ProjectRole::Member);
-    $this->annB = app(AgentService::class)->create($this->ann, ['name' => 'B-SECRET token', 'level' => 'write']);
+    $this->annB = app(AgentService::class)->create($this->ann, ['name' => 'B-SECRET token', 'level' => 'delete']);
 
     // Workspace A: ann's current workspace.
     $this->a = makeWorkspace($this->ann, 'alpha');
@@ -319,7 +319,7 @@ beforeEach(function () {
     app(CommentService::class)->add($issue, $this->ann, 'Alpha comment');
     app(LabelService::class)->create($web, ['name' => 'alpha']);
     app(SprintService::class)->create($web, ['name' => 'Alpha sprint']);
-    $this->annA = app(AgentService::class)->create($this->ann, ['name' => 'ann in A', 'level' => 'write']);
+    $this->annA = app(AgentService::class)->create($this->ann, ['name' => 'ann in A', 'level' => 'delete']);
 
     $this->bBefore = workspaceSnapshot($this->b);
 });

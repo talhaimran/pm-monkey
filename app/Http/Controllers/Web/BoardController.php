@@ -96,7 +96,7 @@ class BoardController extends Controller
 
     public function destroyColumn(DeleteColumnRequest $request, Project $project, Column $column): RedirectResponse
     {
-        Gate::authorize('manage', $project);
+        Gate::authorize('removeColumn', $project);
         $this->columns->delete($column->setRelation('project', $project), $request->validated('move_issues_to'));
 
         return back();

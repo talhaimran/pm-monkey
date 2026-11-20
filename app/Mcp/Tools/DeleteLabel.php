@@ -25,7 +25,7 @@ class DeleteLabel extends Tool
     {
         $request->validate(['project' => 'required|string', 'label' => 'required|string']);
         $project = $projects->resolve($request->user(), $request->get('project'));
-        Gate::authorize('contribute', $project);
+        Gate::authorize('remove', $project);
         $label = $labels->resolve($project, $request->get('label'));
         $labels->delete($label);
 

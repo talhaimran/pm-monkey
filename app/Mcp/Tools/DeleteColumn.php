@@ -25,7 +25,7 @@ class DeleteColumn extends Tool
     {
         $data = $request->validate(['project' => 'required|string', 'column' => 'required|string', 'move_issues_to' => 'nullable|string|max:50']);
         $project = $projects->resolve($request->user(), $data['project']);
-        Gate::authorize('manage', $project);
+        Gate::authorize('removeColumn', $project);
         $column = $columns->resolve($project, $data['column']);
         $columns->delete($column, $data['move_issues_to'] ?? null);
 

@@ -7,6 +7,7 @@ use App\Mcp\Tools\Concerns\RespondsWithJson;
 use App\Services\ProjectService;
 use App\Services\SprintService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Support\Facades\Gate;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
@@ -23,7 +24,8 @@ class DeleteSprint extends Tool
 
     public function handle(Request $request, ProjectService $projects, SprintService $sprints): Response
     {
-        [, $sprint] = $this->projectAndSprint($request, $projects, $sprints);
+        [$project, $sprint] = $this->projectAndSprint($request, $projects, $sprints);
+        Gate::authorize('remove', $project);
         $sprints->delete($sprint);
 
         return $this->result("Deleted {$sprint->name}; its issues are back in the backlog.", ['deleted' => $sprint->name]);

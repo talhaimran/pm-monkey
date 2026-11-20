@@ -25,7 +25,7 @@ class CommentPolicy
     public function delete(User $user, Comment $comment): Response
     {
         $project = $comment->issue->project;
-        $allowed = $this->projects->contribute($user, $project);
+        $allowed = $this->projects->remove($user, $project);
         if ($allowed->denied()) {
             return $allowed;
         }

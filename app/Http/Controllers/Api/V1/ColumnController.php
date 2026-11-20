@@ -47,7 +47,7 @@ class ColumnController extends Controller
     public function destroy(DeleteColumnRequest $request, string $key, string $name): Response
     {
         $project = $this->projects->resolve($request->user(), $key);
-        Gate::authorize('manage', $project);
+        Gate::authorize('removeColumn', $project);
         $this->columns->delete($this->columns->resolve($project, $name), $request->validated('move_issues_to'));
 
         return response()->noContent();

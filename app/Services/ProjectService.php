@@ -64,8 +64,14 @@ class ProjectService
             $project->issues()->withTrashed()->whereNotNull('parent_id')->forceDelete();
             $project->issues()->withTrashed()->forceDelete();
             // An agent limited to this project alone would be left with none, which means all of them: revoke it.
-            Agent::where('status', '!=', AgentStatus::Revoked)->whereHas('projects', fn ($q) => $q->whereKey($project->id))
-                ->withCount('projects')->get()->where('projects_count', 1)
+            // Its row is locked first, so two deletes of its last two projects run in turn and the second sees the
+            // first (the count is a locking read, so it reads the latest rows, not this transaction's snapshot).
+            $agents = Agent::whereIn('id', DB::table('agent_projects')->where('project_id', $project->id)->select('agent_id'))
+                ->where('status', '!=', AgentStatus::Revoked)->orderBy('id')->lockForUpdate()->get();
+            $scopedElsewhere = DB::table('agent_projects')->join('projects', 'projects.id', '=', 'agent_projects.project_id')
+                ->whereIn('agent_projects.agent_id', $agents->modelKeys())->where('agent_projects.project_id', '!=', $project->id)
+                ->sharedLock()->pluck('agent_projects.agent_id');
+            $agents->reject(fn (Agent $agent) => $scopedElsewhere->contains($agent->id))
                 ->each(fn (Agent $agent) => $this->agents->revoke($agent, null, 'projects_deleted'));
             $project->delete();
             $this->audit->log('project.deleted', $project, ['name' => $project->name], $project->workspace()->first());

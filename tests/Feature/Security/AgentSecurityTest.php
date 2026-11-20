@@ -6,15 +6,23 @@ use App\Enums\Entitlement;
 use App\Enums\ProjectRole;
 use App\Mcp\Servers\LocalPmServer;
 use App\Mcp\Servers\PmServer;
+use App\Mcp\Tools\DeleteLabel;
+use App\Mcp\Tools\DeleteProject;
 use App\Mcp\Tools\ListProjects;
 use App\Models\Activity;
 use App\Models\Agent;
 use App\Models\AuditLog;
 use App\Models\Comment;
+use App\Models\Issue;
+use App\Models\Project;
 use App\Models\User;
 use App\Services\AgentService;
+use App\Services\ColumnService;
+use App\Services\CommentService;
 use App\Services\Entitlements;
+use App\Services\LabelService;
 use App\Services\ProjectService;
+use App\Services\SprintService;
 use App\Services\WorkspaceMemberService;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -197,4 +205,73 @@ test('deleting the only project of a scoped agent revokes it rather than widenin
         ->and(AuditLog::where('action', 'agent.revoked')->sole()->metadata)->toEqual(['by' => 'system', 'reason' => 'projects_deleted']);
     asToken($plain)->getJson('/api/v1/projects')->assertUnauthorized();
     expect(Agent::count())->toBe(1);
+});
+
+/** Scan F1: every delete needs the Delete level, not only issues. One of each deletable thing in WEB, plus project API. */
+function deletables($t): array
+{
+    $issue = Issue::firstOrFail();
+    $comment = app(CommentService::class)->add($issue, $t->owner, 'Note');
+    app(LabelService::class)->create($t->web, ['name' => 'ux']);
+    app(ColumnService::class)->create($t->web, ['name' => 'Blocked']);
+    $sprint = app(SprintService::class)->create($t->web, ['name' => 'Sprint 9']);
+
+    return [
+        'project' => ['/api/v1/projects/API', fn () => Project::where('key', 'API')->exists()],
+        'comment' => ["/api/v1/comments/{$comment->id}", fn () => Comment::whereKey($comment->id)->exists()],
+        'label' => ['/api/v1/projects/WEB/labels/ux', fn () => $t->web->labels()->where('name', 'ux')->exists()],
+        'column' => ['/api/v1/projects/WEB/columns/Blocked', fn () => $t->web->columns()->where('name', 'Blocked')->exists()],
+        'sprint' => ["/api/v1/projects/WEB/sprints/{$sprint->id}", fn () => $t->web->sprints()->whereKey($sprint->id)->exists()],
+    ];
+}
+
+test('a Write agent cannot delete a project, comment, label, column or sprint over REST; a Delete agent can', function () {
+    $refused = "This agent can't delete. Its owner can allow deletes in Settings → Agents.";
+    $things = deletables($this);
+    [, $write] = makeAgent($this->owner, AgentLevel::Write);
+    [, $delete] = makeAgent($this->owner, AgentLevel::Delete);
+
+    foreach ($things as $name => [$path, $exists]) {
+        asToken($write)->deleteJson($path, ['confirm' => true])->assertForbidden()->assertJsonPath('message', $refused);
+        expect($exists())->toBeTrue("{$name} survives a Write agent");
+    }
+    foreach ($things as $name => [$path, $exists]) {
+        asToken($delete)->deleteJson($path, ['confirm' => true])->assertSuccessful();
+        expect($exists())->toBeFalse("{$name} is deleted by a Delete agent");
+    }
+});
+
+test('a Write agent cannot delete over MCP either; a Delete agent can', function () {
+    $refused = "This agent can't delete. Its owner can allow deletes in Settings → Agents.";
+    app(LabelService::class)->create($this->web, ['name' => 'ux']);
+
+    apiAs($this->owner, AgentLevel::Write);
+    PmServer::tool(DeleteProject::class, ['project' => 'API', 'confirm' => true])->assertHasErrors([$refused]);
+    PmServer::tool(DeleteLabel::class, ['project' => 'WEB', 'label' => 'ux'])->assertHasErrors([$refused]);
+    expect(Project::where('key', 'API')->exists())->toBeTrue()
+        ->and($this->web->labels()->where('name', 'ux')->exists())->toBeTrue();
+
+    app('auth')->forgetGuards();
+    apiAs($this->owner, AgentLevel::Delete);
+    PmServer::tool(DeleteProject::class, ['project' => 'API', 'confirm' => true])->assertOk();
+    PmServer::tool(DeleteLabel::class, ['project' => 'WEB', 'label' => 'ux'])->assertOk();
+});
+
+test('people deleting in the web app are unaffected by agent levels', function () {
+    $label = app(LabelService::class)->create($this->web, ['name' => 'ux']);
+    $sprint = app(SprintService::class)->create($this->web, ['name' => 'Sprint 9']);
+
+    $this->actingAs($this->owner)->delete(w("/projects/WEB/labels/{$label->id}"))->assertSessionHasNoErrors()->assertRedirect();
+    $this->actingAs($this->owner)->delete(w("/projects/WEB/sprints/{$sprint->id}"))->assertSessionHasNoErrors()->assertRedirect();
+    expect($this->web->labels()->count())->toBe(0)->and($this->web->sprints()->count())->toBe(0);
+});
+
+test('scan F2: an agent scoped to two projects stays active after the first is deleted and is revoked after the last', function () {
+    [$agent] = makeAgent($this->owner, AgentLevel::Write, ['WEB', 'API']);
+
+    app(ProjectService::class)->delete($this->web);
+    expect($agent->fresh()->status)->toBe(AgentStatus::Active);
+
+    app(ProjectService::class)->delete($this->api->fresh());
+    expect($agent->fresh()->status)->toBe(AgentStatus::Revoked);
 });

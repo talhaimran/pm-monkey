@@ -15,14 +15,9 @@ class IssuePolicy
         return $this->projects->contribute($user, $issue->project);
     }
 
-    /** Owner's role first (contribute), then the agent's level: an agent deletes only at the Delete level. */
     public function delete(User $user, Issue $issue): Response
     {
-        $contribute = $this->projects->contribute($user, $issue->project);
-
-        return $contribute->denied() || $user->canDelete()
-            ? $contribute
-            : Response::deny("This agent can't delete. Its owner can allow deletes in Settings → Agents.");
+        return $this->projects->remove($user, $issue->project);
     }
 
     public function comment(User $user, Issue $issue): Response
