@@ -17,7 +17,6 @@ class PurgeDeletedWorkspaces extends Command
         $purged = 0;
         // eachById: rows are deleted while paging.
         Workspace::where('deletion_scheduled_at', '<=', now())->eachById(function (Workspace $workspace) use ($workspaces, &$purged) {
-            // shortcut: not logged yet; AuditLogger records workspace.deleted in PR 4.
             $workspaces->purge($workspace);
             $purged++;
         });
