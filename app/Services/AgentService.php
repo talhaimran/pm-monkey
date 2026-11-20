@@ -82,11 +82,12 @@ class AgentService
     {
         $rules = collect(self::rules())->except('expires_in_days')->map(fn ($rule) => ['sometimes', ...$rule])->all();
         $data = Validator::make($data, $rules)->validate();
-        $this->ensureNotRevoked($agent);
         $owner = $agent->owner()->firstOrFail();
         $projectIds = array_key_exists('projects', $data) ? $this->projectIds($owner, $data['projects'] ?? []) : null;
 
         return $this->entitlements->locked($agent->workspace()->firstOrFail(), function () use ($agent, $actor, $data, $projectIds) {
+            $this->lockFresh($agent);
+            $this->ensureNotRevoked($agent);
             $before = ['name' => $agent->name, 'level' => $agent->permission_level->value, 'projects' => $this->projectKeys($agent)];
             if (isset($data['name'])) {
                 $this->ensureUniqueName($this->agentsOf($agent->workspace_id, $agent->owner_user_id)->whereKeyNot($agent->id), trim($data['name']));
@@ -131,6 +132,7 @@ class AgentService
     public function revoke(Agent $agent, ?User $actor, string $reason = 'manual'): void
     {
         DB::transaction(function () use ($agent, $actor, $reason) {
+            $this->lockFresh($agent);
             $agent->token()->delete();
             if ($agent->status !== AgentStatus::Revoked) {
                 $agent->update(['status' => AgentStatus::Revoked]);
@@ -142,9 +144,9 @@ class AgentService
     /** A new token for the same agent, with the old one's lifetime; the old one stops working at once. */
     public function regenerateToken(Agent $agent, User $actor): string
     {
-        $this->ensureNotRevoked($agent);
-
         return DB::transaction(function () use ($agent, $actor) {
+            $this->lockFresh($agent);
+            $this->ensureNotRevoked($agent);
             $old = $agent->token()->first();
             $agent->token()->delete();
             $plain = $this->issueToken($agent, $agent->owner()->firstOrFail(), $old?->expires_at ? now()->add($old->created_at->diff($old->expires_at)) : null);
@@ -217,11 +219,20 @@ class AgentService
 
     private function setStatus(Agent $agent, User $actor, AgentStatus $status, string $action): void
     {
-        $this->ensureNotRevoked($agent);
-        if ($agent->status !== $status) {
-            $agent->update(['status' => $status]);
-            $this->log($action, $agent, $actor, ['by' => $this->by($agent, $actor)]);
-        }
+        DB::transaction(function () use ($agent, $actor, $status, $action) {
+            $this->lockFresh($agent);
+            $this->ensureNotRevoked($agent);
+            if ($agent->status !== $status) {
+                $agent->update(['status' => $status]);
+                $this->log($action, $agent, $actor, ['by' => $this->by($agent, $actor)]);
+            }
+        });
+    }
+
+    /** Locks the agent row and re-reads it into $agent, so a caller's stale copy can't undo a concurrent revoke. */
+    private function lockFresh(Agent $agent): void
+    {
+        $agent->setRawAttributes(Agent::whereKey($agent->id)->lockForUpdate()->firstOrFail()->getAttributes(), true);
     }
 
     private function issueToken(Agent $agent, User $owner, ?Carbon $expiresAt): string

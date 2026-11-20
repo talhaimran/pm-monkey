@@ -30,9 +30,7 @@ class LocalPmServer extends PmServer
         $token = $plainToken ? PersonalAccessToken::findToken($plainToken)?->loadMissing('tokenable') : null;
 
         if (! $token || ! $token->tokenable instanceof User || ! $token->agent_id || $token->expires_at?->isPast()) {
-            throw new RuntimeException(
-                'PM_MCP_TOKEN is missing or invalid. Create an API token at /settings/tokens and set PM_MCP_TOKEN in your MCP client config.'
-            );
+            throw new RuntimeException(self::INVALID_TOKEN);
         }
         $user = $token->tokenable->withAccessToken($token);
         $agents = app(AgentService::class);

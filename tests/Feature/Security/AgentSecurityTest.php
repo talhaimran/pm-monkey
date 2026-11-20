@@ -128,6 +128,22 @@ test('a long-lived stdio server stops at the next tool call once its agent is pa
     PmServer::tool(ListProjects::class)->assertHasErrors(['stdio-bot was revoked.']);
 });
 
+test('a long-lived stdio server stops at the next tool call once its token is regenerated or expires', function () {
+    [$agent, $plain] = makeAgent($this->owner, AgentLevel::Write);
+    LocalPmServer::authenticate($plain);
+    PmServer::tool(ListProjects::class)->assertOk();
+
+    $this->agents->regenerateToken($agent, $this->owner);
+    PmServer::tool(ListProjects::class)->assertHasErrors(['PM_MCP_TOKEN is missing or invalid.']);
+
+    [, $expiring] = $this->agents->create($this->owner, ['name' => 'short-lived', 'level' => 'write', 'expires_in_days' => 1]);
+    LocalPmServer::authenticate($expiring);
+    PmServer::tool(ListProjects::class)->assertOk();
+
+    $this->travel(2)->days();
+    PmServer::tool(ListProjects::class)->assertHasErrors(['PM_MCP_TOKEN is missing or invalid.']);
+});
+
 test('the rate limit is per agent, and regenerating the token does not reset it', function () {
     app(Entitlements::class)->set($this->ws, Entitlement::ApiPerMinute, '2', 'override');
     [$agent, $a] = makeAgent($this->owner, AgentLevel::Read);

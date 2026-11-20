@@ -97,6 +97,8 @@ test('every agent change writes its audit event once, without the token', functi
         ->and($rows->pluck('target_type')->unique()->all())->toBe(['agent'])
         ->and($rows->pluck('target_label')->unique()->all())->toBe(['bot'])
         ->and($rows->pluck('actor_user_id')->unique()->all())->toBe([$this->owner->id])
+        ->and($rows[0]->metadata)->toEqual(['level' => 'read', 'projects' => ['WEB']])
+        ->and($rows[4]->metadata)->toBeNull()
         ->and($rows[1]->metadata)->toEqual(['level' => ['before' => 'read', 'after' => 'write'], 'projects' => ['before' => ['WEB'], 'after' => ['API', 'WEB']]])
         ->and($rows[2]->metadata)->toEqual(['by' => 'owner'])
         ->and($rows[5]->metadata)->toEqual(['by' => 'owner', 'reason' => 'manual']);
@@ -142,4 +144,25 @@ test('listFor shows a Member their own agents and an Owner every agent, flagging
         ->and($all['alex bot']['projects'])->toBeNull()
         ->and($all['alex bot']['level'])->toBe('write')
         ->and($all['alex bot']['owner']['email'])->toBe($alex->email);
+});
+
+test('a stale instance cannot act on an agent revoked meanwhile: the row is locked and re-read first', function () {
+    [$agent] = $this->agents->create($this->owner, ['name' => 'bot', 'level' => 'read']);
+    $this->agents->pause($agent, $this->owner);
+    $stale = Agent::findOrFail($agent->id);
+    $this->agents->revoke(Agent::findOrFail($agent->id), $this->owner);
+
+    foreach ([
+        fn () => $this->agents->resume($stale, $this->owner),
+        fn () => $this->agents->pause($stale, $this->owner),
+        fn () => $this->agents->update($stale, $this->owner, ['level' => 'write']),
+        fn () => $this->agents->regenerateToken($stale, $this->owner),
+    ] as $call) {
+        expect($call)->toThrow(ValidationException::class, 'bot was revoked.');
+    }
+    $this->agents->revoke($stale, $this->owner);
+
+    expect(Agent::findOrFail($agent->id)->only(['status', 'permission_level']))->toEqual(['status' => AgentStatus::Revoked, 'permission_level' => AgentLevel::Read])
+        ->and(PersonalAccessToken::where('agent_id', $agent->id)->exists())->toBeFalse()
+        ->and(AuditLog::where('action', 'agent.revoked')->count())->toBe(1);
 });
