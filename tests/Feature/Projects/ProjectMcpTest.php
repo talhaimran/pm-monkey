@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AgentLevel;
 use App\Enums\ProjectRole;
 use App\Mcp\Servers\PmServer;
 use App\Mcp\Tools\CreateProject;
@@ -46,7 +47,7 @@ test('update_project needs write ability', function () {
     $me = User::factory()->create();
     makeProject($me);
 
-    apiAs($me, ['read']);
+    apiAs($me, AgentLevel::Read);
     PmServer::tool(UpdateProject::class, ['project' => 'WEB', 'name' => 'X'])->assertHasErrors();
 
     apiAs($me);

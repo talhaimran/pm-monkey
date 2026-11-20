@@ -1,8 +1,10 @@
 <?php
 
+use App\Enums\AgentLevel;
 use App\Enums\IssueType;
 use App\Enums\SprintState;
 use App\Enums\WorkspaceRole;
+use App\Models\Agent;
 use App\Models\Issue;
 use App\Models\Project;
 use App\Models\User;
@@ -39,7 +41,8 @@ test('demo seed builds a usable project and prints a working token', function ()
         ->and($active->issues()->count())->toBeGreaterThanOrEqual(8)
         ->and($project->sprints()->where('state', SprintState::Planned)->count())->toBe(1)
         ->and(Issue::where('assignee_id', $demo->id)->count())->toBeGreaterThan(0)
-        ->and(PersonalAccessToken::where('name', 'Demo token')->sole()->abilities)->toBe(['read', 'write']);
+        ->and(Agent::where('name', 'Demo token')->sole()->permission_level)->toBe(AgentLevel::Write)
+        ->and(PersonalAccessToken::where('name', 'Demo token')->sole()->agent_id)->not->toBeNull();
 });
 
 test('the printed demo token works against the api', function () {

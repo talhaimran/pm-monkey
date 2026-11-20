@@ -6,10 +6,10 @@ use App\Mail\ProjectInvitationMail;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\AgentService;
 use App\Services\AuditLogger;
 use App\Services\InvitationService;
 use App\Services\ProjectService;
-use App\Services\TokenService;
 use App\Services\TwoFactorService;
 use App\Services\WorkspaceMemberService;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -174,13 +174,13 @@ test('project events: created (with via), deleted and admin_joined', function ()
     expectOneAudit('project.admin_joined', $this->ws, $admin, 'WEB');
 });
 
-test('token events record the token name, never the token', function () {
+test('agent events record the agent name, never the token', function () {
     $this->actingAs($this->owner);
-    $token = app(TokenService::class)->create($this->owner, 'ci deploy', true, null);
-    expectOneAudit('token.created', $this->ws, $this->owner, 'ci deploy');
+    [$agent] = app(AgentService::class)->create($this->owner, ['name' => 'ci deploy', 'level' => 'write']);
+    expectOneAudit('agent.created', $this->ws, $this->owner, 'ci deploy');
 
-    app(TokenService::class)->revoke($this->owner, $token->accessToken->id);
-    expectOneAudit('token.revoked', $this->ws, $this->owner, 'ci deploy');
+    app(AgentService::class)->revoke($agent, $this->owner);
+    expectOneAudit('agent.revoked', $this->ws, $this->owner, 'ci deploy');
 });
 
 test('issues:purge records issue.purged in the audit log by key, without the title (E8)', function () {
@@ -222,13 +222,13 @@ test('filters by actor, action group and date', function () {
     $this->ws->addMember($admin, WorkspaceRole::Admin);
     $this->travel(2)->days();
     $this->actingAs($admin);
-    app(TokenService::class)->create($admin, 'later', false, null);
+    app(AgentService::class)->create($admin, ['name' => 'later', 'level' => 'read']);
 
     $get = fn (array $q) => $this->actingAs($this->owner)->get('/acme/settings/audit-log?'.http_build_query($q))->viewData('page')['props']['entries']['data'];
 
-    expect(collect($get(['actor' => $admin->id]))->pluck('action')->all())->toBe(['token.created'])
+    expect(collect($get(['actor' => $admin->id]))->pluck('action')->all())->toBe(['agent.created'])
         ->and(collect($get(['group' => 'workspace']))->pluck('action')->all())->toBe(['workspace.created'])
-        ->and(collect($get(['from' => now()->toDateString()]))->pluck('action')->all())->toBe(['token.created'])
+        ->and(collect($get(['from' => now()->toDateString()]))->pluck('action')->all())->toBe(['agent.created'])
         ->and(collect($get(['to' => now()->subDays(1)->toDateString()]))->pluck('action')->sort()->values()->all())->toBe(['project.created', 'workspace.created']);
 });
 
@@ -264,7 +264,7 @@ test('no password, token or secret ever reaches the audit log', function () {
     $this->post('/login', ['email' => 'secret@example.com', 'password' => 'Wrong-Secret-Passw0rd!']);
     $this->post('/login', ['email' => 'secret@example.com', 'password' => $password]);
     $this->put('/password', ['current_password' => $password, 'password' => 'Next-Secret-Passw0rd!', 'password_confirmation' => 'Next-Secret-Passw0rd!']);
-    $plain[] = app(TokenService::class)->create($user, 'agent', true, null)->plainTextToken;
+    $plain[] = app(AgentService::class)->create($user, ['name' => 'agent', 'level' => 'write'])[1];
     $this->post('/acme/settings/tokens', ['name' => 'web token', 'access' => 'write']);
     $plain[] = session('token');
     Mail::fake();
@@ -297,7 +297,7 @@ test('the Who filter lists former members who still have entries here, but not p
     $former = User::factory()->create(['name' => 'Former Fay']);
     $this->ws->addMember($former, WorkspaceRole::Admin);
     $this->actingAs($former);
-    app(TokenService::class)->create($former, 'old token', false, null);
+    app(AgentService::class)->create($former, ['name' => 'old token', 'level' => 'read']);
     app(WorkspaceMemberService::class)->remove($this->ws, $this->owner, $former);
     makeWorkspace(User::factory()->create(['name' => 'Stranger']), 'other');
     useWorkspace($this->ws);
@@ -305,7 +305,7 @@ test('the Who filter lists former members who still have entries here, but not p
     $this->actingAs($this->owner)->get('/acme/settings/audit-log')->assertInertia(fn (Assert $page) => $page
         ->where('actors', [['id' => $former->id, 'name' => 'Former Fay'], ['id' => $this->owner->id, 'name' => 'Olive']]));
     $this->actingAs($this->owner)->get("/acme/settings/audit-log?actor={$former->id}")->assertInertia(fn (Assert $page) => $page
-        ->where('entries.data', fn ($rows) => collect($rows)->pluck('action')->all() === ['token.created']));
+        ->where('entries.data', fn ($rows) => collect($rows)->pluck('action')->all() === ['agent.created']));
 });
 
 test('2fa events: enabled, recovery codes regenerated, recovery code used, disabled, in each of the user’s workspaces', function () {

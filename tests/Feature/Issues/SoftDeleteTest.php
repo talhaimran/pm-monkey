@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AgentLevel;
 use App\Enums\ProjectRole;
 use App\Mcp\Servers\PmServer;
 use App\Mcp\Tools\DeleteComment;
@@ -166,7 +167,7 @@ test('viewers, read-only tokens and outsiders cannot delete or restore', functio
     $this->issues->restore($issue, $this->admin);
     $this->flushHeaders();
     app('auth')->forgetGuards();
-    apiAs($this->admin, ['read']);
+    apiAs($this->admin, AgentLevel::Read);
     $this->deleteJson('/api/v1/issues/WEB-1', ['confirm' => true])->assertForbidden();
     expect(Issue::count())->toBe(1);
 });

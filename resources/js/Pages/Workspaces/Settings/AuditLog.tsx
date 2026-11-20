@@ -46,6 +46,12 @@ const sentences: Record<string, string> = {
     'project.admin_joined': 'Joined as Admin:',
     'token.created': 'Created API token',
     'token.revoked': 'Revoked API token',
+    'agent.created': 'Created agent',
+    'agent.updated': 'Changed agent',
+    'agent.paused': 'Paused agent',
+    'agent.resumed': 'Resumed agent',
+    'agent.revoked': 'Revoked agent',
+    'agent.token_regenerated': 'Regenerated the token of agent',
     'issue.purged': 'Purged deleted issue',
     'audit_log.exported': 'Exported the audit log',
 };

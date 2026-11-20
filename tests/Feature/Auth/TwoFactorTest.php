@@ -3,7 +3,7 @@
 use App\Enums\WorkspaceRole;
 use App\Models\AuditLog;
 use App\Models\User;
-use App\Services\TokenService;
+use App\Services\AgentService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -144,15 +144,15 @@ describe('a workspace that requires it', function () {
     test('creating a token needs it on; existing tokens keep working', function () {
         $this->ws->forceFill(['settings' => []])->save();
         useWorkspace($this->ws);
-        $old = app(TokenService::class)->create($this->member, 'old', false, null)->plainTextToken;
+        $old = app(AgentService::class)->create($this->member, ['name' => 'old', 'level' => 'read'])[1];
         $this->ws->forceFill(['settings' => ['require_2fa' => true]])->save();
 
-        expect(fn () => app(TokenService::class)->create($this->member, 'new', false, null))
-            ->toThrow(ValidationException::class, 'Acme requires two-factor authentication. Turn it on in your profile before creating a token.');
+        expect(fn () => app(AgentService::class)->create($this->member, ['name' => 'new', 'level' => 'read']))
+            ->toThrow(ValidationException::class, 'Acme requires two-factor authentication. Turn it on in your profile before creating an agent.');
         $this->withToken($old)->getJson('/api/v1/projects')->assertOk();
 
         enableTwoFactor($this->member);
-        expect(app(TokenService::class)->create($this->member->fresh(), 'new', false, null)->plainTextToken)->toBeString();
+        expect(app(AgentService::class)->create($this->member->fresh(), ['name' => 'new', 'level' => 'read'])[1])->toBeString();
     });
 });
 

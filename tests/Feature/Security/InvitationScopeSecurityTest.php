@@ -4,8 +4,8 @@ use App\Enums\ProjectRole;
 use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
+use App\Services\AgentService;
 use App\Services\InvitationService;
-use App\Services\TokenService;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -37,7 +37,7 @@ test('F11: a token scoped to one project cannot overwrite invitations outside it
     makeInvitation($this->api, $this->owner, 'x@example.com', 'member');
     app(InvitationService::class)->invite($this->ws, $this->owner, 'y@example.com', WorkspaceRole::Admin);
     useWorkspace($this->ws);
-    $token = app(TokenService::class)->create($this->owner, 'scoped', true, ['WEB'])->plainTextToken;
+    $token = app(AgentService::class)->create($this->owner, ['name' => 'scoped', 'level' => 'write', 'projects' => ['WEB']])[1];
 
     foreach (['x@example.com', 'y@example.com'] as $email) {
         $this->withToken($token)->postJson('/api/v1/projects/WEB/invitations', ['email' => $email, 'role' => 'member'])->assertUnprocessable()->assertJsonValidationErrors('email');

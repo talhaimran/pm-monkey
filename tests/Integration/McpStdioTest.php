@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AgentLevel;
 use App\Models\Activity;
 use App\Models\User;
 use Illuminate\Support\Facades\Process;
@@ -34,7 +35,7 @@ function runStdio(array $messages, array $env): array
 test('stdio server answers real JSON-RPC calls as the token user', function () {
     $user = User::factory()->create();
     makeProject($user, 'WEB');
-    $token = $user->createToken('stdio-agent', ['read', 'write'])->plainTextToken;
+    $token = makeAgent($user, AgentLevel::Write, name: 'stdio-agent')[1];
 
     [$result, $responses] = runStdio([
         ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'initialize', 'params' => ['protocolVersion' => '2025-06-18', 'capabilities' => (object) [], 'clientInfo' => ['name' => 'pest', 'version' => '1']]],
@@ -51,7 +52,7 @@ test('stdio server answers real JSON-RPC calls as the token user', function () {
         ->and($responses[4]['result']['content'][0]['text'])->toContain('"title":"Over stdio"');
 
     $activity = Activity::sole();
-    expect($activity->via)->toBe('mcp')->and($activity->token_name)->toBe('stdio-agent');
+    expect($activity->via)->toBe('mcp')->and($activity->token_name)->toBe('stdio-agent')->and($activity->agent_id)->not->toBeNull();
 });
 
 test('stdio server refuses to start without a valid token', function () {

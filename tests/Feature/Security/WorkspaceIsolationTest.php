@@ -1,10 +1,12 @@
 <?php
 
+use App\Enums\AgentStatus;
 use App\Enums\ProjectRole;
 use App\Enums\WorkspaceRole;
 use App\Mcp\Servers\LocalPmServer;
 use App\Mcp\Servers\PmServer;
 use App\Mcp\Tools;
+use App\Models\Agent;
 use App\Models\Column;
 use App\Models\Comment;
 use App\Models\Issue;
@@ -13,13 +15,13 @@ use App\Models\Project;
 use App\Models\Sprint;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\AgentService;
 use App\Services\ColumnService;
 use App\Services\CommentService;
 use App\Services\CurrentWorkspace;
 use App\Services\InvitationService;
 use App\Services\LabelService;
 use App\Services\SprintService;
-use App\Services\TokenService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -238,7 +240,7 @@ function isolationVariants($t): array
     $b = [
         '{P}' => 'OPS', '{I}' => 'OPS-1', '{C}' => (string) $t->bComment->id, '{COL}' => (string) $t->bColumn->id, '{COLN}' => 'B-SECRET col',
         '{L}' => (string) $t->bLabel->id, '{LN}' => 'b-secret', '{S}' => (string) $t->bSprint->id, '{SN}' => 'B-SECRET sprint',
-        '{T}' => (string) $t->annB->accessToken->id, '{INV}' => (string) $t->bInvitation->id, '{U}' => (string) $t->bob->id, '{E}' => $t->bob->email,
+        '{T}' => (string) $t->annB[0]->id, '{INV}' => (string) $t->bInvitation->id, '{U}' => (string) $t->bob->id, '{E}' => $t->bob->email,
     ];
     $missing = [
         '{P}' => 'NOPE', '{I}' => 'NOPE-1', '{C}' => '999999', '{COL}' => '999998', '{COLN}' => 'No such col',
@@ -287,6 +289,7 @@ function workspaceSnapshot(Workspace $w): string
         DB::table('workspace_user')->where('workspace_id', $w->id)->orderBy('user_id')->get(),
         DB::table('workspace_invitations')->where('workspace_id', $w->id)->orderBy('id')->get(),
         DB::table('personal_access_tokens')->where('workspace_id', $w->id)->orderBy('id')->get(['id', 'name', 'abilities']),
+        DB::table('agents')->where('workspace_id', $w->id)->orderBy('id')->get(),
     ]));
 }
 
@@ -307,7 +310,7 @@ beforeEach(function () {
     $this->bColumn = app(ColumnService::class)->create($ops, ['name' => 'B-SECRET col']);
     $this->bSprint = app(SprintService::class)->create($ops, ['name' => 'B-SECRET sprint']);
     $this->bInvitation = app(InvitationService::class)->invite($this->b, $this->bob, 'carol@example.com', WorkspaceRole::Member, $ops, ProjectRole::Member);
-    $this->annB = app(TokenService::class)->create($this->ann, 'B-SECRET token', true, null);
+    $this->annB = app(AgentService::class)->create($this->ann, ['name' => 'B-SECRET token', 'level' => 'write']);
 
     // Workspace A: ann's current workspace.
     $this->a = makeWorkspace($this->ann, 'alpha');
@@ -316,7 +319,7 @@ beforeEach(function () {
     app(CommentService::class)->add($issue, $this->ann, 'Alpha comment');
     app(LabelService::class)->create($web, ['name' => 'alpha']);
     app(SprintService::class)->create($web, ['name' => 'Alpha sprint']);
-    $this->annA = app(TokenService::class)->create($this->ann, 'ann in A', true, null);
+    $this->annA = app(AgentService::class)->create($this->ann, ['name' => 'ann in A', 'level' => 'write']);
 
     $this->bBefore = workspaceSnapshot($this->b);
 });
@@ -329,7 +332,7 @@ function answerRoute($t, string $route, array $values): string
     $payload = fillPlaceholders($payload, $values);
 
     if (str_starts_with($path, 'api/')) {
-        $response = $t->withToken($t->annA->plainTextToken)->json($method, $uri, $payload);
+        $response = $t->withToken($t->annA[1])->json($method, $uri, $payload);
         $answer = $response->getContent();
     } else {
         $response = $t->actingAs($t->ann)->from('/dashboard')->call($method, $uri, $payload);
@@ -350,7 +353,7 @@ function answerRoute($t, string $route, array $values): string
 function answerTool($t, string $tool, array $values): string
 {
     $args = fillPlaceholders(collect(isolationToolCases()[$tool])->except('_compare')->all(), $values);
-    Auth::setUser($t->ann->fresh()->withAccessToken($t->annA->accessToken));
+    Auth::setUser($t->ann->fresh()->withAccessToken($t->annA[0]->token()->sole()));
     app(CurrentWorkspace::class)->set($t->a);
     $response = PmServer::tool($tool, $args);
     $text = (fn () => json_encode([...$this->content(), ...$this->errors()]))->call($response);
@@ -407,30 +410,37 @@ test('acting in A, an MCP tool never shows or changes B and answers B like somet
 })->with(fn () => array_keys(isolationToolCases()));
 
 test('the same issue key means the current workspace\'s issue', function () {
-    $this->withToken($this->annA->plainTextToken)->getJson('/api/v1/issues/WEB-1')->assertOk()->assertJsonPath('data.title', 'Alpha issue');
+    $this->withToken($this->annA[1])->getJson('/api/v1/issues/WEB-1')->assertOk()->assertJsonPath('data.title', 'Alpha issue');
     $this->flushHeaders();
     app('auth')->forgetGuards();
-    $this->withToken($this->annB->plainTextToken)->getJson('/api/v1/issues/WEB-1')->assertOk()->assertJsonPath('data.title', 'B-SECRET web issue');
+    $this->withToken($this->annB[1])->getJson('/api/v1/issues/WEB-1')->assertOk()->assertJsonPath('data.title', 'B-SECRET web issue');
 });
 
-test('a token cannot be scoped to another workspace\'s project', function () {
+test('an agent cannot be scoped to another workspace\'s project', function () {
     useWorkspace($this->a, $this->ann);
 
-    expect(fn () => app(TokenService::class)->create($this->ann, 'x', true, ['OPS']))
+    expect(fn () => app(AgentService::class)->create($this->ann, ['name' => 'x', 'level' => 'write', 'projects' => ['OPS']]))
         ->toThrow(ValidationException::class, 'You are not a member of: OPS. Your projects: WEB.');
 });
 
-test('a token whose owner left its workspace returns 401 and is deleted, on the API, MCP over HTTP and stdio', function () {
-    $mcp = app(TokenService::class)->create($this->ann, 'mcp', true, null);  // workspace A
-    $stdio = app(TokenService::class)->create($this->ann, 'stdio', true, null);
+test('an agent whose owner left its workspace is revoked and its token gets 401, on the API, MCP over HTTP and stdio', function () {
+    [$mcp, $mcpPlain] = app(AgentService::class)->create($this->ann, ['name' => 'mcp', 'level' => 'write']);  // workspace A
+    [$stdio, $stdioPlain] = app(AgentService::class)->create($this->ann, ['name' => 'stdio', 'level' => 'write']);
     $this->a->members()->detach($this->ann);
 
-    $this->withToken($this->annA->plainTextToken)->getJson('/api/v1/projects')->assertUnauthorized();
+    $this->withToken($this->annA[1])->getJson('/api/v1/projects')->assertUnauthorized();
     $this->flushHeaders();
     app('auth')->forgetGuards();
-    $this->withToken($mcp->plainTextToken)->postJson('/mcp', ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list'])->assertUnauthorized();
-    expect(fn () => LocalPmServer::authenticate($stdio->plainTextToken))->toThrow(RuntimeException::class);
+    $this->withToken($mcpPlain)->postJson('/mcp', ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list'])->assertUnauthorized();
+    expect(fn () => LocalPmServer::authenticate($stdioPlain))->toThrow(RuntimeException::class);
 
-    expect(PersonalAccessToken::whereKey([$this->annA->accessToken->id, $mcp->accessToken->id, $stdio->accessToken->id])->count())->toBe(0)
-        ->and(PersonalAccessToken::whereKey($this->annB->accessToken->id)->exists())->toBeTrue();
+    expect(PersonalAccessToken::whereIn('agent_id', [$this->annA[0]->id, $mcp->id, $stdio->id])->count())->toBe(0)
+        ->and(Agent::whereKey([$this->annA[0]->id, $mcp->id, $stdio->id])->pluck('status')->unique()->all())->toBe([AgentStatus::Revoked])
+        ->and(PersonalAccessToken::where('agent_id', $this->annB[0]->id)->exists())->toBeTrue()
+        ->and($this->annB[0]->fresh()->status)->toBe(AgentStatus::Active);
+});
+
+test('the agent list of a workspace never shows another workspace\'s agents, even to its Owner', function () {
+    expect(collect(app(AgentService::class)->listFor($this->ann, $this->a))->pluck('name')->all())->toBe(['ann in A'])
+        ->and(collect(app(AgentService::class)->listFor($this->bob, $this->b))->pluck('name')->all())->toBe(['B-SECRET token']);
 });

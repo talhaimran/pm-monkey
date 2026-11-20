@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AgentLevel;
 use App\Enums\ProjectRole;
 use App\Models\Activity;
 use App\Models\Issue;
@@ -152,7 +153,7 @@ test('links must stay inside the project', function () {
 test('updates are logged with display values and the token name', function () {
     addMember($this->project, User::factory()->create(['email' => 'dev@example.com']), ProjectRole::Member);
     makeIssue($this->project, $this->admin, ['title' => 'Old']);
-    $token = $this->admin->createToken('claude-agent', ['read', 'write'])->plainTextToken;
+    $token = makeAgent($this->admin, AgentLevel::Write, name: 'claude-agent')[1];
 
     $this->withToken($token)->patchJson('/api/v1/issues/WEB-1', [
         'title' => 'New', 'status' => 'Done', 'assignee' => 'dev@example.com',
@@ -198,7 +199,7 @@ test('viewers and read-only tokens cannot write issues', function () {
     $this->postJson('/api/v1/projects/WEB/issues', ['title' => 'X'])->assertForbidden();
     $this->getJson('/api/v1/issues/WEB-1')->assertOk();
 
-    apiAs($this->admin, ['read']);
+    apiAs($this->admin, AgentLevel::Read);
     $this->patchJson('/api/v1/issues/WEB-1', ['title' => 'X'])->assertForbidden();
 });
 
