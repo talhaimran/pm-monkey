@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\SocialSignInController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Web\AgentController;
+use App\Http\Controllers\Web\ApprovalController;
 use App\Http\Controllers\Web\AuditLogController;
 use App\Http\Controllers\Web\BoardController;
 use App\Http\Controllers\Web\InvitationController;
@@ -61,6 +62,8 @@ Route::middleware('auth')->group(function () {
 
 Route::prefix('{workspace}')->where(['workspace' => '[a-z0-9-]{3,40}'])->middleware(['auth', 'workspace', 'require-2fa'])->group(function () {
     Route::get('/dashboard', [IssueListController::class, 'dashboard'])->middleware('verified')->name('dashboard');
+    Route::post('/approvals/{approval}/approve', [ApprovalController::class, 'approve'])->name('approvals.approve')->whereNumber('approval');
+    Route::post('/approvals/{approval}/reject', [ApprovalController::class, 'reject'])->name('approvals.reject')->whereNumber('approval');
 
     Route::get('/settings/tokens', fn () => redirect(route('agents.index', [], false), 301));
     Route::get('/settings/agents', [AgentController::class, 'index'])->name('agents.index');

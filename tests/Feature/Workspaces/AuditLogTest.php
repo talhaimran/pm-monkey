@@ -161,9 +161,10 @@ test('member events: invited, revoked, joined, role changed, owner added and rem
 test('project events: created (with via), deleted and admin_joined', function () {
     expectOneAudit('project.created', $this->ws, $this->owner, 'WEB');
 
-    apiAs($this->owner);
+    // Projects are people-only on REST (A-D2): a session call with no token is logged as web.
+    apiAsPerson($this->owner);
     $this->postJson('/api/v1/projects', ['key' => 'API', 'name' => 'Api'])->assertCreated();
-    expect(audits('project.created')->last()->via)->toBe('api');
+    expect(audits('project.created')->last()->via)->toBe('web');
     $this->deleteJson('/api/v1/projects/API', ['confirm' => true])->assertSuccessful();
     expectOneAudit('project.deleted', $this->ws, $this->owner, 'API');
 

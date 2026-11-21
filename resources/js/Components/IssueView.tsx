@@ -1,4 +1,5 @@
 import AgentLabel from '@/Components/AgentLabel';
+import AiBox from '@/Components/AiBox';
 import Avatar from '@/Components/Avatar';
 import Dropdown from '@/Components/Dropdown';
 import EmptyState from '@/Components/EmptyState';
@@ -176,6 +177,8 @@ export default function IssueView({
                         )}
                     </div>
                     <InputError message={errors.status} />
+
+                    <AiBox approvals={issue.pending_approvals} columns={options.columns} />
 
                     <section className="rounded-card bg-card-2">
                         <h2 className="px-4 pt-3 text-lg text-text">Details</h2>
@@ -471,32 +474,42 @@ function ActivityList({ entries }: { entries: ActivityEntry[] }) {
 
     return (
         <ul className="space-y-4">
-            {entries.map((a) => (
-                <li key={a.id} className="flex gap-3">
-                    {a.agent ? <Avatar agent name={a.agent.name} size="md" /> : a.user ? <Avatar name={a.user.name} email={a.user.email} size="md" /> : <span className="h-8 w-8 shrink-0 rounded-pill bg-card-2" />}
-                    <div className="min-w-0 flex-1">
-                        <div className="text-muted">
-                            {a.agent ? <AgentLabel agent={a.agent} avatar={false} /> : <strong className="font-semibold text-text">{a.user?.name ?? 'Someone'}</strong>} {a.action}{' '}
-                            <span className="text-xs">{new Date(a.created_at).toLocaleString()}</span>
-                            {a.via !== 'web' && (
-                                <span className="ms-2 inline-block rounded-ctl tint-amber px-1 text-2xs font-bold uppercase ">
-                                    via {a.via}
-                                </span>
+            {entries.map((a) => {
+                // A person decided an agent's request: the person acted, the agent is named with its avatar (A2).
+                const agentActed = a.agent && !a.approval_request;
+                return (
+                    <li key={a.id} className="flex gap-3">
+                        {agentActed ? <Avatar agent name={a.agent!.name} size="md" /> : a.user ? <Avatar name={a.user.name} email={a.user.email} size="md" /> : <span className="h-8 w-8 shrink-0 rounded-pill bg-card-2" />}
+                        <div className="min-w-0 flex-1">
+                            <div className="text-muted">
+                                {agentActed ? <AgentLabel agent={a.agent!} avatar={false} /> : <strong className="font-semibold text-text">{a.user?.name ?? 'Someone'}</strong>} {a.action}{' '}
+                                {a.approval_request && a.agent && (
+                                    <>
+                                        <Avatar agent name={a.agent.name} className="align-middle" />{' '}
+                                        <strong className="font-semibold text-text">{a.agent.name}</strong>’s move to {a.approval_request.to}{' '}
+                                    </>
+                                )}
+                                <span className="text-xs">{new Date(a.created_at).toLocaleString()}</span>
+                                {a.via !== 'web' && (
+                                    <span className="ms-2 inline-block rounded-ctl tint-amber px-1 text-2xs font-bold uppercase ">
+                                        via {a.via}
+                                    </span>
+                                )}
+                                {a.token_name && <span className="ms-1 text-xs">token “{a.token_name}”</span>}
+                            </div>
+                            {a.changes && (
+                                <ul className="mt-1 space-y-0.5">
+                                    {Object.entries(a.changes).map(([name, c]) => (
+                                        <li key={name} className="break-words">
+                                            <span className="font-medium capitalize">{name.replace('_', ' ')}</span>: {show(c.from)} → {show(c.to)}
+                                        </li>
+                                    ))}
+                                </ul>
                             )}
-                            {a.token_name && <span className="ms-1 text-xs">token “{a.token_name}”</span>}
                         </div>
-                        {a.changes && (
-                            <ul className="mt-1 space-y-0.5">
-                                {Object.entries(a.changes).map(([name, c]) => (
-                                    <li key={name} className="break-words">
-                                        <span className="font-medium capitalize">{name.replace('_', ' ')}</span>: {show(c.from)} → {show(c.to)}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-                </li>
-            ))}
+                    </li>
+                );
+            })}
         </ul>
     );
 }

@@ -106,14 +106,34 @@ export interface Issue {
     subtasks?: IssueLink[];
     epic_issues?: IssueLink[];
     comments?: Comment[];
+    pending_approvals?: ApprovalRequest[];
     created_at: string;
     updated_at: string;
+}
+
+/** An agent's move waiting for a person (A2). `moved`: the issue left `from` since; it is in `now`. */
+export interface ApprovalRequest {
+    id: number;
+    status: 'pending' | 'approved' | 'rejected' | 'expired' | 'stale';
+    issue: string;
+    title: string;
+    from: string;
+    to: string;
+    now: string;
+    moved: boolean;
+    reason: string | null;
+    agent: AgentRef;
+    expires_at: string;
+    created_at: string;
+    can_decide?: boolean;
 }
 
 export interface ActivityEntry {
     id: number;
     action: string;
     changes: Record<string, { from: unknown; to: unknown }> | null;
+    /** On an approved or rejected agent request: which request, and the column it asked for. */
+    approval_request?: { id: number; to: string };
     user: UserSummary | null;
     agent?: AgentRef | null;
     via: 'web' | 'api' | 'mcp';

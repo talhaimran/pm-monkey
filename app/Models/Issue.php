@@ -20,6 +20,9 @@ class Issue extends Model
 {
     use SoftDeletes;
 
+    /** Set by IssueService::update when an agent's move to Done was held for a person (spec 8, A2); never stored. */
+    public ?ApprovalRequest $heldApproval = null;
+
     protected function casts(): array
     {
         return [
@@ -94,5 +97,11 @@ class Issue extends Model
     public function activities(): HasMany
     {
         return $this->hasMany(Activity::class);
+    }
+
+    /** Approval requests still waiting for a person (A2), oldest first. */
+    public function pendingApprovals(): HasMany
+    {
+        return $this->hasMany(ApprovalRequest::class)->open()->oldest('id')->chaperone();
     }
 }

@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Http\Requests\Issues\BulkStoreIssueRequest;
 use App\Http\Requests\Issues\BulkUpdateIssueRequest;
+use App\Http\Resources\ApprovalRequestResource;
 use App\Http\Resources\IssueCardResource;
 use App\Mcp\Tools\Concerns\IssueFields;
 use App\Mcp\Tools\Concerns\RespondsWithJson;
@@ -26,10 +27,13 @@ class BulkUpdateIssues extends Tool
     {
         $rules = new BulkUpdateIssueRequest;
         $updated = $issues->updateMany($request->user(), $request->validate($rules->rules(), $rules->messages())['updates']);
+        $summary = "Updated {$updated->count()} ".Str::plural('issue', $updated->count()).': '.$updated->pluck('key')->implode(', ').'.';
+        $cards = IssueCardResource::collection($updated)->resolve();
+        $held = $updated->pluck('heldApproval')->filter()->values();
 
-        return $this->result(
-            "Updated {$updated->count()} ".Str::plural('issue', $updated->count()).': '.$updated->pluck('key')->implode(', ').'.',
-            IssueCardResource::collection($updated)->resolve(),
+        return $held->isEmpty() ? $this->result($summary, $cards) : $this->result(
+            $summary.' '.$held->map(fn ($approval) => ApprovalRequestResource::sentence($approval))->implode(' '),
+            ['status' => 'pending_approval', 'approval_requests' => ApprovalRequestResource::collection($held)->resolve(), 'data' => $cards],
         );
     }
 
@@ -41,6 +45,7 @@ class BulkUpdateIssues extends Tool
                     'key' => $schema->string()->description('Issue key, e.g. WEB-12.')->required(),
                     'title' => $schema->string()->max(255),
                     ...$this->issueFields($schema),
+                    'reason' => $schema->string()->max(200)->description('Why, when asking a person to approve a move to Done.'),
                 ]))
                 ->min(1)->max(BulkStoreIssueRequest::MAX)
                 ->description('Each item names an issue key plus only the fields to change.')

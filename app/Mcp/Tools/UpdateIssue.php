@@ -30,6 +30,9 @@ class UpdateIssue extends Tool
         Gate::authorize('update', $issue);
         $rules = new UpdateIssueRequest;
         $issue = $issues->update($issue, $request->user(), $request->validate($rules->rules(), $rules->messages()));
+        if ($issue->heldApproval) {
+            return $this->held($issue);
+        }
 
         return $this->result("Updated {$issue->key}.", new IssueResource($issue));
     }
@@ -40,6 +43,7 @@ class UpdateIssue extends Tool
             'issue' => $schema->string()->description('Issue key, e.g. WEB-12.')->required(),
             'title' => $schema->string()->max(255),
             ...$this->issueFields($schema),
+            'reason' => $schema->string()->max(200)->description('Why, when asking a person to approve a move to Done.'),
         ];
     }
 }

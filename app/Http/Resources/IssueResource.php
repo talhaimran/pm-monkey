@@ -38,6 +38,7 @@ class IssueResource extends JsonResource
             'subtasks' => $this->whenLoaded('subtasks', fn () => $this->subtasks->map($child)->all()),
             'epic_issues' => $this->whenLoaded('epicIssues', fn () => $this->epicIssues->map($child)->all()),
             'comments' => $this->whenLoaded('comments', fn () => CommentResource::collection($this->comments)->resolve()),
+            'pending_approvals' => $this->whenLoaded('pendingApprovals', fn () => ApprovalRequestResource::collection($this->pendingApprovals)->resolve()),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

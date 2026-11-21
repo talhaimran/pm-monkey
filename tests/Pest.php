@@ -157,9 +157,10 @@ function w(string $path): string
     return '/'.($current->id() ? $current->get() : Workspace::orderBy('id')->firstOrFail())->slug.$path;
 }
 
+/** A fixture issue, made by $reporter as a person even after apiAs($reporter) (agents can't create in Done, A-L6). */
 function makeIssue(Project $project, User $reporter, array $data = []): Issue
 {
-    return app(IssueService::class)->create($project, $reporter, ['title' => 'Issue', ...$data]);
+    return app(IssueService::class)->create($project, (clone $reporter)->withAccessToken(null), ['title' => 'Issue', ...$data]);
 }
 
 /**
@@ -181,6 +182,22 @@ function apiAs(User $user, AgentLevel $level = AgentLevel::Delete, array $projec
     }
     [$agent] = makeAgent($user, $level, $projects);
     $user->withAccessToken($agent->token()->sole());
+    app('auth')->guard('sanctum')->setUser($user);
+    app('auth')->shouldUse('sanctum');
+
+    return $user;
+}
+
+/**
+ * Authenticate as $user with no token, like a first-party session call to the API: what people (not agents) may do
+ * on REST and MCP, e.g. project settings (A-D2).
+ */
+function apiAsPerson(User $user): User
+{
+    if (! $user->workspaces()->exists()) {
+        joinWorkspace($user);
+    }
+    $user->withAccessToken(null);
     app('auth')->guard('sanctum')->setUser($user);
     app('auth')->shouldUse('sanctum');
 

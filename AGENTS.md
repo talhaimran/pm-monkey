@@ -43,12 +43,12 @@ Permissions: **Admins** manage settings, members, columns and the project itself
 |---|---|---|---|
 | `list_projects` | Projects you're in, with your role | | page, per_page |
 | `get_project` | One project with members | project | |
-| `create_project` | Create a project; you become admin | key, name | description |
-| `update_project` | Rename or edit the description (admin) | project | name, description |
-| `delete_project` | Delete a project and its issues (admin) | project, confirm | |
+| `create_project` | People only: agents get "Only people can change project settings. Do this in the web app." | key, name | description |
+| `update_project` | People only (as above) | project | name, description |
+| `delete_project` | People only (as above) | project, confirm | |
 | `create_issue` | Create an issue, sub-task (`parent`) or epic | project, title | description, type, priority, status, assignee, labels, story_points, due_date, epic, parent, sprint |
-| `get_issue` | Issue with sub-tasks, epic issues, comments | issue | |
-| `update_issue` | Change only the fields you send; `null` clears | issue | title, description, type, priority, status, assignee, labels, story_points, due_date, epic, parent, sprint |
+| `get_issue` | Issue with sub-tasks, epic issues, comments and `pending_approvals` | issue | |
+| `update_issue` | Change only the fields you send; `null` clears. A status of the last column (Done) waits for a person's approval | issue | title, description, type, priority, status, assignee, labels, story_points, due_date, epic, parent, sprint, reason |
 | `delete_issue` | Delete an issue and its sub-tasks. Soft: they disappear from every tool and response; a person can restore them in the web app for 30 days | issue, confirm | |
 | `get_issue_activity` | Change history, newest first | issue | page, per_page |
 | `add_comment` | Markdown comment | issue, body | |
@@ -56,9 +56,9 @@ Permissions: **Admins** manage settings, members, columns and the project itself
 | `delete_comment` | Delete your comment (admins: any). Soft, like issues | comment_id | |
 | `list_labels` / `create_label` / `update_label` / `delete_label` | Manage labels (by name) | project (+ name or label) | color, name |
 | `get_board` | Columns with issue cards in rank order (epics hidden) | project | assignee, type, priority, label, q, sprint |
-| `move_issue` | Change status and/or position on the board | issue | status, position, after |
+| `move_issue` | Change status and/or position on the board. Moving to the last column (Done) waits for a person's approval | issue | status, position, after, reason |
 | `list_columns` | Columns (= statuses) with counts | project | |
-| `create_column` / `update_column` / `delete_column` | Manage columns (admin) | project (+ name or column) | position, name, move_issues_to |
+| `create_column` / `update_column` / `delete_column` | People only (as above) | project (+ name or column) | position, name, move_issues_to |
 | `list_sprints` | Sprints with dates and points | project | state, page |
 | `create_sprint` | Planned sprint (default name "WEB Sprint N") | project | name, goal, start_date, end_date |
 | `update_sprint` | Rename or re-date (not completed sprints) | project, sprint | name, goal, start_date, end_date |
@@ -71,7 +71,7 @@ Permissions: **Admins** manage settings, members, columns and the project itself
 | `my_issues` | Your open assigned issues, by priority then due date | | limit |
 | `project_summary` | Counts per status and type, open/overdue, sprint progress | project | |
 | `bulk_create_issues` | Up to 50 creates, all or nothing | project, issues[] | |
-| `bulk_update_issues` | Up to 50 updates by key, all or nothing | updates[] | |
+| `bulk_update_issues` | Up to 50 updates by key, all or nothing (Done waits for approval, as above) | updates[] | |
 
 **Filters:** `assignee` is an email or `"unassigned"`, and `sprint` is a name, `"active"` or `"backlog"`. `q` matches title text or an exact key. **Sort** (`search_issues`) takes one of `key, title, type, priority, status, assignee, story_points, due_date, created, updated`; prefix with `-` for descending (default `-key`, newest first).
 
@@ -95,7 +95,9 @@ Permissions: **Admins** manage settings, members, columns and the project itself
   "description": "**Steps**\n1. Add item\n2. Click Checkout on Safari 18\n\nNothing happens."}}
 ```
 
-**Work an issue:** `move_issue {issue: "WEB-12", status: "In Progress"}`, then `add_comment` with progress notes, then `move_issue {issue: "WEB-12", status: "Done"}` (or whatever the last column is called).
+**Work an issue:** `move_issue {issue: "WEB-12", status: "In Progress"}`, then `add_comment` with progress notes, then `move_issue {issue: "WEB-12", status: "Done", reason: "PR merged, checks green"}` (or whatever the last column is called).
+
+**Done needs a person.** An agent's move to the last column doesn't happen at once: it opens an approval request and answers `pending_approval` ("WEB-12 needs a person's approval to move to Done (request 41, expires …)"; REST answers 202). Asking again returns the same request. Your owner or a project admin approves or rejects it in the web app; `get_issue` lists the requests still waiting. Requests expire after 7 days; then ask again. Agents can't create issues directly in the last column. Project settings, columns, members and invitations are people-only.
 
 **Break down a story:** `create_issue` once per sub-task with `parent: "WEB-7"`. Don't nest deeper, since sub-tasks can't have sub-tasks. For many at once, use `bulk_create_issues`.
 

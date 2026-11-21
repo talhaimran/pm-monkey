@@ -5,8 +5,10 @@ use App\Enums\ProjectRole;
 use App\Models\Project;
 use App\Models\User;
 
+// Project settings, columns and members are people-only on REST (A-D2); these cover the shared logic as a person.
+
 test('creating a project uppercases the key and makes the creator admin', function () {
-    $user = apiAs(User::factory()->create());
+    $user = apiAsPerson(User::factory()->create());
 
     $this->postJson('/api/v1/projects', ['key' => 'web', 'name' => 'Website'])
         ->assertCreated()
@@ -17,7 +19,7 @@ test('creating a project uppercases the key and makes the creator admin', functi
 });
 
 test('project key must be valid and unique', function () {
-    $user = apiAs(User::factory()->create());
+    $user = apiAsPerson(User::factory()->create());
     makeProject($user, 'WEB');
 
     $this->postJson('/api/v1/projects', ['key' => 'WEB', 'name' => 'Dup'])
@@ -34,7 +36,7 @@ test('index lists only projects the user belongs to', function () {
     makeProject(User::factory()->create(), 'THEIRS');
     asWorkspaceMember($me);
 
-    apiAs($me);
+    apiAsPerson($me);
     $this->getJson('/api/v1/projects')
         ->assertOk()
         ->assertJsonCount(1, 'data')
@@ -47,7 +49,7 @@ test('non-members get a 404 that lists accessible project keys', function () {
     makeProject(User::factory()->create(), 'THEIRS');
     asWorkspaceMember($me);
 
-    apiAs($me);
+    apiAsPerson($me);
     $this->getJson('/api/v1/projects/THEIRS')
         ->assertNotFound()
         ->assertJsonPath('message', fn ($m) => str_contains($m, 'MINE') && ! str_contains($m, 'THEIRS,'));
@@ -58,7 +60,7 @@ test('show returns members and accepts lowercase keys', function () {
     $project = makeProject($admin, 'WEB');
     addMember($project, User::factory()->create(['email' => 'v@example.com']), ProjectRole::Viewer);
 
-    apiAs($admin);
+    apiAsPerson($admin);
     $this->getJson('/api/v1/projects/web')
         ->assertOk()
         ->assertJsonPath('data.key', 'WEB')
@@ -69,7 +71,7 @@ test('viewers cannot update a project', function () {
     $project = makeProject(User::factory()->create());
     $viewer = addMember($project, User::factory()->create(), ProjectRole::Viewer);
 
-    apiAs($viewer);
+    apiAsPerson($viewer);
     $this->patchJson('/api/v1/projects/WEB', ['name' => 'New'])->assertForbidden();
 });
 
@@ -86,7 +88,7 @@ test('admins can update name and description', function () {
     $admin = User::factory()->create();
     makeProject($admin);
 
-    apiAs($admin);
+    apiAsPerson($admin);
     $this->patchJson('/api/v1/projects/WEB', ['name' => 'Renamed', 'description' => 'Hi'])
         ->assertOk()
         ->assertJsonPath('data.name', 'Renamed')
@@ -97,7 +99,7 @@ test('deleting a project requires confirm true', function () {
     $admin = User::factory()->create();
     makeProject($admin);
 
-    apiAs($admin);
+    apiAsPerson($admin);
     $this->deleteJson('/api/v1/projects/WEB')
         ->assertUnprocessable()
         ->assertJsonPath('errors.confirm.0', fn ($m) => str_contains($m, 'confirm: true'));
@@ -110,7 +112,7 @@ test('members cannot delete a project', function () {
     $project = makeProject(User::factory()->create());
     $member = addMember($project, User::factory()->create(), ProjectRole::Member);
 
-    apiAs($member);
+    apiAsPerson($member);
     $this->deleteJson('/api/v1/projects/WEB', ['confirm' => true])->assertForbidden();
 });
 

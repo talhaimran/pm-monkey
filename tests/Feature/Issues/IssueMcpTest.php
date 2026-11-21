@@ -44,9 +44,9 @@ test('get_issue and update_issue work by key', function () {
     makeIssue($this->project, $this->admin, ['title' => 'Old']);
 
     PmServer::tool(GetIssue::class, ['issue' => 'web-1'])->assertOk()->assertSee('"title":"Old"');
-    PmServer::tool(UpdateIssue::class, ['issue' => 'WEB-1', 'status' => 'done', 'priority' => 'high'])
+    PmServer::tool(UpdateIssue::class, ['issue' => 'WEB-1', 'status' => 'in progress', 'priority' => 'high'])
         ->assertOk()
-        ->assertSee(['Updated WEB-1', '"status":"Done"']);
+        ->assertSee(['Updated WEB-1', '"status":"In Progress"']);
 });
 
 test('update_issue can clear fields with null', function () {

@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Board\BoardFilterRequest;
 use App\Http\Requests\Board\MoveIssueRequest;
+use App\Http\Resources\ApprovalRequestResource;
 use App\Http\Resources\BoardResource;
 use App\Http\Resources\IssueResource;
 use App\Services\BoardService;
 use App\Services\IssueService;
 use App\Services\ProjectService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
 
 class BoardController extends Controller
@@ -33,12 +35,16 @@ class BoardController extends Controller
      *
      * `status` is the destination column name (default: current). Place it with `position` (0-based index
      * in the destination column, default bottom) or `after` (key of an issue in that column).
+     *
+     * An agent moving to the last column (Done) gets 202 `{"status": "pending_approval", "approval_request": {...}, "issue": {...}}`
+     * and the issue stays where it is until a person approves. `reason` (optional, max 200) says why.
      */
-    public function move(MoveIssueRequest $request, string $key): IssueResource
+    public function move(MoveIssueRequest $request, string $key): IssueResource|JsonResponse
     {
         $issue = $this->issues->resolve($request->user(), $key);
         Gate::authorize('update', $issue);
+        $issue = $this->board->move($issue, $request->user(), $request->validated());
 
-        return new IssueResource($this->board->move($issue, $request->user(), $request->validated()));
+        return $issue->heldApproval ? ApprovalRequestResource::pending($issue->heldApproval, new IssueResource($issue)) : new IssueResource($issue);
     }
 }

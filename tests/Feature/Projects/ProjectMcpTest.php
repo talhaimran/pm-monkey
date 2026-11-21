@@ -11,8 +11,10 @@ use App\Mcp\Tools\UpdateProject;
 use App\Models\Project;
 use App\Models\User;
 
+// Project tools are people-only (A-D2); AgentGuardrailsTest covers agents being refused.
+
 test('create_project creates and summarizes', function () {
-    $user = apiAs(User::factory()->create());
+    $user = apiAsPerson(User::factory()->create());
 
     PmServer::tool(CreateProject::class, ['key' => 'web', 'name' => 'Website'])
         ->assertOk()
@@ -50,7 +52,7 @@ test('update_project needs write ability', function () {
     apiAs($me, AgentLevel::Read);
     PmServer::tool(UpdateProject::class, ['project' => 'WEB', 'name' => 'X'])->assertHasErrors();
 
-    apiAs($me);
+    apiAsPerson($me);
     PmServer::tool(UpdateProject::class, ['project' => 'WEB', 'name' => 'X'])->assertOk()->assertSee('"name":"X"');
 });
 
@@ -58,7 +60,7 @@ test('delete_project requires confirm true', function () {
     $me = User::factory()->create();
     makeProject($me);
 
-    apiAs($me);
+    apiAsPerson($me);
     PmServer::tool(DeleteProject::class, ['project' => 'WEB'])->assertHasErrors(['confirm: true']);
     PmServer::tool(DeleteProject::class, ['project' => 'WEB', 'confirm' => true])->assertOk();
 

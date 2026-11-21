@@ -13,3 +13,6 @@ Schedule::command('issues:purge')->daily();
 
 // D2: workspaces scheduled for deletion go for good after 7 days.
 Schedule::command('workspaces:purge')->daily();
+
+// A2: approval requests expire after 7 days; the agent can ask again.
+Schedule::command('approvals:expire')->hourly();

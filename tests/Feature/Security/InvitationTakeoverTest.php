@@ -21,7 +21,7 @@ test('an admin of one project cannot take over another project\'s pending invita
     addMember($secret, $mallory, ProjectRole::Viewer);
     makeProject($mallory, 'MAL');
 
-    apiAs($mallory);
+    apiAsPerson($mallory);  // invitations are people-only on REST (A-D2)
     $this->postJson('/api/v1/projects/MAL/invitations', ['email' => 'carol@example.com', 'role' => 'viewer'])
         ->assertStatus(422)->assertJsonValidationErrors('email');
 
@@ -62,7 +62,7 @@ test('a project admin cannot overwrite a pending workspace-level invitation', fu
     $mallory = User::factory()->create();
     makeProject($mallory, 'MAL');
 
-    apiAs($mallory);
+    apiAsPerson($mallory);  // invitations are people-only on REST (A-D2)
     $this->postJson('/api/v1/projects/MAL/invitations', ['email' => 'dana@example.com', 'role' => 'viewer'])
         ->assertStatus(422)->assertJsonValidationErrors('email');
 

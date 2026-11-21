@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 class UndoService
 {
     // Activity actions that change an issue. Comments don't, so a new comment never blocks an undo.
-    private const CHANGES = ['updated', 'undid', 'deleted', 'restored'];
+    private const CHANGES = ['updated', 'undid', 'approved', 'deleted', 'restored'];
 
     /** The marker an undo carries: the newest activity on the issue right after the change. */
     public function token(Issue $issue): int

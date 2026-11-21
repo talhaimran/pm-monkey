@@ -8,9 +8,13 @@ use App\Models\Workspace;
 use App\Services\CurrentWorkspace;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Gate;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class ProjectPolicy
 {
+    /** Decision A-D2: project settings, columns, members and invitations are never available to agents. */
+    public const PEOPLE_ONLY = 'Only people can change project settings. Do this in the web app.';
+
     public function view(User $user, Project $project): Response
     {
         return $project->roleFor($user) || $this->seesAll($user, $project)
@@ -30,18 +34,12 @@ class ProjectPolicy
 
     public function create(User $user): Response
     {
-        if ($denied = $this->writable($user)) {
-            return $denied;
-        }
-
         $current = app(CurrentWorkspace::class);
         if (! $current->id()) {
             return Response::deny('You are not a member of any workspace yet. Ask an admin to invite you.');
         }
 
-        return $user->tokenProjectIds() === null
-            ? Gate::forUser($user)->inspect('createProject', $current->get())
-            : Response::deny('This agent is limited to specific projects, so it cannot create projects. Use an agent with access to all projects.');
+        return $this->peopleOnly($user, Gate::forUser($user)->inspect('createProject', $current->get()));
     }
 
     /** Create and edit issues, comments and labels: members and admins with a writable token. */
@@ -60,20 +58,16 @@ class ProjectPolicy
         };
     }
 
-    /** Edit settings, manage members and invitations. */
+    /** Edit settings and columns, manage members and invitations: project admins, and only people (A-D2). */
     public function manage(User $user, Project $project): Response
     {
-        if ($denied = $this->writable($user)) {
-            return $denied;
-        }
-
         $role = $project->roleFor($user);
 
-        return match (true) {
+        return $this->peopleOnly($user, match (true) {
             (bool) $role?->canManage() => Response::allow(),
             ! $role && $this->seesAll($user, $project) => $this->joinFirst($project),
             default => Response::deny("Your role in {$project->key} is ".($role?->value ?? 'none').'; only admins can do this.'),
-        };
+        });
     }
 
     public function update(User $user, Project $project): Response
@@ -115,6 +109,14 @@ class ProjectPolicy
     private function joinFirst(Project $project): Response
     {
         return Response::deny("You haven't joined {$project->key}. Join it as Admin to make changes.");
+    }
+
+    /** Owner's role first ($allowed), then A-D2: any agent token is refused, whatever its level. */
+    private function peopleOnly(User $user, Response $allowed): Response
+    {
+        return $allowed->denied() || ! $user->currentAccessToken() instanceof PersonalAccessToken
+            ? $allowed
+            : Response::deny(self::PEOPLE_ONLY);
     }
 
     /** Owner's role first ($allowed), then the agent's level (spec 8, A1). */

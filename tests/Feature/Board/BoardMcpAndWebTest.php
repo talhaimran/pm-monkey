@@ -22,14 +22,16 @@ test('get_board and move_issue over mcp', function () {
 
     PmServer::tool(GetBoard::class, ['project' => 'WEB'])->assertOk()->assertSee(['"name":"To Do"', 'WEB-1']);
     PmServer::tool(GetBoard::class, ['project' => 'WEB', 'sprint' => 'backlog'])->assertOk()->assertSee('WEB-1');
-    PmServer::tool(MoveIssue::class, ['issue' => 'WEB-1', 'status' => 'Done'])
+    // Done needs a person (A2); ApprovalTest covers that path.
+    PmServer::tool(MoveIssue::class, ['issue' => 'WEB-1', 'status' => 'In Progress'])
         ->assertOk()
-        ->assertSee('Moved WEB-1 to Done');
+        ->assertSee('Moved WEB-1 to In Progress');
     PmServer::tool(MoveIssue::class, ['issue' => 'WEB-1', 'status' => 'Nope'])->assertHasErrors(['Valid statuses']);
 });
 
 test('column tools over mcp', function () {
-    apiAs($this->admin);
+    // People-only (A-D2): agents are refused in AgentGuardrailsTest; this covers the tools' logic.
+    apiAsPerson($this->admin);
 
     PmServer::tool(CreateColumn::class, ['project' => 'WEB', 'name' => 'Blocked', 'position' => 0])->assertOk();
     PmServer::tool(UpdateColumn::class, ['project' => 'WEB', 'column' => 'Blocked', 'name' => 'On hold'])->assertOk();

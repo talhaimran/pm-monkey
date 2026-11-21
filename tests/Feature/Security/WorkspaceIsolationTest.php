@@ -16,12 +16,14 @@ use App\Models\Sprint;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\AgentService;
+use App\Services\ApprovalService;
 use App\Services\ColumnService;
 use App\Services\CommentService;
 use App\Services\CurrentWorkspace;
 use App\Services\InvitationService;
 use App\Services\LabelService;
 use App\Services\SprintService;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -41,7 +43,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 const B_MARKER = 'B-SECRET';
 
-/** Placeholders: {P} project key, {I} issue key, {C} comment id, {COL}/{COLN} column id/name, {L}/{LN} label id/name, {S}/{SN} sprint id/name, {T} token id, {INV} invitation id, {U} user id, {E} member email. */
+/** Placeholders: {P} project key, {I} issue key, {C} comment id, {COL}/{COLN} column id/name, {L}/{LN} label id/name, {S}/{SN} sprint id/name, {T} token id, {INV} invitation id, {AR} approval request id, {U} user id, {E} member email. */
 function isolationRouteCases(): array
 {
     $confirm = ['confirm' => true];
@@ -97,6 +99,8 @@ function isolationRouteCases(): array
         'DELETE {workspace}/comments/{comment}' => ['alpha/comments/{C}', []],
         'POST {workspace}/comments/{comment}/restore' => ['alpha/comments/{C}/restore', []],
         'GET {workspace}/dashboard' => ['alpha/dashboard', []],
+        'POST {workspace}/approvals/{approval}/approve' => ['alpha/approvals/{AR}/approve', ['confirm_changed' => true]],
+        'POST {workspace}/approvals/{approval}/reject' => ['alpha/approvals/{AR}/reject', ['note' => 'x']],
         'GET {workspace}/search' => ['alpha/search?q=secret', []],
         'GET {workspace}/issues/{key}' => ['alpha/issues/{I}', []],
         'PATCH {workspace}/issues/{key}' => ['alpha/issues/{I}', ['title' => 'x']],
@@ -248,11 +252,13 @@ function isolationVariants($t): array
         '{P}' => 'OPS', '{I}' => 'OPS-1', '{C}' => (string) $t->bComment->id, '{COL}' => (string) $t->bColumn->id, '{COLN}' => 'B-SECRET col',
         '{L}' => (string) $t->bLabel->id, '{LN}' => 'b-secret', '{S}' => (string) $t->bSprint->id, '{SN}' => 'B-SECRET sprint',
         '{T}' => (string) $t->annB[0]->id, '{INV}' => (string) $t->bInvitation->id, '{U}' => (string) $t->bob->id, '{E}' => $t->bob->email,
+        '{AR}' => (string) $t->bApproval->id,
     ];
     $missing = [
         '{P}' => 'NOPE', '{I}' => 'NOPE-1', '{C}' => '999999', '{COL}' => '999998', '{COLN}' => 'No such col',
         '{L}' => '999997', '{LN}' => 'no-such', '{S}' => '999996', '{SN}' => 'No such sprint',
         '{T}' => '999995', '{INV}' => '999994', '{U}' => '999993', '{E}' => 'nobody@example.com',
+        '{AR}' => '999992',
     ];
     $inA = ['{P}' => 'WEB', '{I}' => 'WEB-1'];
 
@@ -297,6 +303,7 @@ function workspaceSnapshot(Workspace $w): string
         DB::table('workspace_invitations')->where('workspace_id', $w->id)->orderBy('id')->get(),
         DB::table('personal_access_tokens')->where('workspace_id', $w->id)->orderBy('id')->get(['id', 'name', 'abilities']),
         DB::table('agents')->where('workspace_id', $w->id)->orderBy('id')->get(),
+        DB::table('approval_requests')->where('workspace_id', $w->id)->orderBy('id')->get(),
     ]));
 }
 
@@ -318,6 +325,7 @@ beforeEach(function () {
     $this->bSprint = app(SprintService::class)->create($ops, ['name' => 'B-SECRET sprint']);
     $this->bInvitation = app(InvitationService::class)->invite($this->b, $this->bob, 'carol@example.com', WorkspaceRole::Member, $ops, ProjectRole::Member);
     $this->annB = app(AgentService::class)->create($this->ann, ['name' => 'B-SECRET token', 'level' => 'delete']);
+    $this->bApproval = app(ApprovalService::class)->requestDone($opsIssue->setRelation('project', $ops), $this->ann, $this->annB[0], $ops->columns()->where('name', 'Done')->sole(), 'B-SECRET reason');
 
     // Workspace A: ann's current workspace.
     $this->a = makeWorkspace($this->ann, 'alpha');
@@ -340,7 +348,9 @@ function answerRoute($t, string $route, array $values): string
 
     if (str_starts_with($path, 'api/')) {
         $response = $t->withToken($t->annA[1])->json($method, $uri, $payload);
-        $answer = $response->getContent();
+        // Debug traces carry line numbers, which can collide with ids during normalizing.
+        $json = json_decode($response->getContent(), true);
+        $answer = is_array($json) ? json_encode(Arr::except($json, ['exception', 'file', 'line', 'trace'])) : $response->getContent();
     } else {
         $response = $t->actingAs($t->ann)->from('/dashboard')->call($method, $uri, $payload);
         $errors = session('errors');

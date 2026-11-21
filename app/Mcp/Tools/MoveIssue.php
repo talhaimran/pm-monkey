@@ -16,7 +16,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tool;
 
 #[Name('move_issue')]
-#[Description('Move an issue to a board column (status) and/or a position in that column.')]
+#[Description('Move an issue to a board column (status) and/or a position in that column. Moving to the last column (Done) waits for a person\'s approval; give a reason.')]
 class MoveIssue extends Tool
 {
     use RespondsWithJson;
@@ -28,6 +28,9 @@ class MoveIssue extends Tool
         Gate::authorize('update', $issue);
         $rules = new MoveIssueRequest;
         $issue = $board->move($issue, $request->user(), $request->validate($rules->rules(), $rules->messages()));
+        if ($issue->heldApproval) {
+            return $this->held($issue);
+        }
 
         return $this->result("Moved {$issue->key} to {$issue->column->name}.", new IssueResource($issue));
     }
@@ -39,6 +42,7 @@ class MoveIssue extends Tool
             'status' => $schema->string()->description('Destination column name; omit to reorder within the current column.'),
             'position' => $schema->integer()->min(0)->description('0-based index in the destination column; default bottom. Do not combine with after.'),
             'after' => $schema->string()->description('Place directly after this issue key (must be in the destination column).'),
+            'reason' => $schema->string()->max(200)->description('Why, when asking a person to approve a move to Done.'),
         ];
     }
 }

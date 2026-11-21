@@ -27,6 +27,7 @@ class IssueService
         private ProjectService $projects,
         private ActivityLogger $activity,
         private RankService $ranks,
+        private ApprovalService $approvals,
     ) {}
 
     /**
@@ -36,7 +37,14 @@ class IssueService
     public function create(Project $project, User $actor, array $data): Issue
     {
         return DB::transaction(function () use ($project, $actor, $data) {
-            [$attributes, $labelIds] = $this->resolveInput($project, $data, null);
+            [$attributes, $labelIds, $column] = $this->resolveInput($project, $data, null);
+
+            // A-L6: an agent can't skip the approval by creating the issue in Done.
+            if ($column && $this->approvals->needsApproval(new Issue, $column, $actor->agent())) {
+                throw ValidationException::withMessages([
+                    'status' => "Agents can't create issues in {$column->name}. Create it in another column, then move it; a person approves the move.",
+                ]);
+            }
 
             $issue = Issue::create([
                 'type' => IssueType::Task,
@@ -56,13 +64,23 @@ class IssueService
         });
     }
 
-    /** $action is 'updated', or 'undid' when the web UI's Undo sends a change back. */
+    /**
+     * $action is 'updated', 'undid' when the web UI's Undo sends a change back, or 'approved' for an approved request.
+     * An agent's move to Done is held instead (A2): the other fields still change (A-L7) and $issue->heldApproval
+     * holds the request; $data['reason'] (A-L5) goes on it.
+     */
     public function update(Issue $issue, User $actor, array $data, string $action = 'updated'): Issue
     {
         return DB::transaction(function () use ($issue, $actor, $data, $action) {
             $issue->loadMissing(self::DISPLAY);
             $before = $this->snapshot($issue);
-            [$attributes, $labelIds] = $this->resolveInput($issue->project, $data, $issue);
+            [$attributes, $labelIds, $column] = $this->resolveInput($issue->project, $data, $issue);
+
+            $issue->heldApproval = null;
+            if ($column && $this->approvals->needsApproval($issue, $column, $agent = $actor->agent())) {
+                unset($attributes['column_id']);
+                $issue->heldApproval = $this->approvals->requestDone($issue, $actor, $agent, $column, $data['reason'] ?? null);
+            }
 
             $issue->update($attributes);
             if ($labelIds !== null) {
@@ -232,6 +250,7 @@ class IssueService
             'subtasks' => fn ($q) => $q->with('column')->orderBy('number'),
             'epicIssues' => fn ($q) => $q->with('column')->orderBy('number')->limit(100),
             'comments' => fn ($q) => $q->with(['author', 'agent.owner'])->oldest()->limit(100),
+            'pendingApprovals.agent.owner',
         ]);
     }
 
@@ -314,12 +333,12 @@ class IssueService
     /**
      * Turn the shared input shape into column values. Only keys present in $data are touched.
      *
-     * @return array{0: array<string, mixed>, 1: ?list<int>}
+     * @return array{0: array<string, mixed>, 1: ?list<int>, 2: ?Column} the column when `status` was given
      */
     private function resolveInput(Project $project, array $data, ?Issue $issue): array
     {
         $attributes = collect($data)->only(['title', 'description', 'story_points', 'due_date'])->all();
-        $labelIds = null;
+        $labelIds = $column = null;
 
         if (isset($data['type'])) {
             $attributes['type'] = IssueType::from($data['type']);
@@ -328,7 +347,8 @@ class IssueService
             $attributes['priority'] = IssuePriority::from($data['priority']);
         }
         if (isset($data['status'])) {
-            $attributes['column_id'] = $this->resolveColumnId($project, $data['status']);
+            $column = $this->resolveColumn($project, $data['status']);
+            $attributes['column_id'] = $column->id;
         }
         if (array_key_exists('assignee', $data)) {
             $attributes['assignee_id'] = $data['assignee'] === null ? null : $this->resolveAssigneeId($project, $data['assignee']);
@@ -354,7 +374,7 @@ class IssueService
             $this->validateLinks($project, $issue, $attributes, $epic, $parent);
         }
 
-        return [$attributes, $labelIds];
+        return [$attributes, $labelIds, $column];
     }
 
     private function validateLinks(Project $project, ?Issue $issue, array $attributes, ?Issue $epic, ?Issue $parent): void
@@ -415,9 +435,9 @@ class IssueService
         return $sprint->id;
     }
 
-    private function resolveColumnId(Project $project, string $name): int
+    private function resolveColumn(Project $project, string $name): Column
     {
-        $columns = $project->columns()->get(['id', 'name']);
+        $columns = $project->columns()->get(['id', 'project_id', 'name']);
         $column = $columns->first(fn ($c) => strcasecmp($c->name, trim($name)) === 0);
 
         if (! $column) {
@@ -426,7 +446,7 @@ class IssueService
             ]);
         }
 
-        return $column->id;
+        return $column;
     }
 
     private function resolveAssigneeId(Project $project, string $email): int

@@ -156,7 +156,7 @@ test('updates are logged with display values and the token name', function () {
     $token = makeAgent($this->admin, AgentLevel::Write, name: 'claude-agent')[1];
 
     $this->withToken($token)->patchJson('/api/v1/issues/WEB-1', [
-        'title' => 'New', 'status' => 'Done', 'assignee' => 'dev@example.com',
+        'title' => 'New', 'status' => 'In Progress', 'assignee' => 'dev@example.com',
     ])->assertOk();
 
     $activity = Activity::where('action', 'updated')->sole();
@@ -166,7 +166,7 @@ test('updates are logged with display values and the token name', function () {
         // toEqual: MySQL JSON columns don't preserve key order.
         ->and($activity->changes)->toEqual([
             'title' => ['from' => 'Old', 'to' => 'New'],
-            'status' => ['from' => 'To Do', 'to' => 'Done'],
+            'status' => ['from' => 'To Do', 'to' => 'In Progress'],
             'assignee' => ['from' => null, 'to' => 'dev@example.com'],
         ]);
 });
@@ -232,7 +232,7 @@ test('deleting a project with issues, labels and comments works', function () {
     makeIssue($this->project, $this->admin, ['type' => 'epic', 'labels' => ['x']]);
     makeIssue($this->project, $this->admin, ['epic' => 'WEB-1']);
     makeIssue($this->project, $this->admin, ['parent' => 'WEB-2']);
-    apiAs($this->admin);
+    apiAsPerson($this->admin);  // project deletes are people-only (A-D2)
 
     $this->deleteJson('/api/v1/projects/WEB', ['confirm' => true])->assertNoContent();
     expect(Issue::count())->toBe(0);
