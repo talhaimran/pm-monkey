@@ -231,7 +231,7 @@ class IssueService
         return $issue->loadMissing(self::DISPLAY)->load([
             'subtasks' => fn ($q) => $q->with('column')->orderBy('number'),
             'epicIssues' => fn ($q) => $q->with('column')->orderBy('number')->limit(100),
-            'comments' => fn ($q) => $q->with('author')->oldest()->limit(100),
+            'comments' => fn ($q) => $q->with(['author', 'agent.owner'])->oldest()->limit(100),
         ]);
     }
 

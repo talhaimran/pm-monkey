@@ -9,12 +9,12 @@ Connection setup (tokens, Claude Code, Claude Desktop) is in the [README](README
 - **Address things by name, never by id.** Projects by key (`WEB`), issues by key (`WEB-12`), statuses by column name (`"In Progress"`), people by email, labels by name, sprints by name. Matching is case-insensitive.
 - **Wrong input tells you the fix.** An unknown status, assignee, label, sprint, project or sort returns an error that lists the valid options, e.g. `Unknown status "Doing". Valid statuses for WEB: To Do, In Progress, In Review, Done.` Retry with one of those values; don't guess again.
 - **Destructive calls need `confirm: true`:** `delete_project`, `delete_issue`, `complete_sprint`. Ask the human first unless they clearly asked for it.
-- **Your token sets your limits.** A read-only token or a Viewer role can't write. A project-scoped token only sees its projects; anything else looks like it doesn't exist. Errors say which limit you hit.
-- **A token belongs to one workspace.** It sees only the projects and people of the workspace it was made in; another workspace's projects look like they don't exist. A human makes one token per workspace. If you were removed from the workspace, the token stops working; if the workspace is scheduled for deletion, every call returns 403 saying so.
+- **Your agent's level sets your limits.** A read-only agent or a Viewer role can't write, and only a delete-level agent can delete. A paused agent gets 403 `agent_paused`, a revoked one 401 `agent_revoked`, and 403 `agents_disabled` when the workspace turned agents off; tell the human, who manages agents in Settings → Agents. A project-scoped token only sees its projects; anything else looks like it doesn't exist. Errors say which limit you hit.
+- **A token belongs to one workspace.** It sees only the projects and people of the workspace it was made in; another workspace's projects look like they don't exist. A human makes one agent per workspace in Settings → Agents. If you were removed from the workspace, the token stops working; if the workspace is scheduled for deletion, every call returns 403 saying so.
 - **Workspace Owners and Admins see every project, read-only, until they join it.** Writing to a project you haven't joined returns 403 `You haven't joined WEB. Join it as Admin to make changes.` Ask the human to join it in the web app.
 - **Plan limits are hard stops.** Adding a project, a person or an invitation past the workspace's plan returns 403 with `"error": "plan_limit"` (REST) or a tool error (MCP), e.g. `Your plan allows 1 project. Upgrade to add more.` Don't retry; tell the human. On REST the body also has `limit`, `allowed`, `current` and `upgrade_url`.
 - **Results are a one-line summary followed by compact JSON.** Lists are paginated (`page`, `per_page` up to 50); the summary says when to pass `page=N`.
-- **Everything you do is logged** on the issue as "via mcp" with your token's name, so humans can see what an agent changed.
+- **Everything you do is logged** on the issue as "via mcp" with your agent's name, so humans can see what an agent changed.
 
 ## Data model
 
@@ -159,7 +159,7 @@ REST errors use HTTP status codes:
 | Status | Meaning |
 |---|---|
 | 401 | Missing or bad token |
-| 403 | Role, read-only token, scope, a project you haven't joined, a locked workspace, or a plan limit (`"error": "plan_limit"`); the message says which |
+| 403 | Role, agent level, scope, a paused agent or agents turned off (`agent_paused`, `agents_disabled`), a project you haven't joined, a locked workspace, or a plan limit (`"error": "plan_limit"`); the message says which |
 | 404 | Not found or not visible to you; the message lists what you can see |
 | 422 | Invalid input; `errors.field` lists the valid options. Bulk errors are keyed `issues.3.status` / `updates.1.key` |
 | 429 | Rate limited per token, per minute and per day; wait for `Retry-After` |
@@ -168,5 +168,5 @@ REST errors use HTTP status codes:
 
 - Read before you write: `get_issue` before editing someone else's issue, and `get_issue_activity` if it changed recently.
 - Prefer one bulk call over many single calls, and send an `Idempotency-Key` on REST creates you might retry.
-- Keep comments short and factual, and say what you changed and why. Humans see your token name on every change.
+- Keep comments short and factual, and say what you changed and why. Humans see your agent's name on every change.
 - Never complete sprints, delete things, or reassign other people's work unless a human asked you to.

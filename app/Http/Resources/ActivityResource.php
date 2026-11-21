@@ -16,6 +16,7 @@ class ActivityResource extends JsonResource
             'action' => $this->action,
             'changes' => $this->changes,
             'user' => IssueResource::user($this->user),
+            'agent' => $this->whenLoaded('agent', fn () => IssueResource::agent($this->agent)),
             'via' => $this->via,
             'token_name' => $this->token_name,
             'created_at' => $this->created_at,

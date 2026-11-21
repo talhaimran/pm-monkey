@@ -20,7 +20,7 @@ beforeEach(function () {
 
 test('creating a read-only token flashes the plain token once', function () {
     $this->actingAs($this->me)
-        ->post(w('/settings/tokens'), ['name' => 'claude', 'access' => 'read'])
+        ->post(w('/settings/agents'), ['name' => 'claude', 'level' => 'read'])
         ->assertRedirect()
         ->assertSessionHas('token');
 
@@ -28,17 +28,17 @@ test('creating a read-only token flashes the plain token once', function () {
     expect($agent->name)->toBe('claude')->and($agent->permission_level)->toBe(AgentLevel::Read)
         ->and(PersonalAccessToken::sole()->agent_id)->toBe($agent->id);
 
-    $this->actingAs($this->me)->get(w('/settings/tokens'))
+    $this->actingAs($this->me)->get(w('/settings/agents'))
         ->assertInertia(fn (Assert $page) => $page
-            ->component('Tokens/Index')
-            ->where('tokens.0.name', 'claude')
-            ->where('tokens.0.access', 'read')
-            ->where('tokens.0.projects', null)
+            ->component('Agents/Index')
+            ->where('agents.0.name', 'claude')
+            ->where('agents.0.level', 'read')
+            ->where('agents.0.projects', null)
             ->where('projects.0.key', 'API'));
 });
 
 test('read-write tokens can be scoped to projects', function () {
-    $this->actingAs($this->me)->post(w('/settings/tokens'), ['name' => 'ci', 'access' => 'write', 'projects' => ['WEB']]);
+    $this->actingAs($this->me)->post(w('/settings/agents'), ['name' => 'ci', 'level' => 'write', 'projects' => ['WEB']]);
 
     $agent = Agent::sole();
     expect($agent->permission_level)->toBe(AgentLevel::Write)->and($agent->projects()->pluck('key')->all())->toBe(['WEB']);
@@ -48,16 +48,17 @@ test('tokens cannot be scoped to projects you are not in', function () {
     makeProject(User::factory()->create(), 'SECRET');
     asWorkspaceMember($this->me);
 
-    $this->actingAs($this->me)->post(w('/settings/tokens'), ['name' => 'x', 'access' => 'read', 'projects' => ['SECRET']])
+    $this->actingAs($this->me)->post(w('/settings/agents'), ['name' => 'x', 'level' => 'read', 'projects' => ['SECRET']])
         ->assertSessionHasErrors('projects');
 });
 
-test('tokens are revocable by their owner only', function () {
+test('a Member can revoke only their own agents', function () {
     [$mine] = makeAgent($this->me, AgentLevel::Read, name: 'mine');
+    asWorkspaceMember($this->me); // an Owner or Admin may revoke anyone's
     [$theirs] = makeAgent(addMember($this->web, User::factory()->create(), ProjectRole::Member), AgentLevel::Read, name: 'theirs');
 
-    $this->actingAs($this->me)->delete(w("/settings/tokens/{$theirs->id}"))->assertNotFound();
-    $this->actingAs($this->me)->delete(w("/settings/tokens/{$mine->id}"))->assertRedirect();
+    $this->actingAs($this->me)->delete(w("/settings/agents/{$theirs->id}"))->assertForbidden();
+    $this->actingAs($this->me)->delete(w("/settings/agents/{$mine->id}"))->assertRedirect();
 
     expect(PersonalAccessToken::pluck('name')->all())->toBe(['theirs'])
         ->and($mine->fresh()->status)->toBe(AgentStatus::Revoked);

@@ -265,7 +265,7 @@ test('no password, token or secret ever reaches the audit log', function () {
     $this->post('/login', ['email' => 'secret@example.com', 'password' => $password]);
     $this->put('/password', ['current_password' => $password, 'password' => 'Next-Secret-Passw0rd!', 'password_confirmation' => 'Next-Secret-Passw0rd!']);
     $plain[] = app(AgentService::class)->create($user, ['name' => 'agent', 'level' => 'write'])[1];
-    $this->post('/acme/settings/tokens', ['name' => 'web token', 'access' => 'write']);
+    $this->post('/acme/settings/agents', ['name' => 'web token', 'level' => 'write']);
     $plain[] = session('token');
     Mail::fake();
     app(InvitationService::class)->invite($this->ws, $user, 'invitee@example.com', WorkspaceRole::Member);

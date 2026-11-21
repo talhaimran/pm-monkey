@@ -75,7 +75,14 @@ export interface Comment {
     body_html?: string;
     can_edit?: boolean;
     author: UserSummary | null;
+    agent?: AgentRef | null;
     created_at: string;
+}
+
+/** The agent that acted, when one did: its name and its owner's name. */
+export interface AgentRef {
+    name: string;
+    owner: string;
 }
 
 export interface Issue {
@@ -108,6 +115,7 @@ export interface ActivityEntry {
     action: string;
     changes: Record<string, { from: unknown; to: unknown }> | null;
     user: UserSummary | null;
+    agent?: AgentRef | null;
     via: 'web' | 'api' | 'mcp';
     token_name: string | null;
     created_at: string;

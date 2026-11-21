@@ -203,6 +203,10 @@ class AgentService
         }
 
         $deny = fn (int $status, string $error, string $message) => throw new HttpResponseException(response()->json(['error' => $error, 'message' => $message], $status));
+        $workspace = $agent->workspace()->first();
+        if ($workspace && ! $workspace->setting('agents_enabled')) {
+            $deny(403, 'agents_disabled', "Agents are turned off in {$workspace->name}. An Owner or Admin can turn them on in Settings → Security.");
+        }
         match ($agent->status) {
             AgentStatus::Paused => $deny(403, 'agent_paused', "{$agent->label()} is paused. Its owner or a workspace Admin can resume it in Settings → Agents."),
             AgentStatus::Revoked => $deny(401, 'agent_revoked', "{$agent->label()} was revoked. Its owner can create a new agent in Settings → Agents."),

@@ -102,8 +102,8 @@ function Sidebar({ project, searchId, create }: { project?: { key: string; name:
                     Profile
                 </NavItem>
                 {workspace && (
-                    <NavItem href={route('tokens.index')} icon={KeyRound} current={route().current('tokens.index')}>
-                        API tokens
+                    <NavItem href={route('agents.index')} icon={KeyRound} current={route().current('agents.index')}>
+                        Agents
                     </NavItem>
                 )}
                 <ThemeToggle className={`${row} ${rest}`} />

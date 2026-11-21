@@ -134,6 +134,6 @@ class DemoSeeder extends Seeder
         $this->command?->line('  REST: curl -H "Authorization: Bearer <token>" '.url('/api/v1/projects'));
         $this->command?->line('  MCP over HTTP: '.url('/mcp').' (Authorization: Bearer <token>)');
         $this->command?->line('  MCP over stdio: PM_MCP_TOKEN=<token> php artisan mcp:start pm');
-        $this->command?->warn('  The token is shown only now. Revoke it at '.url('/demo/settings/tokens').' when you are done.');
+        $this->command?->warn('  The token is shown only now. Revoke it at '.url('/demo/settings/agents').' when you are done.');
     }
 }

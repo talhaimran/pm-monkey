@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\SocialSignInController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Web\AgentController;
 use App\Http\Controllers\Web\AuditLogController;
 use App\Http\Controllers\Web\BoardController;
 use App\Http\Controllers\Web\InvitationController;
@@ -12,7 +13,6 @@ use App\Http\Controllers\Web\LabelController;
 use App\Http\Controllers\Web\ProjectController;
 use App\Http\Controllers\Web\ProjectMemberController;
 use App\Http\Controllers\Web\SprintController;
-use App\Http\Controllers\Web\TokenController;
 use App\Http\Controllers\Web\UsageController;
 use App\Http\Controllers\Web\WorkspaceController;
 use App\Http\Controllers\Web\WorkspaceInvitationController;
@@ -62,9 +62,14 @@ Route::middleware('auth')->group(function () {
 Route::prefix('{workspace}')->where(['workspace' => '[a-z0-9-]{3,40}'])->middleware(['auth', 'workspace', 'require-2fa'])->group(function () {
     Route::get('/dashboard', [IssueListController::class, 'dashboard'])->middleware('verified')->name('dashboard');
 
-    Route::get('/settings/tokens', [TokenController::class, 'index'])->name('tokens.index');
-    Route::post('/settings/tokens', [TokenController::class, 'store'])->name('tokens.store');
-    Route::delete('/settings/tokens/{token}', [TokenController::class, 'destroy'])->name('tokens.destroy');
+    Route::get('/settings/tokens', fn () => redirect(route('agents.index', [], false), 301));
+    Route::get('/settings/agents', [AgentController::class, 'index'])->name('agents.index');
+    Route::post('/settings/agents', [AgentController::class, 'store'])->name('agents.store');
+    Route::patch('/settings/agents/{agent}', [AgentController::class, 'update'])->name('agents.update')->whereNumber('agent');
+    Route::post('/settings/agents/{agent}/pause', [AgentController::class, 'pause'])->name('agents.pause')->whereNumber('agent');
+    Route::post('/settings/agents/{agent}/resume', [AgentController::class, 'resume'])->name('agents.resume')->whereNumber('agent');
+    Route::post('/settings/agents/{agent}/regenerate', [AgentController::class, 'regenerate'])->name('agents.regenerate')->whereNumber('agent');
+    Route::delete('/settings/agents/{agent}', [AgentController::class, 'revoke'])->name('agents.revoke')->whereNumber('agent');
 
     Route::get('/settings/general', [WorkspaceSettingsController::class, 'general'])->name('settings.general');
     Route::patch('/settings/general', [WorkspaceSettingsController::class, 'update'])->name('settings.general.update');
@@ -74,6 +79,7 @@ Route::prefix('{workspace}')->where(['workspace' => '[a-z0-9-]{3,40}'])->middlew
     Route::get('/settings/usage', UsageController::class)->name('settings.usage');
     Route::get('/settings/security', [WorkspaceSettingsController::class, 'security'])->name('settings.security');
     Route::patch('/settings/security', [WorkspaceSettingsController::class, 'updateSecurity'])->name('settings.security.update');
+    Route::patch('/settings/agent-policy', [WorkspaceSettingsController::class, 'updateAgentPolicy'])->name('settings.agent-policy.update');
     Route::patch('/settings/sign-in-methods', [WorkspaceSettingsController::class, 'updateSignInMethods'])->name('settings.sign-in-methods.update');
     Route::get('/settings/audit-log/export', [AuditLogController::class, 'export'])->name('settings.audit-log.export');
     Route::post('/settings/members/invitations', [WorkspaceSettingsController::class, 'invite'])->name('settings.invitations.store')->middleware('throttle:invites');

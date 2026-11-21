@@ -20,4 +20,9 @@ class Activity extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class);
+    }
 }

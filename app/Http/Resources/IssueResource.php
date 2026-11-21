@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Agent;
 use App\Models\Issue;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -43,6 +44,12 @@ class IssueResource extends JsonResource
     }
 
     /** @return array{id: int, name: string, email: string}|null */
+    /** {name, owner} of the agent that acted, for the agent label; null for a person or when not loaded (load agent.owner). */
+    public static function agent(?Agent $agent): ?array
+    {
+        return $agent ? ['name' => $agent->name, 'owner' => $agent->owner->name] : null;
+    }
+
     public static function user(?User $user): ?array
     {
         return $user ? ['id' => $user->id, 'name' => $user->name, 'email' => $user->email] : null;

@@ -17,7 +17,7 @@ test('demo seed builds a usable project and prints a working token', function ()
         ->expectsOutputToContain('demo@example.com')
         ->expectsOutputToContain('Demo API token')
         ->expectsOutputToContain('PM_MCP_TOKEN')
-        ->expectsOutputToContain('/demo/settings/tokens')
+        ->expectsOutputToContain('/demo/settings/agents')
         ->assertSuccessful();
 
     $workspace = Workspace::sole();

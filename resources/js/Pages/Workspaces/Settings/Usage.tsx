@@ -52,8 +52,8 @@ export default function Usage({ workspaceLimits, tokenLimits }: { workspaceLimit
                 )}
 
                 <section className={card}>
-                    <h2 className="text-lg text-text">Your API tokens</h2>
-                    <p className="mt-1 text-sm text-muted">Each token gets its own budget, for the REST API and MCP.</p>
+                    <h2 className="text-lg text-text">Your agents</h2>
+                    <p className="mt-1 text-sm text-muted">Each agent token gets its own budget, for the REST API and MCP.</p>
                     <dl className="mt-4 grid grid-cols-2 gap-4 text-md">
                         <div>
                             <dt className="text-muted">Per minute</dt>
