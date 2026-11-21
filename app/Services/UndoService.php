@@ -117,7 +117,8 @@ class UndoService
             $activity->action === 'deleted' => "{$who} deleted {$issue->key}",
             $activity->action === 'restored' => "{$who} restored {$issue->key}",
             $status !== null => "{$who} moved {$issue->key} to {$status}",
-            default => "{$who} changed ".implode(', ', array_keys($activity->changes ?? []) ?: ['it'])." on {$issue->key}",
+            // approval_request is the link to an agent's request (A2), not a field.
+            default => "{$who} changed ".implode(', ', array_keys(collect($activity->changes)->except('approval_request')->all()) ?: ['it'])." on {$issue->key}",
         };
     }
 }

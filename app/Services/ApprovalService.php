@@ -31,9 +31,13 @@ class ApprovalService
     /** The one rule: an agent moving an issue into its project's last column from anywhere else needs a person. */
     public function needsApproval(Issue $issue, Column $to, ?Agent $agent): bool
     {
-        return $agent !== null
-            && $to->id !== $issue->column_id
-            && $to->id === Column::where('project_id', $to->project_id)->orderByDesc('position')->value('id');
+        return $agent !== null && $to->id !== $issue->column_id && $to->id === $issue->project->doneColumnId();
+    }
+
+    /** Why a revoked agent's request went stale; AgentService::revoke marks them at once. */
+    public static function revokedReason(Agent $agent): string
+    {
+        return "{$agent->label()} was revoked.";
     }
 
     /** Open a request for $agent's move of $issue to $to, or return the open one for the same issue and target. */
@@ -81,7 +85,7 @@ class ApprovalService
             $stale = match (true) {
                 $issue->trashed() => "{$issue->key} was deleted.",
                 ! $column => "The column {$approval->action['to_column']} was deleted.",
-                $approval->agent->status === AgentStatus::Revoked => "{$approval->agent->label()} was revoked.",
+                $approval->agent->status === AgentStatus::Revoked => self::revokedReason($approval->agent),
                 $issue->column_id === $column->id => "{$issue->key} is already in {$column->name}.",
                 default => null,
             };

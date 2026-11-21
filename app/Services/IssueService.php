@@ -40,7 +40,7 @@ class IssueService
             [$attributes, $labelIds, $column] = $this->resolveInput($project, $data, null);
 
             // A-L6: an agent can't skip the approval by creating the issue in Done.
-            if ($column && $this->approvals->needsApproval(new Issue, $column, $actor->agent())) {
+            if ($column && $this->approvals->needsApproval((new Issue)->setRelation('project', $project), $column, $actor->agent())) {
                 throw ValidationException::withMessages([
                     'status' => "Agents can't create issues in {$column->name}. Create it in another column, then move it; a person approves the move.",
                 ]);

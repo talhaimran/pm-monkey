@@ -276,7 +276,6 @@ test('Review Focus 3: a move that is no longer possible marks the request stale 
 })->with([
     'issue deleted' => [fn ($t) => app(IssueService::class)->delete(issueOne(), $t->owner), 'WEB-1 was deleted.'],
     'target column deleted' => [fn ($t) => app(ColumnService::class)->delete($t->web->columns()->where('name', 'Done')->sole()->setRelation('project', $t->web), null), 'The column Done was deleted.'],
-    'agent revoked' => [fn ($t) => app(AgentService::class)->revoke($t->agent, $t->owner), "Talha's agent was revoked."],
     'already there' => [fn ($t) => app(BoardService::class)->move(issueOne(), $t->owner, ['status' => 'Done']), 'WEB-1 is already in Done.'],
 ]);
 
@@ -372,4 +371,31 @@ test('the dashboard lists exactly the requests the viewer can decide, in this wo
 
     app(MembershipService::class)->changeRole($this->web, $sam, ProjectRole::Viewer);
     expect($ids($sam))->toBe([]);
+});
+
+test('revoking an agent marks its pending requests stale at once: off the dashboard and out of get_issue', function () {
+    $id = askForDone($this, 'move_issue');
+
+    app(AgentService::class)->revoke($this->agent, $this->owner);
+
+    expect(ApprovalRequest::find($id)->status)->toBe(ApprovalStatus::Stale)
+        ->and(ApprovalRequest::find($id)->note)->toBe("Talha's agent was revoked.");
+    $this->actingAs($this->owner)->get(w('/dashboard'))->assertInertia(fn (Assert $page) => $page->where('pendingApprovals', []));
+    $this->get(w('/issues/WEB-1'))->assertInertia(fn (Assert $page) => $page->where('issue.pending_approvals', []));
+
+    // Review Focus 3: approving afterwards moves nothing.
+    $this->post(w("/approvals/{$id}/approve"))->assertSessionHasErrors(['approval' => 'This request was already stale.']);
+    expect(issueOne()->column->name)->toBe('In Review');
+});
+
+test("undo's conflict message after an approved move names the move, never the request link", function () {
+    $sam = addMember($this->web, User::factory()->create(['name' => 'Sam Member']), ProjectRole::Member);
+    $this->actingAs($sam)->patch(w('/issues/WEB-1'), ['title' => 'Renamed']);
+    $undo = session('undo');
+    $id = askForDone($this, 'move_issue');
+    $this->actingAs($this->owner)->post(w("/approvals/{$id}/approve"));
+
+    $this->actingAs($sam)->patch($undo['url'], $undo['data'])
+        ->assertSessionHasErrors(['undo' => "Can't undo: Talha Imran moved WEB-1 to Done."]);
+    expect(session('errors')->getBag('default')->first('undo'))->not->toContain('approval_request');
 });

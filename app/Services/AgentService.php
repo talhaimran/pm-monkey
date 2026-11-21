@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Enums\AgentLevel;
 use App\Enums\AgentStatus;
+use App\Enums\ApprovalStatus;
 use App\Enums\Entitlement;
 use App\Enums\WorkspaceRole;
 use App\Models\Agent;
+use App\Models\ApprovalRequest;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Builder;
@@ -134,6 +136,9 @@ class AgentService
         DB::transaction(function () use ($agent, $actor, $reason) {
             $this->lockFresh($agent);
             $agent->token()->delete();
+            // A2: its waiting requests can never be approved now; take them off people's lists.
+            ApprovalRequest::where('agent_id', $agent->id)->where('status', ApprovalStatus::Pending)
+                ->update(['status' => ApprovalStatus::Stale, 'note' => ApprovalService::revokedReason($agent), 'updated_at' => now()]);
             if ($agent->status !== AgentStatus::Revoked) {
                 $agent->update(['status' => AgentStatus::Revoked]);
                 $this->log('agent.revoked', $agent, $actor, ['by' => $this->by($agent, $actor), 'reason' => $reason]);
