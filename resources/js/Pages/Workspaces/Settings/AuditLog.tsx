@@ -1,3 +1,4 @@
+import AgentLabel from '@/Components/AgentLabel';
 import Avatar from '@/Components/Avatar';
 import EmptyState from '@/Components/EmptyState';
 import InputLabel from '@/Components/InputLabel';
@@ -14,6 +15,7 @@ type Entry = {
     created_at: string;
     actor: string | null;
     actor_type: 'user' | 'system' | 'staff';
+    agent?: { name: string; owner: string } | null;
     via: string;
     action: string;
     target_label: string | null;
@@ -52,6 +54,7 @@ const sentences: Record<string, string> = {
     'agent.resumed': 'Resumed agent',
     'agent.revoked': 'Revoked agent',
     'agent.token_regenerated': 'Regenerated the token of agent',
+    'agent_policy.changed': 'Changed the agent policy',
     'issue.purged': 'Purged deleted issue',
     'audit_log.exported': 'Exported the audit log',
 };
@@ -172,10 +175,14 @@ export default function AuditLog({
                                                 </time>
                                             </td>
                                             <td className="whitespace-nowrap px-4 py-2 text-text">
-                                                <span className="flex items-center gap-2">
-                                                    {e.actor && <Avatar name={e.actor} email={e.actor} size="xs" />}
-                                                    {e.actor ?? (e.actor_type === 'system' ? 'System' : 'Unknown')}
-                                                </span>
+                                                {e.agent ? (
+                                                    <AgentLabel agent={e.agent} />
+                                                ) : (
+                                                    <span className="flex items-center gap-2">
+                                                        {e.actor && <Avatar name={e.actor} email={e.actor} size="xs" />}
+                                                        {e.actor ?? (e.actor_type === 'system' ? 'System' : 'Unknown')}
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="min-w-[16rem] px-4 py-2 text-text">
                                                 {sentences[e.action] ?? e.action} {e.target_label && <strong className="font-medium">{e.target_label}</strong>}

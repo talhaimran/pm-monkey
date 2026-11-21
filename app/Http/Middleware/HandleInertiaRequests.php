@@ -49,6 +49,7 @@ class HandleInertiaRequests extends Middleware
             'edition' => config('pm.edition'),
             'flash' => [
                 'token' => fn () => $request->session()->get('token'),
+                'tokenAgent' => fn () => $request->session()->get('token_agent'),
                 // Spec 7.0c: what the plan-limit dialog shows after a refused action.
                 'planLimit' => fn () => $request->session()->get('planLimit'),
                 // Spec 7.0e: shown once, right after they are made.

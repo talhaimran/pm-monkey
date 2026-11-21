@@ -59,7 +59,7 @@ use Laravel\Sanctum\PersonalAccessToken;
     PmOps is a Jira-like project tracker. Projects are addressed by their short KEY (e.g. WEB); issues by KEY-NUMBER (e.g. WEB-12).
     Start with list_projects to see what you can access. Issue fields take names, not ids: status is a column name,
     assignee a member email, labels label names, epic/parent issue keys. Errors list the valid options. Results are a short summary followed by JSON; lists are paginated (pass page=N).
-    Destructive tools (delete_*) require confirm: true. Read-only tokens and Viewers cannot write.
+    Destructive tools (delete_*) require confirm: true. Read-only agents and Viewers cannot write, and only agents with the delete level can delete.
     MD)]
 class PmServer extends Server
 {
@@ -122,7 +122,7 @@ class PmServer extends Server
 
     protected array $prompts = [];
 
-    public const INVALID_TOKEN = 'PM_MCP_TOKEN is missing or invalid. Create an API token at /settings/tokens and set PM_MCP_TOKEN in your MCP client config.';
+    public const INVALID_TOKEN = 'PM_MCP_TOKEN is missing or invalid. Create an agent in Settings → Agents (/{workspace}/settings/agents) and set PM_MCP_TOKEN in your MCP client config.';
 
     /**
      * Re-checks the token and the agent on every call, so a regenerated or expired token, a pause or a revoke stops a

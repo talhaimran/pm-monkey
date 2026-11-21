@@ -40,7 +40,7 @@ class LocalPmServer extends PmServer
         if (! $workspace) {
             $agents->revoke($user->agent(), null, 'owner_left');
 
-            throw new RuntimeException('PM_MCP_TOKEN belongs to a workspace you are no longer a member of, so its agent was revoked. Create a new API token.');
+            throw new RuntimeException('PM_MCP_TOKEN belongs to a workspace you are no longer a member of, so its agent was revoked. Create a new agent in Settings → Agents.');
         }
 
         if ($workspace->deletion_scheduled_at) {

@@ -7,7 +7,7 @@ A lightweight, self-hosted, Jira-like project tracker that people use through a 
 - **Issues:** Task, Bug, Story and Epic types, priorities, assignee, labels, story points, due dates, epics and one level of sub-tasks. Descriptions and comments are Markdown, and an activity log records who changed what and whether it came via web, API or MCP (with the token name).
 - **Kanban board** with drag and drop and per-project columns. **Backlog** with drag-to-rank. **Sprints:** create, start and complete, with unfinished issues moved to the backlog or the next sprint.
 - **List view**, cross-project **search**, and a **dashboard** with my issues, status counts and sprint progress.
-- **For agents:** 36 MCP tools over HTTP or stdio, a REST API with OpenAPI docs, project-scoped read-only or read-write tokens, Idempotency-Key, per-token rate limits, bulk create/update, and errors that list the valid options.
+- **For agents:** 36 MCP tools over HTTP or stdio, a REST API with OpenAPI docs, agents with read, write or delete levels and project-scoped tokens, Idempotency-Key, per-token rate limits, bulk create/update, and errors that list the valid options.
 
 See [AGENTS.md](AGENTS.md) for how agents should use it. [SPEC.md](SPEC.md) is the product spec, and [PROGRESS.md](PROGRESS.md) logs the decisions made while building it.
 
@@ -149,15 +149,16 @@ npm run build             # TypeScript check + production build
 
 `tests/Integration` spawns the real stdio MCP server, so it uses `DatabaseTruncation` instead of transactions.
 
-## API tokens
+## Agents
 
-Create tokens at **user menu → API tokens** (`/demo/settings/tokens`, under your workspace's address):
+Create an agent at **sidebar → Agents** (`/demo/settings/agents`, under your workspace's address). Each agent has one token:
 
-- **One workspace:** a token belongs to the workspace it was made in and only sees that workspace. Make one per workspace if you need several.
-- **Read-only** or **Read and write**. Read-only tokens (and Viewers) can never change anything.
-- **All my projects** or a chosen subset. A scoped token can't see or create anything outside its projects.
+- **One workspace:** an agent belongs to the workspace it was made in and only sees that workspace. Make one per workspace if you need several.
+- **Level:** read only, read and write, or read, write and delete. An agent never does more than you can (a Viewer's agent is read only).
+- **All my projects** or a chosen subset. A scoped agent can't see or create anything outside its projects.
 - **Expiry:** 30 days, 90 days (the default), 1 year or never. Expired tokens stop working on REST and both MCP transports.
-- The token is shown once. The page lists each token's scope, **last used** time and expiry, and lets you **revoke** it.
+- The token is shown once. The page lists each agent's level, projects, status, **last used** time and expiry, and lets you **edit**, **pause**, **resume**, make a **new token** or **revoke** it. Workspace Owners and Admins also see everyone's agents and can pause, resume or revoke them.
+- Owners and Admins can turn agents off for the whole workspace in Settings → Security; every agent call then gets `403 agents_disabled`.
 
 Every REST and MCP call uses the token as `Authorization: Bearer <token>`.
 
@@ -173,7 +174,7 @@ The base URL is `/api/v1`, documented at `/docs/api`. Highlights:
 - **Rate limit:** per token, the workspace's `api_per_minute` and `api_per_day` limits (or `PM_API_RATE_LIMIT` per minute when unset); a 429 says when to retry.
 
 ```bash
-TOKEN=...   # from the seed output or /demo/settings/tokens
+TOKEN=...   # from the seed output or /demo/settings/agents
 curl -s http://localhost:8000/api/v1/me/issues -H "Authorization: Bearer $TOKEN"
 curl -s -X POST http://localhost:8000/api/v1/projects/WEB/issues \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -H "Idempotency-Key: $(uuidgen)" \
@@ -261,7 +262,7 @@ HTTP, through the `mcp-remote` bridge (a third-party npm package, needs Node), w
 php artisan mcp:inspector pm        # opens the MCP Inspector against the stdio server
 ```
 
-If the stdio server exits at once with "PM_MCP_TOKEN is missing or invalid", the token is wrong or revoked. Create a new one at `/{workspace}/settings/tokens`. Raw HTTP check:
+If the stdio server exits at once with "PM_MCP_TOKEN is missing or invalid", the token is wrong or revoked. Create a new agent at `/{workspace}/settings/agents`. Raw HTTP check:
 
 ```bash
 curl -s -X POST http://localhost:8000/mcp -H "Authorization: Bearer $TOKEN" \

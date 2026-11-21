@@ -216,7 +216,7 @@ export default function Members({
                 title={removing?.id === me.id ? 'Leave this workspace?' : `Remove ${removing?.name ?? ''}?`}
                 warnings={[
                     { text: 'They leave every project in this workspace.', reason: 'Their issues and comments stay.' },
-                    { text: 'Their API tokens for this workspace are deleted.' },
+                    { text: 'Their agents in this workspace are revoked.' },
                 ]}
                 confirmLabel={removing?.id === me.id ? 'Leave workspace' : 'Remove member'}
                 processing={processing}

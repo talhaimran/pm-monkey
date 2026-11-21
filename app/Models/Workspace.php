@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Workspace extends Model
 {
     /** Spec 7.0a defaults; sign_in_methods "all" means every method the install offers. */
-    public const DEFAULT_SETTINGS = ['members_can_create_projects' => true, 'require_2fa' => false, 'sign_in_methods' => ['password', 'google', 'github']];
+    public const DEFAULT_SETTINGS = ['members_can_create_projects' => true, 'require_2fa' => false, 'agents_enabled' => true, 'sign_in_methods' => ['password', 'google', 'github']];
 
     /** E1: words a slug may not be, so /{slug} never shadows an app path. */
     public const RESERVED_SLUGS = [

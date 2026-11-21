@@ -61,11 +61,11 @@ class WorkspaceService
     }
 
     /** @param array<string, mixed> $changes settings keys to change; workspace.settings_changed keeps before and after of the changed ones. */
-    public function updateSettings(Workspace $workspace, array $changes): void
+    public function updateSettings(Workspace $workspace, array $changes, string $action = 'workspace.settings_changed'): void
     {
         $before = collect($changes)->mapWithKeys(fn ($v, $key) => [$key => $workspace->setting($key)])->all();
         $workspace->forceFill(['settings' => [...($workspace->settings ?? []), ...$changes]])->save();
-        $this->logChanges('workspace.settings_changed', $workspace, $before, $changes);
+        $this->logChanges($action, $workspace, $before, $changes);
     }
 
     /** D2: the Owner types the slug; members are locked out for 7 days, then workspaces:purge deletes it. */

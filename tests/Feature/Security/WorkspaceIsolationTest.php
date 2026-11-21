@@ -130,9 +130,16 @@ function isolationRouteCases(): array
         'DELETE {workspace}/projects/{project}/sprints/{sprint}' => ['alpha/projects/{P}/sprints/{S}', []],
         'POST {workspace}/projects/{project}/sprints/{sprint}/complete' => ['alpha/projects/{P}/sprints/{S}/complete', ['confirm' => true, 'move_open_issues_to' => 'backlog']],
         'POST {workspace}/projects/{project}/sprints/{sprint}/start' => ['alpha/projects/{P}/sprints/{S}/start', []],
+        // The old tokens page only redirects.
         'GET {workspace}/settings/tokens' => ['alpha/settings/tokens', []],
-        'POST {workspace}/settings/tokens' => ['alpha/settings/tokens', ['name' => 'x', 'access' => 'read', 'projects' => ['{P}']]],
-        'DELETE {workspace}/settings/tokens/{token}' => ['alpha/settings/tokens/{T}', []],
+        'GET {workspace}/settings/agents' => ['alpha/settings/agents', []],
+        'POST {workspace}/settings/agents' => ['alpha/settings/agents', ['name' => 'x', 'level' => 'read', 'projects' => ['{P}']]],
+        'PATCH {workspace}/settings/agents/{agent}' => ['alpha/settings/agents/{T}', ['name' => 'x', 'level' => 'read']],
+        'POST {workspace}/settings/agents/{agent}/pause' => ['alpha/settings/agents/{T}/pause', []],
+        'POST {workspace}/settings/agents/{agent}/resume' => ['alpha/settings/agents/{T}/resume', []],
+        'POST {workspace}/settings/agents/{agent}/regenerate' => ['alpha/settings/agents/{T}/regenerate', []],
+        'DELETE {workspace}/settings/agents/{agent}' => ['alpha/settings/agents/{T}', []],
+        'PATCH {workspace}/settings/agent-policy' => ['alpha/settings/agent-policy', ['agents_enabled' => true]],
         'GET {workspace}/settings/general' => ['alpha/settings/general', []],
         'PATCH {workspace}/settings/general' => ['alpha/settings/general', ['name' => 'Alpha', 'slug' => 'alpha', 'members_can_create_projects' => true]],
         // A wrong confirmation: deleting A for real would end the remaining cases.

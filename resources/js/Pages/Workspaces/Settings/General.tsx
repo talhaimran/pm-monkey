@@ -76,7 +76,7 @@ export default function General({ settings, can }: { settings: Settings; can: { 
                     <section className={card}>
                         <h2 className="text-lg text-t-bad">Delete workspace</h2>
                         <p className="mt-1 text-sm text-muted">
-                            Everything in {settings.name} goes after 7 days: projects, issues, comments, invitations and API tokens. Until then nobody can use it, and you can undo.
+                            Everything in {settings.name} goes after 7 days: projects, issues, comments, invitations and agents. Until then nobody can use it, and you can undo.
                         </p>
                         <DangerButton className="mt-4" onClick={() => setConfirming(true)}>
                             Delete workspace

@@ -70,7 +70,7 @@ class AuditLogController extends Controller
     /** This workspace's rows only; callers order them newest first. */
     private function query(Workspace $workspace, array $filters): Builder
     {
-        return AuditLog::with('actor:id,name')
+        return AuditLog::with(['actor:id,name', 'agent.owner:id,name'])
             ->where('workspace_id', $workspace->id)
             ->when($filters['actor'] ?? null, fn ($q, $id) => $q->where('actor_user_id', $id))
             ->when($filters['group'] ?? null, fn ($q, $g) => $q->where('action', 'like', "{$g}.%"))

@@ -15,6 +15,7 @@ class CommentResource extends JsonResource
             'id' => $this->id,
             'body' => $this->body,
             'author' => IssueResource::user($this->author),
+            'agent' => $this->whenLoaded('agent', fn () => IssueResource::agent($this->agent)),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

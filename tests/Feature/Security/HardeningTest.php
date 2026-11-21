@@ -71,11 +71,11 @@ test('tokens can expire and expired tokens are rejected', function () {
     $me = User::factory()->create();
     makeProject($me);
 
-    $this->actingAs($me)->post(w('/settings/tokens'), ['name' => 'ci', 'access' => 'read', 'expires_in_days' => 30])->assertRedirect();
+    $this->actingAs($me)->post(w('/settings/agents'), ['name' => 'ci', 'level' => 'read', 'expires_in_days' => 30])->assertRedirect();
     $token = PersonalAccessToken::sole();
     expect($token->expires_at->isSameDay(now()->addDays(30)))->toBeTrue();
 
-    $this->actingAs($me)->post(w('/settings/tokens'), ['name' => 'bad', 'access' => 'read', 'expires_in_days' => 5000])
+    $this->actingAs($me)->post(w('/settings/agents'), ['name' => 'bad', 'level' => 'read', 'expires_in_days' => 5000])
         ->assertSessionHasErrors('expires_in_days');
 
     [$agent, $expired] = makeAgent($me, AgentLevel::Read, name: 'old');
@@ -83,8 +83,8 @@ test('tokens can expire and expired tokens are rejected', function () {
     app('auth')->forgetGuards(); // drop the web-session user set by actingAs; real API calls have no session
     $this->withToken($expired)->getJson('/api/v1/projects')->assertUnauthorized();
 
-    $this->actingAs($me)->get(w('/settings/tokens'))->assertInertia(fn ($page) => $page
-        ->where('tokens', fn ($tokens) => collect($tokens)->firstWhere('name', 'ci')['expires_at'] !== null));
+    $this->actingAs($me)->get(w('/settings/agents'))->assertInertia(fn ($page) => $page
+        ->where('agents', fn ($tokens) => collect($tokens)->firstWhere('name', 'ci')['expires_at'] !== null));
 });
 
 test('the stdio server rejects expired tokens', function () {

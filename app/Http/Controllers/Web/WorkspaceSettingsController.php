@@ -81,6 +81,7 @@ class WorkspaceSettingsController extends Controller
 
         return Inertia::render('Workspaces/Settings/Security', [
             'require2fa' => (bool) $workspace->setting('require_2fa'),
+            'agentsEnabled' => (bool) $workspace->setting('agents_enabled'),
             'members' => $workspace->members()->count(),
             'membersWithout2fa' => $workspace->members()->whereNull('two_factor_confirmed_at')->count(),
             'signInMethods' => array_values($workspace->setting('sign_in_methods')),
@@ -98,6 +99,17 @@ class WorkspaceSettingsController extends Controller
             throw ValidationException::withMessages(['require_2fa' => 'Turn on two-factor authentication for your own account first, or you would be locked out.']);
         }
         $this->workspaces->updateSettings($workspace, ['require_2fa' => (bool) $on]);
+
+        return back();
+    }
+
+    /** Spec 8 (A-L11): a workspace-wide switch; off, every agent call is refused with agents_disabled. */
+    public function updateAgentPolicy(Request $request): RedirectResponse
+    {
+        $workspace = $this->current->get();
+        Gate::authorize('manageSecurity', $workspace);
+        $on = $request->validate(['agents_enabled' => ['required', 'boolean']])['agents_enabled'];
+        $this->workspaces->updateSettings($workspace, ['agents_enabled' => (bool) $on], 'agent_policy.changed');
 
         return back();
     }

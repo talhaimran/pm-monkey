@@ -13,7 +13,7 @@ return [
     // Invitation emails per hour per user (web and API), so the server can't be used to spam.
     'invite_rate_limit' => (int) env('PM_INVITE_RATE_LIMIT', 30),
 
-    // API token the stdio MCP server (`php artisan mcp:start pm`) acts as. Create one at /settings/tokens.
+    // API token the stdio MCP server (`php artisan mcp:start pm`) acts as. Create an agent at /{workspace}/settings/agents.
     'mcp_token' => env('PM_MCP_TOKEN'),
 
     // How long a replayable Idempotency-Key response is kept.

@@ -1,3 +1,4 @@
+import AgentLabel from '@/Components/AgentLabel';
 import Avatar from '@/Components/Avatar';
 import Dropdown from '@/Components/Dropdown';
 import EmptyState from '@/Components/EmptyState';
@@ -420,10 +421,10 @@ function CommentItem({ comment, canDelete }: { comment: Comment; canDelete: bool
 
     return (
         <div className="flex gap-3">
-            {comment.author ? <Avatar name={comment.author.name} email={comment.author.email} size="md" /> : <span className="h-8 w-8 shrink-0 rounded-pill bg-card-2" />}
+            {comment.agent ? <Avatar agent name={comment.agent.name} size="md" /> : comment.author ? <Avatar name={comment.author.name} email={comment.author.email} size="md" /> : <span className="h-8 w-8 shrink-0 rounded-pill bg-card-2" />}
             <div className="min-w-0 flex-1">
                 <div className="text-muted">
-                    <strong className="font-semibold text-text">{comment.author?.name ?? 'Deleted user'}</strong>{' '}
+                    {comment.agent ? <AgentLabel agent={comment.agent} avatar={false} /> : <strong className="font-semibold text-text">{comment.author?.name ?? 'Deleted user'}</strong>}{' '}
                     <span className="text-xs">{new Date(comment.created_at).toLocaleString()}</span>
                 </div>
                 {editing ? (
@@ -472,10 +473,10 @@ function ActivityList({ entries }: { entries: ActivityEntry[] }) {
         <ul className="space-y-4">
             {entries.map((a) => (
                 <li key={a.id} className="flex gap-3">
-                    {a.user ? <Avatar name={a.user.name} email={a.user.email} size="md" /> : <span className="h-8 w-8 shrink-0 rounded-pill bg-card-2" />}
+                    {a.agent ? <Avatar agent name={a.agent.name} size="md" /> : a.user ? <Avatar name={a.user.name} email={a.user.email} size="md" /> : <span className="h-8 w-8 shrink-0 rounded-pill bg-card-2" />}
                     <div className="min-w-0 flex-1">
                         <div className="text-muted">
-                            <strong className="font-semibold text-text">{a.user?.name ?? 'Someone'}</strong> {a.action}{' '}
+                            {a.agent ? <AgentLabel agent={a.agent} avatar={false} /> : <strong className="font-semibold text-text">{a.user?.name ?? 'Someone'}</strong>} {a.action}{' '}
                             <span className="text-xs">{new Date(a.created_at).toLocaleString()}</span>
                             {a.via !== 'web' && (
                                 <span className="ms-2 inline-block rounded-ctl tint-amber px-1 text-2xs font-bold uppercase ">
