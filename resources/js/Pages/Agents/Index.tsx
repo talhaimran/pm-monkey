@@ -256,8 +256,10 @@ function AgentForm({ agent, projects, onClose }: { agent: AgentRow | 'new' | nul
     const existing = agent && agent !== 'new' ? agent : null;
     const [allProjects, setAllProjects] = useState(existing ? existing.projects === null : true);
     const [confirmDelete, setConfirmDelete] = useState(false);
+    const me = (usePage().props as unknown as { auth: { user: { name: string } } }).auth.user;
     const form = useForm({
-        name: existing?.name ?? '',
+        // A-L2: a new agent is "{first name}'s agent" until renamed.
+        name: existing?.name ?? `${me.name.split(' ')[0]}’s agent`,
         description: existing?.description ?? '',
         level: (existing?.level ?? 'write') as Level,
         projects: existing?.projects ?? ([] as string[]),

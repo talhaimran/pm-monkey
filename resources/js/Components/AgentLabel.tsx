@@ -6,7 +6,7 @@ export default function AgentLabel({ agent, size = 'xs', className = '' }: { age
         <span className={`inline-flex min-w-0 items-center gap-2 ${className}`}>
             <Avatar agent name={agent.name} size={size} />
             <span className="truncate">
-                <strong className="font-semibold text-text">{agent.name}</strong> <span className="text-muted">{agent.owner}’s agent</span>
+                <strong className="font-semibold text-text">{agent.name}</strong> <span className="text-muted">{agent.owner.split(' ')[0]}’s agent</span>
             </span>
         </span>
     );
