@@ -6,9 +6,9 @@ use App\Mcp\Servers\PmServer;
 use App\Mcp\Tools\DeleteProject;
 use App\Mcp\Tools\UpdateIssue;
 use App\Models\User;
+use App\Services\AgentService;
 use App\Services\InvitationService;
 use App\Services\ProjectService;
-use App\Services\TokenService;
 use Illuminate\Support\Facades\Mail;
 
 /** Step 0 PR 3 security review probes: roles, view-all and scheduled deletion. */
@@ -41,7 +41,7 @@ test('seeing every project gives a workspace Admin no write on API or MCP until 
 });
 
 test('a scheduled workspace refuses the stdio MCP token too', function () {
-    $token = app(TokenService::class)->create($this->member, 'agent', true, null)->plainTextToken;
+    $token = app(AgentService::class)->create($this->member, ['name' => 'agent', 'level' => 'write'])[1];
     $this->ws->forceFill(['deletion_scheduled_at' => now()->addDays(7)])->save();
 
     expect(fn () => LocalPmServer::authenticate($token))->toThrow(RuntimeException::class, 'Acme is scheduled for deletion on');

@@ -1,13 +1,15 @@
 <?php
 
+use App\Enums\AgentLevel;
+use App\Enums\AgentStatus;
 use App\Enums\ProjectRole;
 use App\Enums\WorkspaceRole;
 use App\Mcp\Servers\PmServer;
 use App\Mcp\Tools\CreateProject;
+use App\Models\Agent;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProjectService;
-use App\Services\TokenService;
 use App\Services\WorkspaceMemberService;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -107,15 +109,14 @@ test('a demoted Owner cannot act as one afterwards (the role is re-read under th
     expect($this->ws->members()->wherePivot('role', 'owner')->count())->toBe(1);
 });
 
-test('a member can leave; removal takes them out of every project here and deletes their tokens here only', function () {
+test('a member can leave; removal takes them out of every project here and revokes their agents here only', function () {
     addMember($this->project, $this->member, ProjectRole::Member);
     $other = makeWorkspace($this->member, 'other');
     $otherProject = makeProject($this->member, 'OTH');
-    $tokens = app(TokenService::class);
     useWorkspace($this->ws);
-    $tokens->create($this->member, 'here', false, null);
+    makeAgent($this->member, AgentLevel::Read, name: 'here');
     useWorkspace($other);
-    $tokens->create($this->member, 'there', false, null);
+    makeAgent($this->member, AgentLevel::Read, name: 'there');
     useWorkspace($this->ws);
 
     $this->actingAs($this->admin)->delete(w("/settings/members/{$this->member->id}"))->assertSessionHasNoErrors();
@@ -123,7 +124,8 @@ test('a member can leave; removal takes them out of every project here and delet
     expect($this->member->workspaceRole($this->ws))->toBeNull()
         ->and($this->project->roleFor($this->member))->toBeNull()
         ->and($otherProject->roleFor($this->member))->toBe(ProjectRole::Admin)
-        ->and($this->member->tokens()->pluck('name')->all())->toBe(['there']);
+        ->and($this->member->tokens()->pluck('name')->all())->toBe(['there'])
+        ->and(Agent::where('name', 'here')->sole()->status)->toBe(AgentStatus::Revoked);
 
     $leaver = User::factory()->create();
     $this->ws->addMember($leaver, WorkspaceRole::Member);
@@ -150,7 +152,7 @@ test("removing a project's only admin needs a new admin for it first", function 
 test('review focus 1: removed from A while A is current, the next request lands in B and A tokens are gone', function () {
     $b = makeWorkspace($this->member, 'bravo');
     useWorkspace($this->ws, $this->member);
-    $token = app(TokenService::class)->create($this->member, 'a-token', false, null);
+    [, $token] = makeAgent($this->member, AgentLevel::Read);
     expect($this->member->fresh()->current_workspace_id)->toBe($this->ws->id);
 
     app(WorkspaceMemberService::class)->remove($this->ws, $this->owner, $this->member);
@@ -158,7 +160,7 @@ test('review focus 1: removed from A while A is current, the next request lands 
     $this->actingAs($this->member->fresh())->get('/dashboard')->assertRedirect('/bravo/dashboard');
     $this->actingAs($this->member->fresh())->get('/acme/dashboard')->assertNotFound();
     app('auth')->forgetGuards();
-    $this->withToken($token->plainTextToken)->getJson('/api/v1/projects')->assertUnauthorized();
+    $this->withToken($token)->getJson('/api/v1/projects')->assertUnauthorized();
     expect($this->member->tokens()->count())->toBe(0);
 });
 

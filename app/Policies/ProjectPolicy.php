@@ -41,7 +41,7 @@ class ProjectPolicy
 
         return $user->tokenProjectIds() === null
             ? Gate::forUser($user)->inspect('createProject', $current->get())
-            : Response::deny('This token is limited to specific projects, so it cannot create projects. Use a token with access to all projects.');
+            : Response::deny('This agent is limited to specific projects, so it cannot create projects. Use an agent with access to all projects.');
     }
 
     /** Create and edit issues, comments and labels: members and admins with a writable token. */
@@ -83,7 +83,19 @@ class ProjectPolicy
 
     public function delete(User $user, Project $project): Response
     {
-        return $this->manage($user, $project);
+        return $this->deletable($user, $this->manage($user, $project));
+    }
+
+    /** Delete issues, comments, labels and sprints: contribute, and an agent needs the Delete level. */
+    public function remove(User $user, Project $project): Response
+    {
+        return $this->deletable($user, $this->contribute($user, $project));
+    }
+
+    /** Delete columns: manage, and an agent needs the Delete level. */
+    public function removeColumn(User $user, Project $project): Response
+    {
+        return $this->deletable($user, $this->manage($user, $project));
     }
 
     /** Workspace Owners and Admins see every project, read-only until they join it (spec 7.0b). */
@@ -105,10 +117,18 @@ class ProjectPolicy
         return Response::deny("You haven't joined {$project->key}. Join it as Admin to make changes.");
     }
 
+    /** Owner's role first ($allowed), then the agent's level (spec 8, A1). */
+    private function deletable(User $user, Response $allowed): Response
+    {
+        return $allowed->denied() || $user->canDelete()
+            ? $allowed
+            : Response::deny("This agent can't delete. Its owner can allow deletes in Settings → Agents.");
+    }
+
     private function writable(User $user): ?Response
     {
         return $user->canWrite()
             ? null
-            : Response::deny('This API token is read-only. Use a read-write token to make changes.');
+            : Response::deny('This agent is read-only. Its owner can change its level in Settings → Agents.');
     }
 }

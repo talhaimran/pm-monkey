@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AgentLevel;
 use App\Enums\ProjectRole;
 use App\Mcp\Resources\IssueResource as IssueMcpResource;
 use App\Mcp\Servers\PmServer;
@@ -100,7 +101,7 @@ test('issue resource reads by key', function () {
 });
 
 test('read-only tokens cannot create issues over mcp', function () {
-    apiAs($this->admin, ['read']);
+    apiAs($this->admin, AgentLevel::Read);
 
     PmServer::tool(CreateIssue::class, ['project' => 'WEB', 'title' => 'X'])->assertHasErrors(['read-only']);
 });

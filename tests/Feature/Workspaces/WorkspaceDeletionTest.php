@@ -7,7 +7,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
-use App\Services\TokenService;
+use App\Services\AgentService;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -20,7 +20,7 @@ beforeEach(function () {
     $this->project = makeProject($this->owner, 'WEB');
     makeIssue($this->project, $this->owner);
     $this->member = addMember($this->project, User::factory()->create(), ProjectRole::Member);
-    $this->token = app(TokenService::class)->create($this->member, 'agent', true, null)->plainTextToken;
+    $this->token = app(AgentService::class)->create($this->member, ['name' => 'agent', 'level' => 'write'])[1];
     makeInvitation($this->project, $this->owner, 'new@example.com', 'member');
 });
 

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['issue_id', 'user_id', 'body'])]
+#[Fillable(['issue_id', 'user_id', 'body', 'agent_id'])]
 class Comment extends Model
 {
     use SoftDeletes;

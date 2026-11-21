@@ -5,13 +5,13 @@ namespace Database\Seeders;
 use App\Enums\ProjectRole;
 use App\Enums\WorkspaceRole;
 use App\Models\User;
+use App\Services\AgentService;
 use App\Services\CommentService;
 use App\Services\CurrentWorkspace;
 use App\Services\IssueService;
 use App\Services\LabelService;
 use App\Services\ProjectService;
 use App\Services\SprintService;
-use App\Services\TokenService;
 use App\Services\WorkspaceService;
 use Illuminate\Database\Seeder;
 
@@ -28,7 +28,7 @@ class DemoSeeder extends Seeder
         LabelService $labels,
         SprintService $sprints,
         CommentService $comments,
-        TokenService $tokens,
+        AgentService $agents,
         WorkspaceService $workspaces,
         CurrentWorkspace $current,
     ): void {
@@ -125,12 +125,12 @@ class DemoSeeder extends Seeder
         $comment('WEB-7', $demo, "Design review notes:\n\n1. Keep the summary sticky on desktop\n2. Show delivery estimate before payment");
         $comment('WEB-5', $alex, 'Looks great. One nit: the loading spinner shifts the label by 2px.');
 
-        $token = $tokens->create($demo, 'Demo token', write: true, projectKeys: null);
+        [, $token] = $agents->create($demo, ['name' => 'Demo token', 'level' => 'write']);
 
         $this->command?->newLine();
         $this->command?->info('Demo workspace ready: project WEB with '.$project->issues()->count().' issues, active sprint "'.$sprint1->name.'".');
         $this->command?->line('  Log in at '.url('/login').' as demo@example.com / password');
-        $this->command?->line('  Demo API token: '.$token->plainTextToken);
+        $this->command?->line('  Demo API token: '.$token);
         $this->command?->line('  REST: curl -H "Authorization: Bearer <token>" '.url('/api/v1/projects'));
         $this->command?->line('  MCP over HTTP: '.url('/mcp').' (Authorization: Bearer <token>)');
         $this->command?->line('  MCP over stdio: PM_MCP_TOKEN=<token> php artisan mcp:start pm');

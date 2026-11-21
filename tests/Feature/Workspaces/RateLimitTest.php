@@ -1,15 +1,15 @@
 <?php
 
+use App\Enums\AgentLevel;
 use App\Enums\Entitlement;
 use App\Models\User;
 use App\Services\Entitlements;
-use App\Services\TokenService;
 
 beforeEach(function () {
     $this->owner = User::factory()->create();
     $this->ws = makeWorkspace($this->owner, 'acme');
     makeProject($this->owner, 'WEB');
-    $this->token = fn () => app(TokenService::class)->create($this->owner, 'agent', false, null)->plainTextToken;
+    $this->token = fn () => makeAgent($this->owner, AgentLevel::Read)[1];
 });
 
 function hit(string $token)
@@ -28,14 +28,14 @@ test('api_per_minute limits each token of the workspace', function () {
         hit($a)->assertOk();
     }
     hit($a)->assertStatus(429)->assertHeader('Retry-After')
-        ->assertJsonPath('message', fn ($m) => str_starts_with($m, 'Too many requests: the limit is 3 per minute per token. Retry after '));
+        ->assertJsonPath('message', fn ($m) => str_starts_with($m, 'Too many requests: the limit is 3 per minute per agent. Retry after '));
     hit($b)->assertOk();
 
     $this->travel(61)->seconds();
     hit($a)->assertOk();
 });
 
-test('api_per_day counts per token per calendar day (E11)', function () {
+test('api_per_day counts per agent per calendar day (E11)', function () {
     $this->travelTo(now()->setTime(12, 0));
     app(Entitlements::class)->set($this->ws, Entitlement::ApiPerDay, '2', 'override');
     $a = ($this->token)();
@@ -45,7 +45,7 @@ test('api_per_day counts per token per calendar day (E11)', function () {
     hit($a)->assertOk();
     $this->travel(2)->minutes();
     hit($a)->assertStatus(429)->assertHeader('Retry-After')
-        ->assertJsonPath('message', fn ($m) => str_starts_with($m, 'Too many requests: the limit is 2 per day per token. Retry after '));
+        ->assertJsonPath('message', fn ($m) => str_starts_with($m, 'Too many requests: the limit is 2 per day per agent. Retry after '));
 
     $this->travelTo(now()->addDay()->startOfDay()->addMinute());
     hit($a)->assertOk();
@@ -57,7 +57,7 @@ test('without rows the limit falls back to PM_API_RATE_LIMIT per minute and no d
 
     hit($a)->assertOk();
     hit($a)->assertOk();
-    hit($a)->assertStatus(429)->assertJsonPath('message', fn ($m) => str_contains($m, 'the limit is 2 per minute per token'));
+    hit($a)->assertStatus(429)->assertJsonPath('message', fn ($m) => str_contains($m, 'the limit is 2 per minute per agent'));
 
     foreach (range(1, 5) as $i) {
         $this->travel(61)->seconds();

@@ -41,11 +41,17 @@ use App\Mcp\Tools\UpdateLabel;
 use App\Mcp\Tools\UpdateProject;
 use App\Mcp\Tools\UpdateSprint;
 use App\Services\ActivityLogger;
+use App\Services\AgentService;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Laravel\Mcp\Exceptions\JsonRpcException;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Version;
 use Laravel\Mcp\Server\ServerContext;
+use Laravel\Mcp\Transport\JsonRpcRequest;
+use Laravel\Mcp\Transport\JsonRpcResponse;
+use Laravel\Sanctum\PersonalAccessToken;
 
 #[Name('PmOps')]
 #[Version('1.0.0')]
@@ -115,4 +121,30 @@ class PmServer extends Server
     }
 
     protected array $prompts = [];
+
+    public const INVALID_TOKEN = 'PM_MCP_TOKEN is missing or invalid. Create an API token at /settings/tokens and set PM_MCP_TOKEN in your MCP client config.';
+
+    /**
+     * Re-checks the token and the agent on every call, so a regenerated or expired token, a pause or a revoke stops a
+     * long-lived stdio process at its next call, as REST would refuse it.
+     */
+    protected function runMethodHandle(JsonRpcRequest $request, ServerContext $context): iterable|JsonRpcResponse
+    {
+        try {
+            app(AgentService::class)->ensureUsable(auth()->user()?->agent());
+        } catch (HttpResponseException $e) {
+            $error = $e->getResponse()->getData(true);
+
+            throw new JsonRpcException($error['message'], -32001, $request->id, $error);
+        }
+
+        // After the agent check, so a revoked agent says so rather than "invalid token".
+        $token = auth()->user()?->currentAccessToken();
+        if ($token instanceof PersonalAccessToken && ! PersonalAccessToken::whereKey($token->id)
+            ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))->exists()) {
+            throw new JsonRpcException(self::INVALID_TOKEN, -32001, $request->id);
+        }
+
+        return parent::runMethodHandle($request, $context);
+    }
 }

@@ -20,7 +20,7 @@ class WorkspaceMemberService
 
     public const OWNERS_ONLY = 'Only Owners can add, change or remove Owners.';
 
-    public function __construct(private MembershipService $memberships, private AuditLogger $audit, private Entitlements $entitlements, private WorkspaceUsage $usage) {}
+    public function __construct(private MembershipService $memberships, private AuditLogger $audit, private Entitlements $entitlements, private WorkspaceUsage $usage, private AgentService $agents) {}
 
     public function changeRole(Workspace $workspace, User $actor, User $member, WorkspaceRole $role): void
     {
@@ -46,7 +46,7 @@ class WorkspaceMemberService
     }
 
     /**
-     * Takes $member out of the workspace, every project in it and their tokens for it. Anyone may leave; removing
+     * Takes $member out of the workspace and every project in it, and revokes their agents there. Anyone may leave; removing
      * someone else needs an Owner or Admin. $newAdmins (project key => email) names a new Admin for each project
      * $member is the only Admin of.
      *
@@ -86,6 +86,7 @@ class WorkspaceMemberService
             }
 
             $member->projects()->detach($workspace->projects()->pluck('id'));
+            $this->agents->revokeAllOf($member, $workspace);
             $member->tokens()->where('workspace_id', $workspace->id)->delete();
             $workspace->members()->detach($member->id);
             $this->audit->log('member.removed', $member, array_filter(['role' => $role->value, 'new_admins' => $newAdmins ? array_intersect_key($newAdmins, array_flip($keys)) : null]), $workspace, $actor);

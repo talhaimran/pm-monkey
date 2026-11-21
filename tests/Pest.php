@@ -1,12 +1,15 @@
 <?php
 
+use App\Enums\AgentLevel;
 use App\Enums\ProjectRole;
 use App\Enums\WorkspaceRole;
+use App\Models\Agent;
 use App\Models\Issue;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
+use App\Services\AgentService;
 use App\Services\CurrentWorkspace;
 use App\Services\InvitationService;
 use App\Services\IssueService;
@@ -17,7 +20,6 @@ use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Fortify\Fortify;
-use Laravel\Sanctum\Sanctum;
 use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
@@ -160,15 +162,38 @@ function makeIssue(Project $project, User $reporter, array $data = []): Issue
     return app(IssueService::class)->create($project, $reporter, ['title' => 'Issue', ...$data]);
 }
 
-/** Authenticate as an API token holder with the given abilities. */
-function apiAs(User $user, array $abilities = ['read', 'write']): User
+/**
+ * An agent of $owner in the current workspace (made through AgentService, so audited like a real one).
+ *
+ * @param  list<string>  $projects  project keys; empty = all of the owner's
+ * @return array{0: Agent, 1: string} the agent and its plain token
+ */
+function makeAgent(User $owner, AgentLevel $level = AgentLevel::Delete, array $projects = [], ?string $name = null): array
+{
+    return app(AgentService::class)->create($owner, ['name' => $name ?? 'agent '.(Agent::max('id') + 1), 'level' => $level->value, 'projects' => $projects]);
+}
+
+/** Authenticate as a new agent of $user (Delete level by default: everything $user's role allows). */
+function apiAs(User $user, AgentLevel $level = AgentLevel::Delete, array $projects = []): User
 {
     if (! $user->workspaces()->exists()) {
         joinWorkspace($user);
     }
-    Sanctum::actingAs($user, $abilities);
+    [$agent] = makeAgent($user, $level, $projects);
+    $user->withAccessToken($agent->token()->sole());
+    app('auth')->guard('sanctum')->setUser($user);
+    app('auth')->shouldUse('sanctum');
 
     return $user;
+}
+
+/** A fresh request with only $token as credentials: withHeader/withToken persist and Sanctum caches the user within a test. */
+function asToken(string $token, array $headers = [])
+{
+    test()->flushHeaders();
+    app('auth')->forgetGuards();
+
+    return test()->withToken($token)->withHeaders($headers);
 }
 
 /** The current code for $user's secret. Fortify refuses a code twice in its window, so tests clear its cache between uses. */

@@ -15,7 +15,7 @@ class CommentService
     public function add(Issue $issue, User $author, string $body): Comment
     {
         return DB::transaction(function () use ($issue, $author, $body) {
-            $comment = $issue->comments()->create(['user_id' => $author->id, 'body' => $body]);
+            $comment = $issue->comments()->create(['user_id' => $author->id, 'body' => $body, 'agent_id' => $author->agent()?->id]);
             $this->activity->log($issue, $author, 'commented');
 
             return $comment->setRelation('author', $author);

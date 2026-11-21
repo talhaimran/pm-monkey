@@ -17,7 +17,7 @@ class IssuePolicy
 
     public function delete(User $user, Issue $issue): Response
     {
-        return $this->projects->contribute($user, $issue->project);
+        return $this->projects->remove($user, $issue->project);
     }
 
     public function comment(User $user, Issue $issue): Response

@@ -60,7 +60,7 @@ class SprintController extends Controller
     public function destroy(Request $request, string $key, string $sprint): Response
     {
         $project = $this->projects->resolve($request->user(), $key);
-        Gate::authorize('contribute', $project);
+        Gate::authorize('remove', $project);
         $this->sprints->delete($this->sprints->resolve($project, $sprint));
 
         return response()->noContent();

@@ -47,24 +47,25 @@ class AppServiceProvider extends ServiceProvider
         // Every token belongs to the workspace it was made in (spec 7.0a); one made outside a workspace is never accepted.
         PersonalAccessToken::creating(fn (PersonalAccessToken $token) => $token->workspace_id ??= app(CurrentWorkspace::class)->id());
 
-        // Per-token API budget (spec 7.0c): api_per_minute and api_per_day of the token's workspace, else
-        // PM_API_RATE_LIMIT per minute and no daily limit. Runs before ResolveTokenWorkspace, so it reads the token.
+        // Per-agent API budget (spec 7.0c, 8 A3): api_per_minute and api_per_day of the token's workspace, else
+        // PM_API_RATE_LIMIT per minute and no daily limit. Keyed by agent, so a regenerated token keeps the count and
+        // another agent of the same owner isn't slowed. Runs before ResolveTokenWorkspace, so it reads the token.
         RateLimiter::for('api', function (Request $request) {
             $user = $request->user();
             $token = $user?->currentAccessToken();
             $token = $token instanceof PersonalAccessToken ? $token : null;
-            $by = $token ? "token:{$token->id}" : ($user ? "user:{$user->id}" : "ip:{$request->ip()}");
+            $by = $token?->agent_id ? "agent:{$token->agent_id}" : ($user ? "user:{$user->id}" : "ip:{$request->ip()}");
             $workspace = $token?->workspace_id ? Workspace::find($token->workspace_id) : null;
             $entitlements = app(Entitlements::class);
             $perMinute = ($workspace ? $entitlements->get($workspace, Entitlement::ApiPerMinute) : null) ?? (int) config('pm.api_rate_limit');
             $perDay = $workspace ? $entitlements->get($workspace, Entitlement::ApiPerDay) : null;
             $tooMany = fn (int $limit, string $per) => fn (Request $request, array $headers) => response()->json([
-                'message' => "Too many requests: the limit is {$limit} per {$per} per token. Retry after {$headers['Retry-After']} seconds.",
+                'message' => "Too many requests: the limit is {$limit} per {$per} per agent. Retry after {$headers['Retry-After']} seconds.",
             ], 429, $headers);
 
             return array_filter([
                 Limit::perMinute($perMinute)->by($by)->response($tooMany($perMinute, 'minute')),
-                // E11: one counter per token per calendar day.
+                // E11: one counter per agent per calendar day.
                 $perDay === null ? null : Limit::perDay($perDay)->by("pm:api-day:{$by}:".now()->toDateString())->response($tooMany($perDay, 'day')),
             ]);
         });

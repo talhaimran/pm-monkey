@@ -32,7 +32,7 @@ class LabelController extends Controller
 
     public function destroy(Project $project, Label $label): RedirectResponse
     {
-        Gate::authorize('contribute', $project);
+        Gate::authorize('remove', $project);
         $this->labels->delete($label);
 
         return back();

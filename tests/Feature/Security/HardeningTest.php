@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AgentLevel;
 use App\Enums\ProjectRole;
 use App\Enums\WorkspaceRole;
 use App\Mail\ProjectInvitationMail;
@@ -77,7 +78,8 @@ test('tokens can expire and expired tokens are rejected', function () {
     $this->actingAs($me)->post(w('/settings/tokens'), ['name' => 'bad', 'access' => 'read', 'expires_in_days' => 5000])
         ->assertSessionHasErrors('expires_in_days');
 
-    $expired = $me->createToken('old', ['read'], now()->subMinute())->plainTextToken;
+    [$agent, $expired] = makeAgent($me, AgentLevel::Read, name: 'old');
+    $agent->token()->update(['expires_at' => now()->subMinute()]);
     app('auth')->forgetGuards(); // drop the web-session user set by actingAs; real API calls have no session
     $this->withToken($expired)->getJson('/api/v1/projects')->assertUnauthorized();
 
@@ -86,7 +88,9 @@ test('tokens can expire and expired tokens are rejected', function () {
 });
 
 test('the stdio server rejects expired tokens', function () {
-    $plain = User::factory()->create()->createToken('old', ['read'], now()->subMinute())->plainTextToken;
+    makeProject($me = User::factory()->create());
+    [$agent, $plain] = makeAgent($me, AgentLevel::Read);
+    $agent->token()->update(['expires_at' => now()->subMinute()]);
 
     expect(fn () => LocalPmServer::authenticate($plain))->toThrow(RuntimeException::class, 'PM_MCP_TOKEN');
 });

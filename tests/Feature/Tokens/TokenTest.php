@@ -1,5 +1,9 @@
 <?php
 
+use App\Enums\AgentLevel;
+use App\Enums\AgentStatus;
+use App\Enums\ProjectRole;
+use App\Models\Agent;
 use App\Models\Issue;
 use App\Models\User;
 use App\Services\CommentService;
@@ -20,8 +24,9 @@ test('creating a read-only token flashes the plain token once', function () {
         ->assertRedirect()
         ->assertSessionHas('token');
 
-    $token = PersonalAccessToken::sole();
-    expect($token->name)->toBe('claude')->and($token->abilities)->toBe(['read']);
+    $agent = Agent::sole();
+    expect($agent->name)->toBe('claude')->and($agent->permission_level)->toBe(AgentLevel::Read)
+        ->and(PersonalAccessToken::sole()->agent_id)->toBe($agent->id);
 
     $this->actingAs($this->me)->get(w('/settings/tokens'))
         ->assertInertia(fn (Assert $page) => $page
@@ -35,7 +40,8 @@ test('creating a read-only token flashes the plain token once', function () {
 test('read-write tokens can be scoped to projects', function () {
     $this->actingAs($this->me)->post(w('/settings/tokens'), ['name' => 'ci', 'access' => 'write', 'projects' => ['WEB']]);
 
-    expect(PersonalAccessToken::sole()->abilities)->toBe(['read', 'write', "project:{$this->web->id}"]);
+    $agent = Agent::sole();
+    expect($agent->permission_level)->toBe(AgentLevel::Write)->and($agent->projects()->pluck('key')->all())->toBe(['WEB']);
 });
 
 test('tokens cannot be scoped to projects you are not in', function () {
@@ -47,17 +53,18 @@ test('tokens cannot be scoped to projects you are not in', function () {
 });
 
 test('tokens are revocable by their owner only', function () {
-    $mine = $this->me->createToken('mine', ['read'])->accessToken;
-    $theirs = User::factory()->create()->createToken('theirs', ['read'])->accessToken;
+    [$mine] = makeAgent($this->me, AgentLevel::Read, name: 'mine');
+    [$theirs] = makeAgent(addMember($this->web, User::factory()->create(), ProjectRole::Member), AgentLevel::Read, name: 'theirs');
 
     $this->actingAs($this->me)->delete(w("/settings/tokens/{$theirs->id}"))->assertNotFound();
     $this->actingAs($this->me)->delete(w("/settings/tokens/{$mine->id}"))->assertRedirect();
 
-    expect(PersonalAccessToken::pluck('name')->all())->toBe(['theirs']);
+    expect(PersonalAccessToken::pluck('name')->all())->toBe(['theirs'])
+        ->and($mine->fresh()->status)->toBe(AgentStatus::Revoked);
 });
 
 test('real tokens record last use and read-only ones cannot write', function () {
-    $plain = $this->me->createToken('ro', ['read'])->plainTextToken;
+    $plain = makeAgent($this->me, AgentLevel::Read, name: 'ro')[1];
 
     $this->withToken($plain)->getJson('/api/v1/projects')->assertOk();
     $this->withToken($plain)->postJson('/api/v1/projects/WEB/issues', ['title' => 'x'])
@@ -68,7 +75,7 @@ test('real tokens record last use and read-only ones cannot write', function () 
 });
 
 test('scoped tokens only see their projects', function () {
-    $plain = $this->me->createToken('scoped', ['read', 'write', "project:{$this->web->id}"])->plainTextToken;
+    $plain = makeAgent($this->me, AgentLevel::Write, ['WEB'], name: 'scoped')[1];
     $api = fn () => $this->withToken($plain);
 
     expect($api()->getJson('/api/v1/projects')->json('data.*.key'))->toBe(['WEB'])
@@ -87,7 +94,7 @@ test('scoped tokens only see their projects', function () {
 
 test('scoped tokens cannot reach comments in other projects by id', function () {
     $comment = app(CommentService::class)->add(Issue::where('number', 1)->where('project_id', $this->api->id)->first(), $this->me, 'hidden');
-    $plain = $this->me->createToken('scoped', ['read', 'write', "project:{$this->web->id}"])->plainTextToken;
+    $plain = makeAgent($this->me, AgentLevel::Write, ['WEB'], name: 'scoped')[1];
 
     $this->withToken($plain)->patchJson("/api/v1/comments/{$comment->id}", ['body' => 'x'])->assertNotFound();
 });

@@ -47,8 +47,8 @@ enum Entitlement: string
             self::BilledUsers => 'Owners, Admins and anyone Member or Admin in a project, including pending invitations',
             self::Viewers => 'Everyone else in the workspace, including pending invitations',
             self::Projects => 'Projects in the workspace',
-            self::ApiPerMinute => 'API and MCP requests per token per minute',
-            self::ApiPerDay => 'API and MCP requests per token per day',
+            self::ApiPerMinute => 'API and MCP requests per agent per minute',
+            self::ApiPerDay => 'API and MCP requests per agent per day',
             self::AgentsPerUser => 'Agents each person may own',
             self::AgentRunsPerDay => 'In-app agent runs per person per day',
             self::StorageMb => 'Attachment storage in MB',
@@ -103,6 +103,7 @@ enum Entitlement: string
             self::BilledUsers => 'billed user',
             self::Viewers => 'Viewer',
             self::Projects => 'project',
+            self::AgentsPerUser => 'agent',
             default => str_replace('_', ' ', $this->value),
         };
 

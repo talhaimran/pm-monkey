@@ -44,7 +44,7 @@ class LabelController extends Controller
     public function destroy(Request $request, string $key, string $name): Response
     {
         $project = $this->projects->resolve($request->user(), $key);
-        Gate::authorize('contribute', $project);
+        Gate::authorize('remove', $project);
         $this->labels->delete($this->labels->resolve($project, $name));
 
         return response()->noContent();

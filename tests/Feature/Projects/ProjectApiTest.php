@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AgentLevel;
 use App\Enums\ProjectRole;
 use App\Models\Project;
 use App\Models\User;
@@ -76,7 +77,7 @@ test('read-only tokens cannot write even as admin', function () {
     $admin = User::factory()->create();
     makeProject($admin);
 
-    apiAs($admin, ['read']);
+    apiAs($admin, AgentLevel::Read);
     $this->patchJson('/api/v1/projects/WEB', ['name' => 'New'])->assertForbidden();
     $this->postJson('/api/v1/projects', ['key' => 'NEW', 'name' => 'New'])->assertForbidden();
 });

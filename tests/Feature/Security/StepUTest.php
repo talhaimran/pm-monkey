@@ -5,9 +5,9 @@ use App\Models\Activity;
 use App\Models\Comment;
 use App\Models\Issue;
 use App\Models\User;
+use App\Services\AgentService;
 use App\Services\CommentService;
 use App\Services\IssueService;
-use App\Services\TokenService;
 use Inertia\Testing\AssertableInertia as Assert;
 
 // Security review of step U (soft delete, Undo, peek drawer). The claude-security plugin scan was unavailable,
@@ -111,7 +111,7 @@ test('a deleted issue cannot be written to through any API or web route', functi
 test('a token scoped to another project cannot delete, restore-by-recreate or see deleted issues', function () {
     makeIssue($this->project, $this->admin, ['title' => 'Scoped away']);
     makeProject($this->admin, 'DOC');
-    $plain = app(TokenService::class)->create($this->admin, 'doc only', true, ['DOC'])->plainTextToken;
+    $plain = app(AgentService::class)->create($this->admin, ['name' => 'doc only', 'level' => 'write', 'projects' => ['DOC']])[1];
 
     $this->withToken($plain)->deleteJson('/api/v1/issues/WEB-1', ['confirm' => true])->assertNotFound();
     $this->withToken($plain)->getJson('/api/v1/issues?q=Scoped')->assertOk()->assertDontSee('Scoped away');

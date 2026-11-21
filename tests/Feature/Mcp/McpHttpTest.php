@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AgentLevel;
 use App\Models\Activity;
 use App\Models\User;
 
@@ -24,7 +25,7 @@ test('requests without a token get 401 with a bearer challenge', function () {
 });
 
 test('initialize and tools/list describe the server and every tool in one page', function () {
-    $token = $this->me->createToken('agent', ['read'])->plainTextToken;
+    $token = makeAgent($this->me, AgentLevel::Read, name: 'agent')[1];
 
     rpc($token, 'initialize', ['protocolVersion' => '2025-06-18', 'capabilities' => (object) [], 'clientInfo' => ['name' => 'test', 'version' => '1']])
         ->assertOk()
@@ -41,7 +42,7 @@ test('initialize and tools/list describe the server and every tool in one page',
 });
 
 test('tools/call writes as the token user and logs via mcp with the token name', function () {
-    $token = $this->me->createToken('claude-desktop', ['read', 'write'])->plainTextToken;
+    $token = makeAgent($this->me, AgentLevel::Write, name: 'claude-desktop')[1];
 
     rpc($token, 'tools/call', ['name' => 'create_issue', 'arguments' => ['project' => 'WEB', 'title' => 'Over HTTP']])
         ->assertOk()
@@ -54,8 +55,8 @@ test('tools/call writes as the token user and logs via mcp with the token name',
 
 test('read-only and scoped tokens are enforced over mcp', function () {
     $other = makeProject($this->me, 'API');
-    $readOnly = $this->me->createToken('ro', ['read'])->plainTextToken;
-    $scoped = $this->me->createToken('scoped', ['read', 'write', "project:{$this->project->id}"])->plainTextToken;
+    $readOnly = makeAgent($this->me, AgentLevel::Read, name: 'ro')[1];
+    $scoped = makeAgent($this->me, AgentLevel::Write, ['WEB'], name: 'scoped')[1];
 
     rpc($readOnly, 'tools/call', ['name' => 'create_issue', 'arguments' => ['project' => 'WEB', 'title' => 'x']])
         ->assertJsonPath('result.isError', true)
@@ -67,7 +68,7 @@ test('read-only and scoped tokens are enforced over mcp', function () {
 });
 
 test('resources are listed and readable by uri', function () {
-    $token = $this->me->createToken('agent', ['read'])->plainTextToken;
+    $token = makeAgent($this->me, AgentLevel::Read, name: 'agent')[1];
     makeIssue($this->project, $this->me, ['title' => 'Readable']);
 
     $templates = rpc($token, 'resources/templates/list')->assertOk()->json('result.resourceTemplates');
@@ -80,7 +81,7 @@ test('resources are listed and readable by uri', function () {
 
 test('the mcp endpoint shares the per-token rate limit', function () {
     config(['pm.api_rate_limit' => 2]);
-    $token = $this->me->createToken('agent', ['read'])->plainTextToken;
+    $token = makeAgent($this->me, AgentLevel::Read, name: 'agent')[1];
 
     rpc($token, 'tools/list')->assertOk();
     rpc($token, 'tools/list')->assertOk();

@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Enums\AgentStatus;
 use App\Enums\Entitlement;
 use App\Enums\IssuePriority;
 use App\Enums\IssueType;
 use App\Enums\ProjectRole;
 use App\Enums\SprintState;
+use App\Models\Agent;
 use App\Models\Column;
 use App\Models\Project;
 use App\Models\User;
@@ -16,7 +18,7 @@ use Illuminate\Validation\ValidationException;
 
 class ProjectService
 {
-    public function __construct(private CurrentWorkspace $current, private AuditLogger $audit, private Entitlements $entitlements, private WorkspaceUsage $usage) {}
+    public function __construct(private CurrentWorkspace $current, private AuditLogger $audit, private Entitlements $entitlements, private WorkspaceUsage $usage, private AgentService $agents) {}
 
     public function listFor(User $user, int $perPage = 25, ?int $page = null): LengthAwarePaginator
     {
@@ -61,6 +63,16 @@ class ProjectService
             // Deleting a project is permanent: its issues go for good, including soft-deleted ones.
             $project->issues()->withTrashed()->whereNotNull('parent_id')->forceDelete();
             $project->issues()->withTrashed()->forceDelete();
+            // An agent limited to this project alone would be left with none, which means all of them: revoke it.
+            // Its row is locked first, so two deletes of its last two projects run in turn and the second sees the
+            // first (the count is a locking read, so it reads the latest rows, not this transaction's snapshot).
+            $agents = Agent::whereIn('id', DB::table('agent_projects')->where('project_id', $project->id)->select('agent_id'))
+                ->where('status', '!=', AgentStatus::Revoked)->orderBy('id')->lockForUpdate()->get();
+            $scopedElsewhere = DB::table('agent_projects')->join('projects', 'projects.id', '=', 'agent_projects.project_id')
+                ->whereIn('agent_projects.agent_id', $agents->modelKeys())->where('agent_projects.project_id', '!=', $project->id)
+                ->sharedLock()->pluck('agent_projects.agent_id');
+            $agents->reject(fn (Agent $agent) => $scopedElsewhere->contains($agent->id))
+                ->each(fn (Agent $agent) => $this->agents->revoke($agent, null, 'projects_deleted'));
             $project->delete();
             $this->audit->log('project.deleted', $project, ['name' => $project->name], $project->workspace()->first());
         });
