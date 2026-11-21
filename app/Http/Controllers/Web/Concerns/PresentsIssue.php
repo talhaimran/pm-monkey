@@ -24,6 +24,10 @@ trait PresentsIssue
             'body_html' => self::markdown($c['body']),
             'can_edit' => ($c['author']['id'] ?? null) === $user->id,
         ])->all();
+        $data['pending_approvals'] = $issue->pendingApprovals->map(fn ($approval, $i) => [
+            ...$data['pending_approvals'][$i],
+            'can_decide' => $user->can('decide', $approval),
+        ])->all();
 
         return [
             'issue' => $data,

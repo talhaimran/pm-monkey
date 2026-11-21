@@ -43,7 +43,7 @@ test('projects: the second project is refused on web, API and MCP', function () 
         ->assertSessionHas('planLimit', planLimitJson('projects', 1, 1, $message))
         ->assertSessionHasErrors(['plan_limit' => $message]);
 
-    apiAs($this->owner);
+    apiAsPerson($this->owner);  // projects, invitations and members are people-only (A-D2)
     $this->postJson('/api/v1/projects', ['key' => 'TWO', 'name' => 'Two'])->assertForbidden()->assertExactJson(planLimitJson('projects', 1, 1, $message));
     PmServer::tool(CreateProject::class, ['key' => 'TWO', 'name' => 'Two'])->assertHasErrors([$message]);
 
@@ -59,7 +59,7 @@ test('billed users: pending invitations count, so the next billed invitation is 
     $this->actingAs($this->owner)->from('/acme/settings/members')
         ->post('/acme/settings/members/invitations', ['email' => 'b@example.com', 'role' => 'admin'])
         ->assertSessionHas('planLimit', planLimitJson('billed_users', 2, 2, $message));
-    apiAs($this->owner);
+    apiAsPerson($this->owner);  // projects, invitations and members are people-only (A-D2)
     $this->postJson('/api/v1/projects/WEB/invitations', ['email' => 'c@example.com', 'role' => 'member'])
         ->assertForbidden()->assertExactJson(planLimitJson('billed_users', 2, 2, $message));
 
@@ -84,7 +84,7 @@ test('a Viewer becoming a project Member or Admin needs a billed seat (web and A
 
     $this->actingAs($this->owner)->from('/acme/projects/WEB/settings')->patch("/acme/projects/WEB/members/{$viewer->id}", ['role' => 'member'])
         ->assertSessionHas('planLimit');
-    apiAs($this->owner);
+    apiAsPerson($this->owner);  // projects, invitations and members are people-only (A-D2)
     $this->patchJson('/api/v1/projects/WEB/members/vic@example.com', ['role' => 'admin'])->assertForbidden()->assertJsonPath('limit', 'billed_users');
     expect($this->project->roleFor($viewer))->toBe(ProjectRole::Viewer);
 
@@ -118,7 +118,7 @@ test('review focus 3: an invitation is refused at accept time when the workspace
 
 test('no rows means unlimited', function () {
     $this->ws->entitlements()->delete();
-    apiAs($this->owner);
+    apiAsPerson($this->owner);  // projects, invitations and members are people-only (A-D2)
 
     foreach (['TWO', 'THREE'] as $key) {
         $this->postJson('/api/v1/projects', ['key' => $key, 'name' => $key])->assertCreated();
@@ -127,7 +127,7 @@ test('no rows means unlimited', function () {
 
 test('a message for an Owner on self-hosted has no upgrade link', function () {
     config(['pm.billing_url' => null]);
-    apiAs($this->owner);
+    apiAsPerson($this->owner);  // projects, invitations and members are people-only (A-D2)
 
     $this->postJson('/api/v1/projects', ['key' => 'TWO', 'name' => 'Two'])->assertForbidden()->assertJsonPath('upgrade_url', null);
 });

@@ -49,7 +49,11 @@ class BoardService
             Project::whereKey($issue->project_id)->lockForUpdate()->first();
 
             if (isset($input['status'])) {
-                $issue = $this->issues->update($issue, $actor, ['status' => $input['status']], $action);
+                $issue = $this->issues->update($issue, $actor, ['status' => $input['status'], 'reason' => $input['reason'] ?? null], $action);
+            }
+            // An agent's move to Done waits for a person (A2): the issue stays where it was.
+            if ($issue->heldApproval) {
+                return $issue;
             }
             $issue->loadMissing(IssueService::DISPLAY);
 

@@ -16,7 +16,9 @@ use App\Models\Comment;
 use App\Models\Issue;
 use App\Models\Project;
 use App\Models\User;
+use App\Policies\ProjectPolicy;
 use App\Services\AgentService;
+use App\Services\AuditLogger;
 use App\Services\ColumnService;
 use App\Services\CommentService;
 use App\Services\Entitlements;
@@ -172,7 +174,8 @@ test('activity, comments and audit rows written by an agent carry its id; activi
 
     asToken($plain)->postJson('/api/v1/projects/WEB/issues', ['title' => 'By agent'])->assertCreated();
     asToken($plain)->postJson('/api/v1/issues/WEB-2/comments', ['body' => 'Done'])->assertCreated();
-    asToken($plain)->postJson('/api/v1/projects', ['key' => 'NEW', 'name' => 'New'])->assertCreated();
+    // Agents can't create projects on REST any more (A-D2); the audit row still records an agent acting in a service.
+    app(AuditLogger::class)->log('project.created', null, [], $this->ws, (clone $this->owner)->withAccessToken($agent->token()->sole()));
 
     $activity = Activity::where('action', 'created')->latest('id')->first();
     expect($activity->agent_id)->toBe($agent->id)
@@ -225,19 +228,22 @@ function deletables($t): array
     ];
 }
 
-test('a Write agent cannot delete a project, comment, label, column or sprint over REST; a Delete agent can', function () {
+test('a Write agent cannot delete a comment, label or sprint over REST; a Delete agent can; projects and columns are people-only', function () {
     $refused = "This agent can't delete. Its owner can allow deletes in Settings → Agents.";
     $things = deletables($this);
     [, $write] = makeAgent($this->owner, AgentLevel::Write);
     [, $delete] = makeAgent($this->owner, AgentLevel::Delete);
+    $settings = ['project', 'column'];
 
     foreach ($things as $name => [$path, $exists]) {
-        asToken($write)->deleteJson($path, ['confirm' => true])->assertForbidden()->assertJsonPath('message', $refused);
+        asToken($write)->deleteJson($path, ['confirm' => true])->assertForbidden()
+            ->assertJsonPath('message', in_array($name, $settings, true) ? ProjectPolicy::PEOPLE_ONLY : $refused);
         expect($exists())->toBeTrue("{$name} survives a Write agent");
     }
     foreach ($things as $name => [$path, $exists]) {
-        asToken($delete)->deleteJson($path, ['confirm' => true])->assertSuccessful();
-        expect($exists())->toBeFalse("{$name} is deleted by a Delete agent");
+        $response = asToken($delete)->deleteJson($path, ['confirm' => true]);
+        in_array($name, $settings, true) ? $response->assertForbidden()->assertJsonPath('message', ProjectPolicy::PEOPLE_ONLY) : $response->assertSuccessful();
+        expect($exists())->toBe(in_array($name, $settings, true), "{$name}: only people delete projects and columns");
     }
 });
 
@@ -246,14 +252,14 @@ test('a Write agent cannot delete over MCP either; a Delete agent can', function
     app(LabelService::class)->create($this->web, ['name' => 'ux']);
 
     apiAs($this->owner, AgentLevel::Write);
-    PmServer::tool(DeleteProject::class, ['project' => 'API', 'confirm' => true])->assertHasErrors([$refused]);
+    PmServer::tool(DeleteProject::class, ['project' => 'API', 'confirm' => true])->assertHasErrors([ProjectPolicy::PEOPLE_ONLY]);
     PmServer::tool(DeleteLabel::class, ['project' => 'WEB', 'label' => 'ux'])->assertHasErrors([$refused]);
     expect(Project::where('key', 'API')->exists())->toBeTrue()
         ->and($this->web->labels()->where('name', 'ux')->exists())->toBeTrue();
 
     app('auth')->forgetGuards();
     apiAs($this->owner, AgentLevel::Delete);
-    PmServer::tool(DeleteProject::class, ['project' => 'API', 'confirm' => true])->assertOk();
+    PmServer::tool(DeleteProject::class, ['project' => 'API', 'confirm' => true])->assertHasErrors([ProjectPolicy::PEOPLE_ONLY]);
     PmServer::tool(DeleteLabel::class, ['project' => 'WEB', 'label' => 'ux'])->assertOk();
 });
 

@@ -2,6 +2,9 @@
 
 namespace App\Mcp\Tools\Concerns;
 
+use App\Http\Resources\ApprovalRequestResource;
+use App\Http\Resources\IssueResource;
+use App\Models\Issue;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Laravel\Mcp\Response;
@@ -16,6 +19,15 @@ trait RespondsWithJson
         }
 
         return Response::text($summary."\n\n".json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    }
+
+    /** An agent's move to Done held for a person (A2): who has to act, then the same JSON as REST's 202. */
+    protected function held(Issue $issue): Response
+    {
+        return $this->result(
+            ApprovalRequestResource::sentence($issue->heldApproval),
+            ApprovalRequestResource::pending($issue->heldApproval, new IssueResource($issue))->getData(true),
+        );
     }
 
     /** Paginated list with a summary that tells the agent how to fetch more. */

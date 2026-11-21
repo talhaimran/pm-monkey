@@ -33,14 +33,15 @@ test('F8: a project admin cannot revoke a workspace-Admin invitation that names 
     expect(WorkspaceInvitation::find($mine->id))->toBeNull();
 });
 
-test('F11: a token scoped to one project cannot overwrite invitations outside it', function () {
+test('F11: a token scoped to one project cannot overwrite invitations outside it (since A-D2, agents cannot invite at all)', function () {
     makeInvitation($this->api, $this->owner, 'x@example.com', 'member');
     app(InvitationService::class)->invite($this->ws, $this->owner, 'y@example.com', WorkspaceRole::Admin);
     useWorkspace($this->ws);
     $token = app(AgentService::class)->create($this->owner, ['name' => 'scoped', 'level' => 'write', 'projects' => ['WEB']])[1];
 
     foreach (['x@example.com', 'y@example.com'] as $email) {
-        $this->withToken($token)->postJson('/api/v1/projects/WEB/invitations', ['email' => $email, 'role' => 'member'])->assertUnprocessable()->assertJsonValidationErrors('email');
+        $this->withToken($token)->postJson('/api/v1/projects/WEB/invitations', ['email' => $email, 'role' => 'member'])
+            ->assertForbidden()->assertJsonPath('message', 'Only people can change project settings. Do this in the web app.');
     }
     expect(WorkspaceInvitation::firstWhere('email', 'x@example.com')->project_id)->toBe($this->api->id)
         ->and(WorkspaceInvitation::firstWhere('email', 'y@example.com')->role)->toBe(WorkspaceRole::Admin);

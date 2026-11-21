@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\PresentsIssue;
 use App\Http\Requests\Lists\IssueListRequest;
+use App\Http\Resources\ApprovalRequestResource;
 use App\Http\Resources\IssueResource;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
+use App\Services\ApprovalService;
+use App\Services\CurrentWorkspace;
 use App\Services\DashboardService;
 use App\Services\IssueService;
 use App\Services\ProjectService;
@@ -69,6 +72,8 @@ class IssueListController extends Controller
 
         return Inertia::render('Dashboard', [
             'myIssues' => IssueResource::collection($this->dashboard->myIssues($user, 50))->resolve(),
+            // A2: what this person can decide here (their agents' requests, and every request in projects they administer).
+            'pendingApprovals' => ApprovalRequestResource::collection(app(ApprovalService::class)->decidableBy($user, app(CurrentWorkspace::class)->get()))->resolve(),
             'projects' => $projects->map(fn ($p) => [
                 'key' => $p->key,
                 'name' => $p->name,

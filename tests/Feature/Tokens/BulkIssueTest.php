@@ -18,7 +18,7 @@ test('bulk create makes all issues in order', function () {
     $this->postJson('/api/v1/projects/WEB/issues/bulk', ['issues' => [
         ['title' => 'One'],
         ['title' => 'Two', 'type' => 'bug'],
-        ['title' => 'Three', 'status' => 'Done'],
+        ['title' => 'Three', 'status' => 'In Review'],
     ]])
         ->assertCreated()
         ->assertJsonPath('data.*.key', ['WEB-1', 'WEB-2', 'WEB-3']);
@@ -48,11 +48,11 @@ test('bulk update changes several issues by key and logs each', function () {
     makeIssue($this->project, $this->me);
 
     $this->patchJson('/api/v1/issues/bulk', ['updates' => [
-        ['key' => 'WEB-1', 'status' => 'Done'],
+        ['key' => 'WEB-1', 'status' => 'In Review'],
         ['key' => 'web-2', 'priority' => 'high', 'assignee' => 'me@example.com'],
     ]])
         ->assertOk()
-        ->assertJsonPath('data.0.status', 'Done')
+        ->assertJsonPath('data.0.status', 'In Review')
         ->assertJsonPath('data.1.assignee.email', 'me@example.com');
 
     expect(Activity::where('action', 'updated')->count())->toBe(2);

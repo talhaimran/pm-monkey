@@ -3,10 +3,12 @@
 use App\Enums\ProjectRole;
 use App\Models\User;
 
+// Project settings, columns and members are people-only on REST (A-D2); these cover the shared logic as a person.
+
 beforeEach(function () {
     $this->admin = User::factory()->create();
     $this->project = makeProject($this->admin, 'WEB');
-    apiAs($this->admin);
+    apiAsPerson($this->admin);
 });
 
 $names = fn () => test()->getJson('/api/v1/projects/WEB/columns')->json('data.*.name');
@@ -70,7 +72,7 @@ test('unknown column names list the valid ones', function () {
 test('only admins manage columns', function () {
     $member = addMember($this->project, User::factory()->create(), ProjectRole::Member);
 
-    apiAs($member);
+    apiAsPerson($member);
     $this->getJson('/api/v1/projects/WEB/columns')->assertOk();
     $this->postJson('/api/v1/projects/WEB/columns', ['name' => 'X'])->assertForbidden();
 });

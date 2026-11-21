@@ -69,6 +69,8 @@ class ColumnService
         }
 
         DB::transaction(function () use ($column, $target, $others) {
+            // The project row first, the same order as moves and approvals (CLAUDE.md, ApprovalService).
+            Project::whereKey($column->project_id)->lockForUpdate()->first();
             // Soft-deleted issues move too (to the first column when no target was needed), so they can still be restored.
             $column->issues()->withTrashed()->update(['column_id' => ($target ?? $others->sortBy('position')->first())->id]);
             $column->delete();

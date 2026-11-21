@@ -89,7 +89,7 @@ test('scoped tokens only see their projects', function () {
     $api()->getJson('/api/v1/issues/API-1')->assertNotFound();
     $api()->postJson('/api/v1/projects', ['key' => 'NEW', 'name' => 'New'])
         ->assertForbidden()
-        ->assertJsonPath('message', fn ($m) => str_contains($m, 'limited to specific projects'));
+        ->assertJsonPath('message', 'Only people can change project settings. Do this in the web app.');
     $api()->postJson('/api/v1/projects/WEB/issues', ['title' => 'ok'])->assertCreated();
 });
 

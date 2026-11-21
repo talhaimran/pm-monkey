@@ -54,7 +54,7 @@ test('invitations are rate limited per user', function () {
     $admin = User::factory()->create();
     makeProject($admin);
 
-    apiAs($admin);
+    apiAsPerson($admin);  // invitations are people-only (A-D2)
     $this->postJson('/api/v1/projects/WEB/invitations', ['email' => 'a@x.test', 'role' => 'member'])->assertCreated();
     $this->postJson('/api/v1/projects/WEB/invitations', ['email' => 'b@x.test', 'role' => 'member'])->assertCreated();
     $this->postJson('/api/v1/projects/WEB/invitations', ['email' => 'c@x.test', 'role' => 'member'])

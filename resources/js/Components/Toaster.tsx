@@ -30,6 +30,8 @@ export default function Toaster() {
 
     useEffect(() => {
         if (errors?.undo) add({ message: errors.undo, tone: 'bad' });
+        // An approval that couldn't go through (moved since, stale, expired, already decided): say why.
+        if (errors?.approval) add({ message: errors.approval, tone: 'bad' });
     }, [errors, add]);
 
     const undo = useCallback(

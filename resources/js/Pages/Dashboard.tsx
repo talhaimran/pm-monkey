@@ -1,6 +1,7 @@
+import ApprovalCard from '@/Components/ApprovalCard';
 import IssueTable from '@/Components/IssueTable';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Issue, ProjectRole } from '@/types';
+import { ApprovalRequest, Issue, ProjectRole } from '@/types';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import { CircleCheck, FolderKanban } from 'lucide-react';
@@ -24,9 +25,11 @@ interface Summary {
 
 export default function Dashboard({
     myIssues,
+    pendingApprovals,
     projects,
 }: {
     myIssues: Issue[];
+    pendingApprovals: ApprovalRequest[];
     projects: { key: string; name: string; my_role: ProjectRole; summary: Summary }[];
 }) {
     return (
@@ -47,6 +50,20 @@ export default function Dashboard({
                         </div>
                     ))}
                 </dl>
+
+                {/* A2: requests this person can decide (their agents', and every one in projects they administer). */}
+                <section>
+                    <h2 className="mb-3 text-heading-2xl text-text">Pending approvals</h2>
+                    {pendingApprovals.length === 0 ? (
+                        <EmptyState compact title="No requests waiting for you." hint="When an agent asks to move an issue to Done, it shows up here." />
+                    ) : (
+                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                            {pendingApprovals.map((a) => (
+                                <ApprovalCard key={a.id} approval={a} canDecide linkIssue />
+                            ))}
+                        </div>
+                    )}
+                </section>
 
                 <section>
                     <h2 className="mb-3 text-heading-2xl text-text">My issues</h2>

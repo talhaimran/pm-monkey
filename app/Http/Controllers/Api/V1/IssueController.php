@@ -9,6 +9,7 @@ use App\Http\Requests\Issues\DestroyIssueRequest;
 use App\Http\Requests\Issues\StoreIssueRequest;
 use App\Http\Requests\Issues\UpdateIssueRequest;
 use App\Http\Resources\ActivityResource;
+use App\Http\Resources\ApprovalRequestResource;
 use App\Http\Resources\IssueResource;
 use App\Services\IssueService;
 use App\Services\ProjectService;
@@ -54,10 +55,17 @@ class IssueController extends Controller
      * Update up to 50 issues across your projects, all or nothing.
      *
      * Body: `{"updates": [{"key": "WEB-1", ...fields to change}, ...]}`. Errors are keyed `updates.{index}.{field}`.
+     * An agent's moves to the last column wait for a person: 202 with `status: pending_approval` and `approval_requests`.
      */
-    public function bulkUpdate(BulkUpdateIssueRequest $request): AnonymousResourceCollection
+    public function bulkUpdate(BulkUpdateIssueRequest $request): AnonymousResourceCollection|JsonResponse
     {
-        return IssueResource::collection($this->issues->updateMany($request->user(), $request->validated('updates')));
+        $updated = $this->issues->updateMany($request->user(), $request->validated('updates'));
+        $held = $updated->pluck('heldApproval')->filter()->values();
+        $response = IssueResource::collection($updated);
+
+        return $held->isEmpty() ? $response : $response
+            ->additional(['status' => 'pending_approval', 'approval_requests' => ApprovalRequestResource::collection($held)->resolve()])
+            ->response()->setStatusCode(202);
     }
 
     /** Get an issue by key (e.g. WEB-12) with sub-tasks, epic issues and comments. */
@@ -66,13 +74,19 @@ class IssueController extends Controller
         return new IssueResource($this->issues->loadFull($this->issues->resolve($request->user(), $key)));
     }
 
-    /** Update an issue. Send only the fields to change; send null to clear assignee, epic, parent, points or due date. */
-    public function update(UpdateIssueRequest $request, string $key): IssueResource
+    /**
+     * Update an issue. Send only the fields to change; send null to clear assignee, epic, parent, points or due date.
+     *
+     * An agent moving the issue to the last column (Done) gets 202 `{"status": "pending_approval", "approval_request": {...},
+     * "issue": {...}}`: a person must approve the move; the other fields are applied. `reason` (optional) says why.
+     */
+    public function update(UpdateIssueRequest $request, string $key): IssueResource|JsonResponse
     {
         $issue = $this->issues->resolve($request->user(), $key);
         Gate::authorize('update', $issue);
+        $issue = $this->issues->update($issue, $request->user(), $request->validated());
 
-        return new IssueResource($this->issues->update($issue, $request->user(), $request->validated()));
+        return $issue->heldApproval ? ApprovalRequestResource::pending($issue->heldApproval, new IssueResource($issue)) : new IssueResource($issue);
     }
 
     /** Delete an issue and its sub-tasks (requires confirm: true). */
